@@ -122,14 +122,14 @@ vec3 odyssey_get_global_wind_no_point(vec3 worldPos, float scale) {
     return vec3(0.0);
   }
 
-  vec2 worldXZ = worldPos.xz;
+  vec2 worldXZ = worldPos.xy;
   float noise = odyssey_sample_blended_noise(worldXZ);
   vec3 base = windGlobal * (scale * noise);
   return odyssey_wind_apply_deviation(base, worldXZ, noise);
 }
 
 vec3 odyssey_get_global_wind(vec3 worldPos, float scale) {
-  vec2 worldXZ = worldPos.xz;
+  vec2 worldXZ = worldPos.xy;
   float noise = odyssey_sample_blended_noise(worldXZ);
   vec3 base = windGlobal * (scale * noise) + odyssey_point_source_wind(worldPos);
 

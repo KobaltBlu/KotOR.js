@@ -1,12 +1,18 @@
 import { describe, expect, test, jest } from '@jest/globals';
 import * as THREE from 'three';
 import {
-  GRASS_FAR_RADIUS_SQ,
-  GRASS_NEAR_RADIUS_SQ,
+  GRASS_LOD_FAR_DIST,
+  GRASS_LOD_FULL_DIST,
+  GRASS_LOD_MID_DIST,
+  GRASS_LOD_MID_FRACTION,
   binCellKey,
   colorFromAreDword,
-  computeBinFade,
   computeFaceGrassCount,
+  computeGrassBoundaryEdges,
+  computeGrassLodFraction,
+  grassInstanceRank,
+  grassVisibleInstanceCount,
+  triangleR2Barycentric,
   grassMeshOffset,
   normalizeGrassProbability,
   pickGrassTextureQuad,
@@ -27,6 +33,7 @@ jest.mock('@engine/runtime/GameState', () => ({
 }));
 
 import { GrassManager } from '@engine/managers/GrassManager';
+import { GrassTrampleField } from '@engine/managers/grass/GrassTrampleField';
 
 describe('GrassManager material depth', () => {
   test('grass is transparent with depthWrite for terrain draw order and saber occlusion', () => {
@@ -40,11 +47,39 @@ describe('GrassManager material depth', () => {
 });
 
 describe('grassHelpers', () => {
-  test('computeFaceGrassCount matches round(area * density)', () => {
-    expect(computeFaceGrassCount(2.4, 1)).toBe(2);
-    expect(computeFaceGrassCount(2.6, 1)).toBe(3);
+  test('computeFaceGrassCount scales and stochastically rounds', () => {
+    expect(computeFaceGrassCount(2.4, 1, 1, () => 0.5)).toBe(2);
+    expect(computeFaceGrassCount(2.4, 1, 1, () => 0.3)).toBe(3);
+    expect(computeFaceGrassCount(2, 1, 2.5, () => 0.99)).toBe(5);
     expect(computeFaceGrassCount(10, 0)).toBe(0);
     expect(computeFaceGrassCount(0, 5)).toBe(0);
+    // Tiny faces still get grass on average (no bald fine-mesh patches).
+    let total = 0;
+    let seed = 1;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for(let i = 0; i < 4000; i++) total += computeFaceGrassCount(0.1, 1, 1, rnd);
+    expect(total / 4000).toBeGreaterThan(0.08);
+    expect(total / 4000).toBeLessThan(0.12);
+  });
+
+  test('triangleR2Barycentric stays inside the triangle', () => {
+    const out = new THREE.Vector3();
+    for(let i = 0; i < 200; i++){
+      triangleR2Barycentric(i, 0.3, 0.7, out);
+      expect(out.x).toBeGreaterThanOrEqual(-1e-9);
+      expect(out.y).toBeGreaterThanOrEqual(0);
+      expect(out.z).toBeGreaterThanOrEqual(0);
+      expect(out.x + out.y + out.z).toBeCloseTo(1);
+    }
+  });
+
+  test('computeGrassBoundaryEdges flags only unshared edges', () => {
+    // Two triangles sharing edge (1,0,0)-(0,1,0).
+    const verts = [0,0,0, 1,0,0, 0,1,0, 1,1,0];
+    const faces = [{ a: 0, b: 1, c: 2 }, { a: 1, b: 3, c: 2 }] as any;
+    const flags = computeGrassBoundaryEdges(faces, 'aabb', verts, undefined);
+    expect(flags[0]).toBe(0b101); // AB and CA border; BC shared
+    expect(flags[1]).toBe(0b011); // AB and BC border; CA shared
   });
 
   test('normalizeGrassProbability handles percentages and zeros', () => {
@@ -63,17 +98,28 @@ describe('grassHelpers', () => {
     expect(pickGrassTextureQuad(prob2, () => 0.9)).toBe(3);
   });
 
-  test('computeBinFade uses extended near/far squared radii', () => {
-    expect(computeBinFade(0)).toBe(1);
-    expect(computeBinFade(GRASS_NEAR_RADIUS_SQ - 1)).toBe(1);
-    expect(computeBinFade(GRASS_FAR_RADIUS_SQ)).toBe(0);
-    expect(computeBinFade(GRASS_FAR_RADIUS_SQ + 10)).toBe(0);
-    const mid = (GRASS_NEAR_RADIUS_SQ + GRASS_FAR_RADIUS_SQ) * 0.5;
-    const fade = computeBinFade(mid);
-    expect(fade).toBeGreaterThan(0);
-    expect(fade).toBeLessThan(1);
-    // Extended vs original 15/30: full opacity still holds past old far radius.
-    expect(computeBinFade(900)).toBe(1);
+  test('LOD keeps everything near and thins smoothly with distance', () => {
+    expect(computeGrassLodFraction(0)).toBe(1);
+    expect(computeGrassLodFraction(GRASS_LOD_FULL_DIST)).toBe(1);
+    expect(computeGrassLodFraction(GRASS_LOD_MID_DIST)).toBeCloseTo(GRASS_LOD_MID_FRACTION);
+    expect(computeGrassLodFraction(GRASS_LOD_FAR_DIST)).toBe(0);
+    let prev = 1;
+    for(let d = 0; d < GRASS_LOD_FAR_DIST + 5; d += 0.5){
+      const f = computeGrassLodFraction(d);
+      expect(f).toBeLessThanOrEqual(prev + 1e-9);
+      prev = f;
+    }
+  });
+
+  test('visible prefix covers every blade the shader can draw', () => {
+    const total = 1000;
+    expect(grassVisibleInstanceCount(total, 1)).toBe(total);
+    expect(grassVisibleInstanceCount(total, 0)).toBe(0);
+    for(const keep of [0.05, 0.3, 0.6, 0.87]){
+      const n = grassVisibleInstanceCount(total, keep);
+      // Instance n (first culled) must have rank >= keep, i.e. zero size in shader.
+      if(n < total) expect(grassInstanceRank(n, total)).toBeGreaterThanOrEqual(keep - 1e-9);
+    }
   });
 
   test('resolveGrassFaces prefers WOK over AABB', () => {
@@ -100,5 +146,45 @@ describe('grassHelpers', () => {
     expect(aabbOff.x).toBeCloseTo(445);
     expect(aabbOff.y).toBeCloseTo(134);
     expect(aabbOff.z).toBeCloseTo(56);
+  });
+});
+
+describe('GrassTrampleField', () => {
+  test('stamping bends grass away from the body and it springs back', () => {
+    const field = new GrassTrampleField(64, 0.25);
+    field.setFocus(0, 0);
+    for(let i = 0; i < 10; i++) field.stamp(0, 0, 1, 0, 0, 1, 1 / 60);
+    const bend = field.sample(0.6, 0, new THREE.Vector2());
+    expect(bend.x).toBeGreaterThan(0.3);
+    expect(Math.abs(bend.y)).toBeLessThan(bend.x * 0.35);
+    expect(field.activeCount).toBeGreaterThan(0);
+
+    // Held briefly after the foot lifts...
+    field.update(0.2);
+    expect(field.sample(0.6, 0).x).toBeGreaterThan(0.3);
+    // ...then recovers fully and deactivates.
+    for(let i = 0; i < 600; i++) field.update(1 / 60);
+    expect(field.sample(0.6, 0).length()).toBeLessThan(0.01);
+    expect(field.activeCount).toBe(0);
+  });
+
+  test('moving bodies push grass toward travel direction', () => {
+    const field = new GrassTrampleField(64, 0.25);
+    field.setFocus(0, 0);
+    for(let i = 0; i < 10; i++) field.stamp(0, 0, 1, 4, 0, 1, 1 / 60);
+    // Beside the path, blades lean outward and forward.
+    const side = field.sample(0, 0.6);
+    expect(side.y).toBeGreaterThan(0);
+    expect(side.x).toBeGreaterThan(0);
+  });
+
+  test('recentering evicts texels outside the window', () => {
+    const field = new GrassTrampleField(64, 0.25); // 16 unit window
+    field.setFocus(0, 0);
+    field.stamp(0, 0, 1, 0, 0, 1, 1 / 60);
+    expect(field.activeCount).toBeGreaterThan(0);
+    field.setFocus(100, 100);
+    expect(field.activeCount).toBe(0);
+    expect(field.sample(0, 0).length()).toBe(0);
   });
 });

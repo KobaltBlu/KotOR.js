@@ -9,34 +9,62 @@ import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import {
   GRASS_ALPHA_TEST_DEFAULT,
   GRASS_BIN_CELL_SIZE,
-  GRASS_FAR_RADIUS_SQ,
-  GRASS_NEAR_RADIUS_SQ,
+  GRASS_BLADE_SEGMENTS,
+  GRASS_CLUMP_CARDS,
+  GRASS_DENSITY_SCALE,
   binCellKey,
   colorFromAreDword,
-  computeBinFade,
   computeFaceGrassCount,
+  computeGrassBoundaryEdges,
+  computeGrassLodFraction,
   faceVertexPositions,
+  grassInstanceRank,
   grassMeshOffset,
+  grassValueNoise,
+  grassVisibleInstanceCount,
   normalizeGrassProbability,
   pickGrassTextureQuad,
   resolveGrassFaces,
+  shuffleInPlace,
+  triangleR2Barycentric,
   type GrassFaceSource,
 } from "@engine/managers/grass/grassHelpers";
+import { GrassTrampleField } from "@engine/managers/grass/GrassTrampleField";
 
 export type GrassBin = {
   mesh: THREE.InstancedMesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
   center: THREE.Vector3;
+  /** Current LOD keep-fraction (0 = culled). */
   fade: number;
+  /** World-space bounds of blade roots, for nearest-distance LOD. */
+  box?: THREE.Box3;
+  /** Total instances in the bin; mesh.count is the visible prefix. */
+  total?: number;
 };
 
 type BladePlacement = {
   matrix: THREE.Matrix4;
-  grassQuad: number;
+  grassQuads: [number, number, number];
   lightmapUV: THREE.Vector2;
-  instanceID: number;
+  seed: number;
+  brightness: number;
+  dryness: number;
   worldX: number;
   worldY: number;
 };
+
+type TrampleBody = {
+  position: THREE.Vector3;
+  area?: unknown;
+  isDead?: () => boolean;
+  getHitRadius?: () => number;
+  getPersonalSpace?: () => number;
+};
+
+/** Blend of face normal -> world up for blade growth direction. */
+const GRASS_UPRIGHT_BIAS = 0.7;
+/** Fraction of quadSize over which blades taper down at grass borders. */
+const GRASS_EDGE_TAPER = 0.6;
 
 /**
  * Scene-level grass: ARE params, WOK/AABB placement, spatial bins, GPU wind.
@@ -45,7 +73,16 @@ export class GrassManager {
   context: any;
   private rooms = new Map<object, GrassBin[]>();
   private _camPos = new THREE.Vector3();
+  private _closest = new THREE.Vector3();
   private static _instance: GrassManager | null = null;
+
+  /** Persistent trample field shared by every grass material. */
+  readonly trample = new GrassTrampleField();
+  /** Shared uniform objects so every room material sees the same values. */
+  private readonly timeUniform = { value: 0 };
+  private readonly trampleMapUniform = { value: this.trample.texture as THREE.Texture };
+  private readonly trampleWindowUniform = { value: this.trample.window };
+  private readonly lastBodyPos = new WeakMap<object, THREE.Vector2>();
 
   init(context: any): void {
     this.context = context;
@@ -56,6 +93,7 @@ export class GrassManager {
       this.disposeBins(bins);
     }
     this.rooms.clear();
+    this.trample.clear();
   }
 
   async buildForRoom(room: AreaRoom): Promise<void> {
@@ -96,7 +134,7 @@ export class GrassManager {
     );
     normalizeGrassProbability(probability);
 
-    const bladeGeom = this.createBladeGeometry(quadSize);
+    const bladeGeom = this.createClumpGeometry(quadSize);
     const placements = this.placeBlades(
       room,
       resolved.faces,
@@ -155,8 +193,8 @@ export class GrassManager {
     (room as any).grassBins = undefined;
   }
 
-  /** Per-frame bin fade from camera; call after WindManager.update. */
-  update(_delta: number = 0): void {
+  /** Per-frame LOD, trample simulation and clock; call after WindManager.update. */
+  update(delta: number = 0): void {
     const cam = GameState.currentCamera;
     if(cam){
       cam.getWorldPosition(this._camPos);
@@ -164,18 +202,89 @@ export class GrassManager {
       this._camPos.copy(GameState.currentCameraPosition || this._camPos);
     }
 
+    if(!this.rooms.size){
+      return;
+    }
+
+    this.timeUniform.value = (this.timeUniform.value + delta) % 3600;
+
     for(const bins of this.rooms.values()){
       for(let i = 0; i < bins.length; i++){
         const bin = bins[i];
-        const dx = bin.center.x - this._camPos.x;
-        const dy = bin.center.y - this._camPos.y;
-        const dz = bin.center.z - this._camPos.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
-        const fade = computeBinFade(distSq, GRASS_NEAR_RADIUS_SQ, GRASS_FAR_RADIUS_SQ);
-        bin.fade = fade;
-        bin.mesh.visible = fade > 0 && bin.mesh.userData.roomGrassVisible !== false;
+        const total = bin.total ?? bin.mesh.count;
+        let dist: number;
+        if(bin.box){
+          bin.box.clampPoint(this._camPos, this._closest);
+          dist = this._closest.distanceTo(this._camPos);
+        }else{
+          dist = bin.center.distanceTo(this._camPos);
+        }
+        const keep = computeGrassLodFraction(dist);
+        bin.fade = keep;
+        bin.mesh.count = grassVisibleInstanceCount(total, keep);
+        bin.mesh.visible = bin.mesh.count > 0 && bin.mesh.userData.roomGrassVisible !== false;
       }
     }
+
+    this.updateTrample(delta);
+  }
+
+  private updateTrample(delta: number): void {
+    const field = this.trample;
+    field.setFocus(this._camPos.x, this._camPos.y);
+
+    const area = GameState.module?.area as any;
+    const bodies = new Set<TrampleBody>();
+    const creatures: TrampleBody[] | undefined = area?.creatures;
+    if(creatures){
+      for(let i = 0; i < creatures.length; i++) bodies.add(creatures[i]);
+    }
+    const party: TrampleBody[] | undefined = (GameState.PartyManager as any)?.party;
+    if(party){
+      for(let i = 0; i < party.length; i++) bodies.add(party[i]);
+    }
+
+    const dt = Math.max(delta, 1e-4);
+    for(const body of bodies){
+      if(!body?.position) continue;
+      if(area && body.area && body.area !== area) continue;
+      const pos = body.position;
+      let last = this.lastBodyPos.get(body);
+      if(!last){
+        last = new THREE.Vector2(pos.x, pos.y);
+        this.lastBodyPos.set(body, last);
+      }
+      let vx = (pos.x - last.x) / dt;
+      let vy = (pos.y - last.y) / dt;
+      // Teleports / spawns are not footsteps.
+      if(vx * vx + vy * vy > 30 * 30){
+        vx = 0;
+        vy = 0;
+      }
+      last.set(pos.x, pos.y);
+
+      const dead = body.isDead?.() === true;
+      const radius = this.bodyFootprint(body) * (dead ? 1.4 : 1);
+      // Moving feet press hard; standing bodies still flatten what's under them.
+      const speed = Math.hypot(vx, vy);
+      const weight = dead ? 0.95 : Math.min(1, 0.7 + speed * 0.15);
+      field.stamp(pos.x, pos.y, radius, vx, vy, weight, delta);
+    }
+
+    field.update(delta);
+  }
+
+  private bodyFootprint(body: TrampleBody): number {
+    let r = 0.5;
+    try{
+      const hit = body.getHitRadius?.();
+      const personal = body.getPersonalSpace?.();
+      r = Math.max(typeof hit === "number" ? hit : 0, typeof personal === "number" ? personal : 0, 0.3);
+    }catch(_e){
+      r = 0.5;
+    }
+    // Legs and body part grass well beyond the collision radius.
+    return Math.min(Math.max(r * 2.2, 0.7), 3.5);
   }
 
   setRoomVisible(room: AreaRoom, visible: boolean): void {
@@ -213,37 +322,57 @@ export class GrassManager {
     sharedMaterial?.dispose();
   }
 
-  private createBladeGeometry(quadSize: number): THREE.BufferGeometry {
+  /**
+   * Clump of crossed cards (60 degrees apart), each split into vertical
+   * segments so the shader can curve it. uv.y doubles as height-along-blade.
+   */
+  private createClumpGeometry(quadSize: number): THREE.BufferGeometry {
+    const cards = GRASS_CLUMP_CARDS;
+    const segs = GRASS_BLADE_SEGMENTS;
+    const rows = segs + 1;
+    const vertsPerCard = rows * 2;
     const half = quadSize * 0.5;
-    const positions = new Float32Array([
-      -half, 0, 0,
-      half, 0, 0,
-      half, quadSize, 0,
-      -half, quadSize, 0,
-    ]);
-    const uvs = new Float32Array([
-      0, 0,
-      1, 0,
-      1, 1,
-      0, 1,
-    ]);
-    const normals = new Float32Array([
-      0, 0, 1,
-      0, 0, 1,
-      0, 0, 1,
-      0, 0, 1,
-    ]);
-    const constraint = new Float32Array([0, 0, 1, 1]);
-    const quadIdx = new Float32Array([0, 0, 0, 0]);
-    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
+    const positions = new Float32Array(cards * vertsPerCard * 3);
+    const uvs = new Float32Array(cards * vertsPerCard * 2);
+    const quadIdx = new Float32Array(cards * vertsPerCard);
+    const indices: number[] = [];
+
+    for(let c = 0; c < cards; c++){
+      const angle = (c / cards) * Math.PI;
+      const dx = Math.cos(angle);
+      const dz = Math.sin(angle);
+      // Nudge each card off-centre so clumps don't read as perfect stars.
+      const ox = Math.cos(angle + 1.9) * quadSize * 0.08;
+      const oz = Math.sin(angle + 1.9) * quadSize * 0.08;
+      const base = c * vertsPerCard;
+      for(let r = 0; r < rows; r++){
+        const t = r / segs;
+        // Cards taper slightly toward the tip.
+        const w = half * (1 - 0.12 * t);
+        for(let side = 0; side < 2; side++){
+          const v = base + r * 2 + side;
+          const sgn = side === 0 ? -1 : 1;
+          positions[v * 3] = ox + dx * w * sgn;
+          positions[v * 3 + 1] = t * quadSize;
+          positions[v * 3 + 2] = oz + dz * w * sgn;
+          uvs[v * 2] = side;
+          uvs[v * 2 + 1] = t;
+          quadIdx[v] = c;
+        }
+        if(r < segs){
+          const i0 = base + r * 2;
+          indices.push(i0, i0 + 1, i0 + 3, i0, i0 + 3, i0 + 2);
+        }
+      }
+    }
 
     const geom = new THREE.BufferGeometry();
     geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geom.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
-    geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
-    geom.setAttribute("constraint", new THREE.BufferAttribute(constraint, 1));
     geom.setAttribute("quadIdx", new THREE.BufferAttribute(quadIdx, 1));
-    geom.setIndex(new THREE.BufferAttribute(indices, 1));
+    geom.setIndex(indices);
+    geom.computeBoundingBox();
     return geom;
   }
 
@@ -263,13 +392,10 @@ export class GrassManager {
         {
           map: { value: null },
           lightMap: { value: null },
-          time: { value: 0 },
           ambientColor: { value: ambient },
           diffuseColor: { value: diffuse },
-          planeHeightJitter: { value: 0.05 },
           quadSize: { value: quadSize },
           grassStiffness: { value: 1.0 },
-          binFade: { value: 1.0 },
           alphaTest: { value: GRASS_ALPHA_TEST_DEFAULT },
         },
       ]),
@@ -283,6 +409,10 @@ export class GrassManager {
       depthWrite: true,
       blending: THREE.NormalBlending,
     });
+    // Shared by reference (UniformsUtils.merge would clone them).
+    material.uniforms.time = this.timeUniform;
+    material.uniforms.grassTrampleMap = this.trampleMapUniform;
+    material.uniforms.grassTrampleWindow = this.trampleWindowUniform;
     return material;
   }
 
@@ -293,11 +423,17 @@ export class GrassManager {
   ): Promise<void> {
     const diffuseMap: OdysseyTexture = await TextureLoader.Load(textureName);
     if(diffuseMap){
-      diffuseMap.minFilter = THREE.LinearFilter;
-      diffuseMap.magFilter = THREE.LinearFilter;
+      // Dense fields shimmer badly without mips; the shader compensates
+      // mip alpha so distant blades don't dissolve under the cutoff.
+      const hasMips = (diffuseMap.mipmaps?.length ?? 0) > 1 ||
+        (diffuseMap.generateMipmaps && !(diffuseMap as any).isCompressedTexture);
+      const minFilter = hasMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+      if(diffuseMap.minFilter !== minFilter || diffuseMap.magFilter !== THREE.LinearFilter){
+        diffuseMap.minFilter = minFilter;
+        diffuseMap.magFilter = THREE.LinearFilter;
+        diffuseMap.needsUpdate = true;
+      }
       material.uniforms.map.value = diffuseMap;
-      material.defines.USE_MAP = "";
-      material.defines.USE_UV = "";
       material.needsUpdate = true;
     }
 
@@ -331,32 +467,21 @@ export class GrassManager {
     const FB = new THREE.Vector3();
     const FC = new THREE.Vector3();
     const normal = new THREE.Vector3();
-    const side = new THREE.Vector3();
     const up = new THREE.Vector3();
     const right = new THREE.Vector3();
+    const forward = new THREE.Vector3();
     const root = new THREE.Vector3();
     const tmp = new THREE.Vector3();
+    const bary = new THREE.Vector3();
     const basis = new THREE.Matrix4();
     const uvA = new THREE.Vector2();
     const uvB = new THREE.Vector2();
     const uvC = new THREE.Vector2();
+    const worldUp = new THREE.Vector3(0, 0, 1);
+    const triangle = new THREE.Triangle();
 
-    const faceIndexByRef = new Map<OdysseyFace3, number>();
-    const grassFaceIndexSet = new Set<number>();
-    for(let i = 0; i < faces.length; i++){
-      faceIndexByRef.set(faces[i], i);
-      grassFaceIndexSet.add(i);
-    }
-
-    // Rebuild adjacency set using face.adjacent when present
-    for(let i = 0; i < faces.length; i++){
-      const face = faces[i];
-      if(!face.adjacent) continue;
-      // adjacency indices refer to walkable/aabb face lists — keep edge padding best-effort
-    }
-
-    const edgePadding = quadSize * 0.5;
-    const maxAttempts = 8;
+    const boundary = computeGrassBoundaryEdges(faces, source, aabbVertices, walkmesh);
+    const taper = quadSize * GRASS_EDGE_TAPER;
     // WOK verts are already world-space; AABB verts are local to room+aabb.
     const roomOffset = grassMeshOffset(source, room.position, aabb?.position);
 
@@ -364,40 +489,28 @@ export class GrassManager {
     // Lightmap UVs are authored on the AABB/MDL mesh, not the WOK.
     const hasLightmapUV = !!(source === "aabb" && aabb?.textureMap2 && uv2?.length);
 
-    const triangle = new THREE.Triangle();
-
     for(let k = 0; k < faces.length; k++){
       const face = faces[k];
       faceVertexPositions(face, source, aabbVertices, walkmesh, FA, FB, FC);
       triangle.set(FA, FB, FC);
-      const area = triangle.getArea();
-      const grassCount = computeFaceGrassCount(area, density);
+      const grassCount = computeFaceGrassCount(triangle.getArea(), density, GRASS_DENSITY_SCALE);
       if(grassCount < 1) continue;
 
-      normal.copy(face.normal);
-      if(normal.lengthSq() < 1e-10){
-        normal.subVectors(FB, FA).cross(tmp.subVectors(FC, FA));
-        if(normal.lengthSq() < 1e-10){
-          normal.set(0, 0, 1);
-        }else{
-          normal.normalize();
-        }
+      if(face.normal){
+        normal.copy(face.normal);
       }else{
-        normal.normalize();
+        normal.set(0, 0, 0);
       }
+      if(normal.lengthSq() < 1e-10){
+        triangle.getNormal(normal);
+        if(normal.lengthSq() < 1e-10) normal.set(0, 0, 1);
+      }
+      normal.normalize();
+      if(normal.z < 0) normal.negate();
+      // Grass grows toward the sky, leaning only a little with the slope.
+      up.copy(normal).lerp(worldUp, GRASS_UPRIGHT_BIAS).normalize();
 
-      side.subVectors(FB, FA);
-      if(side.lengthSq() <= 1e-6){
-        side.crossVectors(normal, new THREE.Vector3(0, 0, 1));
-      }
-      if(side.lengthSq() <= 1e-6){
-        side.set(1, 0, 0);
-      }
-      side.normalize();
-
-      const blockedAB = this.isBlockedEdge(face, 0, grassFaceIndexSet, faceIndexByRef);
-      const blockedBC = this.isBlockedEdge(face, 1, grassFaceIndexSet, faceIndexByRef);
-      const blockedCA = this.isBlockedEdge(face, 2, grassFaceIndexSet, faceIndexByRef);
+      const edges = boundary[k];
 
       if(hasLightmapUV && uv2){
         uvA.set(uv2[face.a * 2], uv2[face.a * 2 + 1]);
@@ -405,47 +518,51 @@ export class GrassManager {
         uvC.set(uv2[face.c * 2], uv2[face.c * 2 + 1]);
       }
 
+      const offU = Math.random();
+      const offV = Math.random();
       for(let j = 0; j < grassCount; j++){
-        let accepted = false;
-        let wa = 0;
-        let wb = 0;
-        let wc = 0;
+        triangleR2Barycentric(j, offU, offV, bary);
+        const wa = bary.x;
+        const wb = bary.y;
+        const wc = bary.z;
+        root.set(
+          wa * FA.x + wb * FB.x + wc * FC.x,
+          wa * FA.y + wb * FB.y + wc * FC.y,
+          wa * FA.z + wb * FB.z + wc * FC.z
+        );
 
-        for(let attempt = 0; attempt < maxAttempts; attempt++){
-          wa = Math.random();
-          wb = Math.random();
-          wc = Math.random();
-          const sum = wa + wb + wc;
-          if(sum > 0){
-            wa /= sum;
-            wb /= sum;
-            wc /= sum;
+        // Taper toward borders with paths/walls instead of a hard bald strip.
+        let edgeScale = 1;
+        if(edges){
+          let d = Infinity;
+          if(edges & 1) d = Math.min(d, this.pointToSegmentDistance(root, FA, FB));
+          if(edges & 2) d = Math.min(d, this.pointToSegmentDistance(root, FB, FC));
+          if(edges & 4) d = Math.min(d, this.pointToSegmentDistance(root, FC, FA));
+          if(d < taper){
+            const t = d / taper;
+            if(t < 0.12) continue;
+            edgeScale = 0.3 + 0.7 * t * t * (3 - 2 * t);
           }
-
-          root.set(
-            wa * FA.x + wb * FB.x + wc * FC.x,
-            wa * FA.y + wb * FB.y + wc * FC.y,
-            wa * FA.z + wb * FB.z + wc * FC.z
-          );
-
-          if(blockedAB && this.pointToSegmentDistance(root, FA, FB) < edgePadding) continue;
-          if(blockedBC && this.pointToSegmentDistance(root, FB, FC) < edgePadding) continue;
-          if(blockedCA && this.pointToSegmentDistance(root, FC, FA) < edgePadding) continue;
-
-          accepted = true;
-          break;
         }
 
-        if(!accepted) continue;
+        const wx = root.x + roomOffset.x;
+        const wy = root.y + roomOffset.y;
+        // Meadow-scale height patches + per-clump jitter.
+        const patch = grassValueNoise(wx * 0.11, wy * 0.11);
+        const heightScale = (0.7 + 0.55 * patch) * (0.85 + Math.random() * 0.3) * edgeScale;
+        const widthScale = (0.85 + Math.random() * 0.3) * (0.6 + 0.4 * edgeScale);
 
-        // Blade basis: X = side (width), Y = normal (up the blade), Z = bitangent
-        right.copy(side);
-        up.copy(normal);
-        const bitangent = tmp.crossVectors(right, up).normalize();
-        // Re-orthogonalize right
-        right.crossVectors(up, bitangent).normalize();
+        // Random yaw about the growth axis.
+        const yaw = Math.random() * Math.PI * 2;
+        tmp.set(Math.cos(yaw), Math.sin(yaw), 0);
+        right.copy(tmp).addScaledVector(up, -tmp.dot(up)).normalize();
+        forward.crossVectors(right, up).normalize();
 
-        basis.makeBasis(right, up, bitangent);
+        basis.makeBasis(
+          right.multiplyScalar(widthScale),
+          tmp.copy(up).multiplyScalar(heightScale),
+          forward.multiplyScalar(widthScale)
+        );
         basis.setPosition(root);
 
         const lm = new THREE.Vector2(0, 0);
@@ -456,13 +573,20 @@ export class GrassManager {
           );
         }
 
+        const dryPatch = grassValueNoise(wx * 0.07 + 31.7, wy * 0.07 - 12.3);
         placements.push({
           matrix: basis.clone(),
-          grassQuad: pickGrassTextureQuad(probability),
+          grassQuads: [
+            pickGrassTextureQuad(probability),
+            pickGrassTextureQuad(probability),
+            pickGrassTextureQuad(probability),
+          ],
           lightmapUV: lm,
-          instanceID: placements.length,
-          worldX: root.x + roomOffset.x,
-          worldY: root.y + roomOffset.y,
+          seed: Math.random(),
+          brightness: 0.86 + Math.random() * 0.22,
+          dryness: Math.max(0, dryPatch - 0.55) * 1.6 * (0.6 + Math.random() * 0.4),
+          worldX: wx,
+          worldY: wy,
         });
       }
     }
@@ -494,17 +618,21 @@ export class GrassManager {
     // AABB verts are room/aabb-local — offset the instanced mesh.
     const meshOffset = grassMeshOffset(source, room.position, aabb?.position);
 
+    const bladeHeight = bladeGeom.boundingBox
+      ? Math.max(bladeGeom.boundingBox.max.y - bladeGeom.boundingBox.min.y, 1e-3)
+      : 1;
+
     const bins: GrassBin[] = [];
     for(const list of buckets.values()){
       if(!list.length) continue;
+      // Random order: any prefix is an even subset, so LOD can draw a prefix.
+      shuffleInPlace(list);
 
       const cloned = bladeGeom.clone();
       const geometry = new THREE.InstancedBufferGeometry();
       geometry.index = cloned.index;
       geometry.attributes.position = cloned.attributes.position;
-      geometry.attributes.normal = cloned.attributes.normal;
       geometry.attributes.uv = cloned.attributes.uv;
-      geometry.attributes.constraint = cloned.attributes.constraint;
       geometry.attributes.quadIdx = cloned.attributes.quadIdx;
 
       const count = list.length;
@@ -513,73 +641,50 @@ export class GrassManager {
       mesh.userData.roomGrassVisible = true;
       mesh.position.copy(meshOffset);
 
-      const instanceIds = new Float32Array(count);
-      const grassQuads = new Float32Array(count);
+      const grassQuads = new Float32Array(count * 3);
+      const bladeParams = new Float32Array(count * 4);
       const lightmapUV = new Float32Array(count * 2);
       const center = new THREE.Vector3();
+      const box = new THREE.Box3();
+      const local = new THREE.Vector3();
 
       for(let i = 0; i < count; i++){
         const p = list[i];
         mesh.setMatrixAt(i, p.matrix);
-        instanceIds[i] = p.instanceID;
-        grassQuads[i] = p.grassQuad;
+        grassQuads[i * 3] = p.grassQuads[0];
+        grassQuads[i * 3 + 1] = p.grassQuads[1];
+        grassQuads[i * 3 + 2] = p.grassQuads[2];
+        bladeParams[i * 4] = grassInstanceRank(i, count);
+        bladeParams[i * 4 + 1] = p.seed;
+        bladeParams[i * 4 + 2] = p.brightness;
+        bladeParams[i * 4 + 3] = p.dryness;
         lightmapUV[i * 2] = p.lightmapUV.x;
         lightmapUV[i * 2 + 1] = p.lightmapUV.y;
-        const local = new THREE.Vector3().setFromMatrixPosition(p.matrix);
+        local.setFromMatrixPosition(p.matrix);
         center.add(local);
+        box.expandByPoint(local);
       }
       center.multiplyScalar(1 / count);
-      center.add(meshOffset);
 
       mesh.instanceMatrix.needsUpdate = true;
-      geometry.setAttribute("instanceID", new THREE.InstancedBufferAttribute(instanceIds, 1));
-      geometry.setAttribute("grassQuad", new THREE.InstancedBufferAttribute(grassQuads, 1));
+      geometry.setAttribute("grassQuads", new THREE.InstancedBufferAttribute(grassQuads, 3));
+      geometry.setAttribute("bladeParams", new THREE.InstancedBufferAttribute(bladeParams, 4));
       geometry.setAttribute("lightmapUV", new THREE.InstancedBufferAttribute(lightmapUV, 2));
-      geometry.computeBoundingSphere();
 
-      // three@0.149 frustum tests use geometry.boundingSphere (not mesh.boundingSphere).
-      // InstancedMesh defaults frustumCulled=false for this reason — replace the unit-blade
-      // sphere with one that covers every instance root in local space.
-      const instanceBox = new THREE.Box3();
-      const instancePos = new THREE.Vector3();
-      const instanceMatrix = new THREE.Matrix4();
-      for(let i = 0; i < count; i++){
-        mesh.getMatrixAt(i, instanceMatrix);
-        instancePos.setFromMatrixPosition(instanceMatrix);
-        instanceBox.expandByPoint(instancePos);
-      }
+      // Frustum sphere: every root plus the tallest (widened, bent) blade.
       const instanceSphere = new THREE.Sphere();
-      instanceBox.getBoundingSphere(instanceSphere);
-      const bladeRadius = geometry.boundingSphere?.radius ?? 1;
-      instanceSphere.radius += bladeRadius;
+      box.getBoundingSphere(instanceSphere);
+      instanceSphere.radius += bladeHeight * 2.4;
       geometry.boundingSphere = instanceSphere;
       mesh.boundingSphere = instanceSphere.clone();
 
-      const bin: GrassBin = { mesh, center, fade: 1 };
-      mesh.onBeforeRender = () => {
-        const u = material.uniforms?.binFade;
-        if(u){
-          u.value = bin.fade;
-        }
-      };
+      center.add(meshOffset);
+      box.translate(meshOffset);
 
-      bins.push(bin);
+      bins.push({ mesh, center, fade: 1, box, total: count });
     }
 
     return bins;
-  }
-
-  private isBlockedEdge(
-    face: OdysseyFace3,
-    edgeIndex: number,
-    grassFaceIndexSet: Set<number>,
-    _faceIndexByRef: Map<OdysseyFace3, number>
-  ): boolean {
-    const adjacentFaceIndex = face.adjacent?.[edgeIndex];
-    if(typeof adjacentFaceIndex !== "number" || adjacentFaceIndex < 0){
-      return true;
-    }
-    return !grassFaceIndexSet.has(adjacentFaceIndex);
   }
 
   private readonly _edgeTmp = new THREE.Vector3();

@@ -580,9 +580,6 @@ export class Creature extends GameObject {
   gestureState: IGestureAnimationState;
   /** Weapon-item Gob gesture (equip draw / PowerItem paths — not moving flourish). */
   weaponGestureState: IWeaponGestureState;
-  /** Last XY used for grass point-source gusts. */
-  private _grassGustLastX = Number.NaN;
-  private _grassGustLastY = Number.NaN;
   
   equipment: { 
     HEAD: Item; 
@@ -1185,7 +1182,6 @@ export class Creature extends GameObject {
 
       const playerControlCommitted = this.updateLocomotionFrame(delta);
 
-      this.pushGrassWindGust();
       this.animationService.promoteIdleCombatAnimation();
 
       this.animationService.updateAnimationState();
@@ -1523,52 +1519,6 @@ export class Creature extends GameObject {
   getBestAttackPoint(targeter: GameObject){
     const p = getAttackApproachPoint(this, targeter);
     return { x: p.x, y: p.y, z: p.z };
-  }
-
-  /**
-   * Moving creatures inject short-lived point gusts so grass tips part.
-   * Gated to outdoor areas with wind; capped by WindManager.MAX_POINT_SOURCES.
-   */
-  private pushGrassWindGust(): void {
-    const wm = GameState.windManager;
-    const area = this.area;
-    if(!wm || !area){
-      return;
-    }
-    if((area.flags & 1) !== 0){
-      return;
-    }
-    if(this.isDead?.()){
-      return;
-    }
-
-    const locomoting =
-      this.animationState.index == ModuleCreatureAnimState.RUNNING ||
-      this.animationState.index == ModuleCreatureAnimState.WALKING ||
-      this.animationState.index == ModuleCreatureAnimState.WALKING_BACK ||
-      this.forceVector.lengthSq() > 1e-6;
-
-    if(!locomoting){
-      this._grassGustLastX = this.position.x;
-      this._grassGustLastY = this.position.y;
-      return;
-    }
-
-    if(Number.isNaN(this._grassGustLastX)){
-      this._grassGustLastX = this.position.x;
-      this._grassGustLastY = this.position.y;
-      return;
-    }
-
-    const dx = this.position.x - this._grassGustLastX;
-    const dy = this.position.y - this._grassGustLastY;
-    if((dx * dx + dy * dy) < 0.04){
-      return;
-    }
-
-    this._grassGustLastX = this.position.x;
-    this._grassGustLastY = this.position.y;
-    wm.addPointSourceWind(this.position, 2.5, 0.2, 1.0);
   }
 
   updateAnimationState(){
