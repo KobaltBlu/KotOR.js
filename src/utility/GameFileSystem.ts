@@ -6,7 +6,10 @@ import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileS
 import { isUsableDirectoryHandle } from "@/utility/gameDirectoryAccess";
 declare const dialog: any;
 
-const webHandleHasRemove = typeof (FileSystemFileHandle.prototype as any).remove === 'function'
+// Guarded: FileSystemFileHandle only exists in browsers, and this module is also
+// imported under Node (Jest), where a bare reference throws at import time.
+const webHandleHasRemove = typeof FileSystemFileHandle !== 'undefined'
+  && typeof (FileSystemFileHandle.prototype as any).remove === 'function';
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {

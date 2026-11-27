@@ -3766,7 +3766,13 @@ export class ModuleCreature extends ModuleObject {
 
       if(this.template.RootNode.hasField('SkillList')){
         let skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
-        for(let i = 0; i < skills.length; i++){
+        // Bounded by both lists. The template's SkillList length is authored
+        // data and `this.skills` comes from skills.2da, so a template carrying
+        // more entries than the ruleset knows about would otherwise index past
+        // the end and throw out of initProperties — the mirror of the save-side
+        // fault this loop's counterpart had.
+        const skillCount = Math.min(skills.length, this.skills.length);
+        for(let i = 0; i < skillCount; i++){
           this.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
         }
       }
@@ -4450,9 +4456,40 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts[ModuleObjectScript.CreatureOnUserDefined]?.name || '');
 
     //Skills
+    // The authored SkillList is a fixed eight entries (skills.2da), so the
+    // literal bound is deliberate — but `this.skills` is only filled by
+    // initProperties(), and a creature reaching save() without that keeps the
+    // constructor's empty array. `this.skills[i].save()` then threw
+    // "Cannot read properties of undefined (reading 'save')" out of save()
+    // itself, losing the entire template rather than one field. Observed
+    // intermittently while loading all 82 TSL modules in one run, on whichever party member had
+    // been carried across enough module warps; it never reproduced in
+    // isolation, which is what a state-accumulation defect looks like.
+    //
+    // A missing entry is written as rank 0 so the list keeps its authored
+    // shape. That is not a silent substitution: a creature with no skills array
+    // never ran initProperties at all, so it has no classes, feats or
+    // appearance either and its template was already meaningless — the save is
+    // completed so one bad creature cannot abort the write, and the creature is
+    // named so the real defect stays visible.
     let skillList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    let missingSkills = 0;
     for(let i = 0; i < 8; i++){
-      skillList.addChildStruct( this.skills[i].save() );
+      const skill = this.skills[i];
+      if(skill){
+        skillList.addChildStruct( skill.save() );
+        continue;
+      }
+      missingSkills++;
+      const placeholder = new GFFStruct();
+      placeholder.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue(0);
+      skillList.addChildStruct( placeholder );
+    }
+    if(missingSkills){
+      console.error(
+        `ModuleCreature.save: '${this.getTag()}' has ${missingSkills} of 8 skills missing ` +
+        `— it reached save() without initProperties(), so its saved template is not trustworthy`
+      );
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
@@ -4463,6 +4500,8 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') ).setValue('');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subrace);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    // Blueprint reference; dropped by every save path until now - see ModulePlaceable.save.
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(0);
     let varTable = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );

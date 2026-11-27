@@ -419,6 +419,10 @@ export class ModuleSound extends ModuleObject {
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+
+    // Blueprint reference; dropped by every save path until now - see ModulePlaceable.save.
+
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Times') ).setValue(this.times);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(Math.max(0, Math.min(127, this.volume)));
