@@ -4,9 +4,15 @@
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import {
+  BACKOFF_BASE_RATIO,
+  BACKOFF_MAX_RATIO,
+  GpuFrameFence,
+  MAX_BACKOFF_YIELD_MS,
+  backoffYieldMs,
   IDLE_WORK_MS,
   INPUT_BREATH_INTERVAL_MS,
   MESSAGE_CHANNEL_YIELD_MS,
+  PRESENT_MARGIN_MS,
   UpdateLoopArm,
   isVSyncEnabledRaw,
   runUpdateTick,
@@ -67,6 +73,7 @@ describe('updateLoopSchedule', () => {
 
     afterEach(() => {
       arm.clear();
+      arm.stopHeartbeat();
       jest.useRealTimers();
     });
 
@@ -172,6 +179,144 @@ describe('updateLoopSchedule', () => {
       expect(arm.generation).toBe(genBefore + 1);
       jest.runOnlyPendingTimers();
       expect(onTick).toHaveBeenCalledTimes(1);
+    });
+
+    it('starts a RAF heartbeat only while uncapped', () => {
+      arm.schedule(false, 17, onTick);
+      expect(arm.heartbeatRunning).toBe(true);
+      arm.schedule(true, 17, onTick);
+      expect(arm.heartbeatRunning).toBe(false);
+    });
+
+    it('rides the next RAF and doubles back-off when rendering is starved', () => {
+      const nowSpy = jest.spyOn(performance, 'now');
+      let t = 1000;
+      nowSpy.mockImplementation(() => t);
+
+      arm.schedule(false, 17, onTick);
+      expect(arm.channelPending).toBe(true);
+      expect(arm.backoffRatio).toBe(BACKOFF_BASE_RATIO);
+
+      // No heartbeat for well past two display frames.
+      t = 1000 + arm.renderStarvedThresholdMs() + 1;
+      arm.schedule(false, 17, onTick);
+      expect(arm.rafId).toBeTruthy();
+      expect(arm.armedCount).toBe(1);
+      expect(arm.backoffRatio).toBe(BACKOFF_BASE_RATIO * 2);
+
+      nowSpy.mockRestore();
+    });
+
+    it('decays back-off toward base on healthy rendering opportunities', () => {
+      arm.schedule(false, 17, onTick);
+      arm.backoffRatio = BACKOFF_MAX_RATIO;
+      jest.advanceTimersByTime(16 * 200);
+      expect(arm.backoffRatio).toBeLessThan(BACKOFF_MAX_RATIO);
+      expect(arm.backoffRatio).toBeGreaterThanOrEqual(BACKOFF_BASE_RATIO);
+    });
+
+    it('sizes the adaptive gap from back-off ratio and smoothed work', () => {
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+      arm.schedule(false, 17, onTick);
+      arm.backoffRatio = 0.5;
+      // max(17, ewma≈17) * 0.5 → 9ms
+      arm.schedule(false, 17, onTick);
+      expect(arm.timeoutId).toBeTruthy();
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 9);
+      expect(backoffYieldMs(1000, 1)).toBe(MAX_BACKOFF_YIELD_MS);
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('defers the tick while the GPU fence reports frames in flight', () => {
+      let ready = false;
+      arm.gpuFence = { isReady: () => ready, reset: () => {} } as unknown as GpuFrameFence;
+      arm.schedule(false, 0, onTick);
+      jest.advanceTimersByTime(5);
+      expect(onTick).not.toHaveBeenCalled();
+      expect(arm.armedCount).toBe(1);
+      ready = true;
+      jest.advanceTimersByTime(5);
+      expect(onTick).toHaveBeenCalledTimes(1);
+    });
+
+    describe('shouldPresentFrame', () => {
+      let nowSpy: ReturnType<typeof jest.spyOn>;
+      let t = 0;
+      beforeEach(() => {
+        t = 1000;
+        nowSpy = jest.spyOn(performance, 'now').mockImplementation(() => t);
+      });
+      afterEach(() => nowSpy.mockRestore());
+
+      it('always draws with V-Sync on or before the heartbeat runs', () => {
+        expect(arm.shouldPresentFrame(true, t)).toBe(true);
+        expect(arm.shouldPresentFrame(false, t)).toBe(true);
+      });
+
+      it('draws once per refresh, on the last tick that fits before it', () => {
+        arm.schedule(false, 4, onTick); // heartbeat starts, lastRenderAt = 1000
+        arm.frameIntervalMs = 16;
+        // next refresh at 1016; draw tick ≈ 4ms + 2ms margin → window opens at 1010
+        expect(arm.shouldPresentFrame(false, 1002)).toBe(false);
+        expect(arm.shouldPresentFrame(false, 1006)).toBe(false);
+        expect(arm.shouldPresentFrame(false, 1011)).toBe(true);
+        // Same refresh: no second draw.
+        expect(arm.shouldPresentFrame(false, 1014)).toBe(false);
+      });
+
+      it('draws immediately after a refresh with no draw', () => {
+        arm.schedule(false, 4, onTick);
+        arm.frameIntervalMs = 16;
+        expect(arm.shouldPresentFrame(false, 1011)).toBe(true);
+        // Two refreshes pass without a tick landing in the window.
+        arm.renderSeq = 2;
+        expect(arm.shouldPresentFrame(false, 1001)).toBe(true);
+      });
+
+      it('widens the window by the tick spacing so a tick always lands in it', () => {
+        arm.schedule(false, 2, onTick); // lastRenderAt = 1000, work ≈ 2
+        arm.frameIntervalMs = 16;
+        arm.tickSpacingEwmaMs = 7;
+        // next refresh 1016, draw ≈ 2 + 2 margin: a tick at 1006 is the last
+        // whose successor (≈1013) could not finish (1013 + 4 > 1016).
+        expect(arm.shouldPresentFrame(false, 1004)).toBe(false);
+        expect(arm.shouldPresentFrame(false, 1006)).toBe(true);
+      });
+
+      it('grows the margin after a missed refresh and decays it after on-time draws', () => {
+        arm.schedule(false, 2, onTick);
+        arm.frameIntervalMs = 16;
+        expect(arm.shouldPresentFrame(false, 1013)).toBe(true); // seq 0, on time
+        expect(arm.presentMarginMs).toBe(PRESENT_MARGIN_MS);
+        arm.renderSeq = 2; // refresh 1 went out with no draw
+        expect(arm.shouldPresentFrame(false, 1001)).toBe(true);
+        const grown = arm.presentMarginMs;
+        expect(grown).toBeGreaterThan(PRESENT_MARGIN_MS);
+        arm.renderSeq = 3;
+        expect(arm.shouldPresentFrame(false, 1013)).toBe(true);
+        expect(arm.presentMarginMs).toBeLessThan(grown);
+      });
+
+      it('learns tick spacing from successive measured schedules', () => {
+        arm.schedule(false, 2, onTick);
+        t = 1006;
+        arm.schedule(false, 2, onTick);
+        expect(arm.tickSpacingEwmaMs).toBeGreaterThan(0);
+        // A long gap (pause / hidden tab) does not count as cadence.
+        const before = arm.tickSpacingEwmaMs;
+        t = 5000;
+        arm.schedule(false, 2, onTick);
+        expect(arm.tickSpacingEwmaMs).toBe(before);
+      });
+
+      it('draws every refresh when a tick is longer than the refresh interval', () => {
+        arm.schedule(false, 30, onTick);
+        arm.frameIntervalMs = 16;
+        for(let seq = 0; seq < 4; seq++){
+          arm.renderSeq = seq;
+          expect(arm.shouldPresentFrame(false, 1000)).toBe(true);
+        }
+      });
     });
 
     it('clear invalidates a pending MessageChannel tick', async () => {

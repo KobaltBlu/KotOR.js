@@ -7,7 +7,7 @@ import { GameEngineType } from "@core/enums/engine";
 import { EngineState, EngineMode } from "@engine/enums/engine";
 import { AudioEngineChannel } from "@core/enums/audio/AudioEngineChannel";
 import { ModuleSaveTable } from "@engine/save/ModuleSaveTable";
-import { isVSyncEnabledRaw, runUpdateTick } from "@engine/runtime/updateLoopSchedule";
+import { GpuFrameFence, isVSyncEnabledRaw, runUpdateTick } from "@engine/runtime/updateLoopSchedule";
 import { GameDebuggerBridge } from "@engine/debug/GameDebuggerBridge";
 import { OdysseyRenderPipeline } from "@engine/render/OdysseyRenderPipeline";
 import { GameStateEvents } from "@engine/runtime/GameStateEvents";
@@ -19,6 +19,9 @@ import { EngineModeController } from '@engine/runtime/EngineModeController';
  * Main update loop, mode ticks, and viewport/shadow prep before render.
  */
 export class GameLoop {
+
+  /** Sim time since the last world draw (uncapped ticks may skip drawing). */
+  static pendingRenderDelta = 0;
 
   static updateTime(delta: number = 0){
     GameState.time += delta;
@@ -70,11 +73,26 @@ export class GameLoop {
   }
 
   static scheduleNextUpdate(workMs = 0): void {
+    const vsync = GameLoop.isVSyncEnabled();
+    if(!vsync) GameLoop.fenceGpuFrame();
     GameState.updateLoop.schedule(
-      GameLoop.isVSyncEnabled(),
+      vsync,
       workMs,
       () => GameLoop.Update(),
     );
+  }
+
+  /**
+   * Uncapped only: mark the end of this tick's GPU work so the next tick waits
+   * when the GPU is more than a frame behind (RAF already provides this).
+   */
+  private static fenceGpuFrame(): void {
+    const gl = GameState.renderer?.getContext();
+    if(!(typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext)) return;
+    const loop = GameState.updateLoop;
+    if(!loop.gpuFence) loop.gpuFence = new GpuFrameFence();
+    loop.gpuFence.attach(gl);
+    loop.gpuFence.insert();
   }
 
   static applyVSyncOption(): void {
@@ -165,7 +183,11 @@ export class GameLoop {
 
     AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
 
-    OdysseyRenderPipeline.renderFrame(delta);
+    GameLoop.pendingRenderDelta += delta;
+    if(GameState.updateLoop.shouldPresentFrame(GameLoop.isVSyncEnabled(), performance.now())){
+      OdysseyRenderPipeline.renderFrame(GameLoop.pendingRenderDelta);
+      GameLoop.pendingRenderDelta = 0;
+    }
 
     if( ((GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
       if(GameState.noClickTimer){
