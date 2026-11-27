@@ -13,6 +13,7 @@ import { BinaryWriter } from "@core/binary/BinaryWriter";
 import { IPerimeter } from "@core/interface/odyssey";
 import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
 import { clearWalkCheckMaterialMaskCache } from "@engine/pathfinding/walk-check-material-mask";
+import { noteWalkmeshGeometryChanged } from "@engine/pathfinding/walk-face-grid";
 
 const _identityMatrix4 = new THREE.Matrix4();
 const _raycastInverseMatrix = new THREE.Matrix4();
@@ -124,10 +125,15 @@ export class OdysseyWalkMesh {
     return this.edgeBvhRoot >= 0;
   }
 
+  /** Bumped whenever vertex positions change (area walk-face grids check it). */
+  geometryVersion = 0;
+
   /** Invalidate sector caches after geometry/transform changes. */
   invalidateSpatialCaches(): void {
     this._faceSectorCache.clear();
     this._edgeSectorCache.clear();
+    this.geometryVersion++;
+    noteWalkmeshGeometryChanged();
   }
 
   /**

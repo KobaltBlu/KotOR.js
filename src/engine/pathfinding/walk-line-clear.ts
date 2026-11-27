@@ -57,6 +57,12 @@ const _lineBox = new THREE.Box3();
 const _candidateFaces: any[] = [];
 const _candidateEdges: WalkmeshEdge[] = [];
 const _candidateRooms: AreaRoom[] = [];
+/**
+ * Last face isCandidatePointWalkable matched, valid only for the candidate
+ * list it came from. hasWalkLineClear clears it whenever that list is refilled.
+ */
+let _walkFaceHint: { pointInFace2d?: (point: THREE.Vector3) => boolean } | undefined;
+let _walkFaceHintList: unknown;
 
 /**
  * Sample walkmesh Z at a 2D point (first matching walk face).
@@ -90,8 +96,15 @@ function isCandidatePointWalkable(
   // Empty array must fall through — getWalkCandidatesForBox can return [] when
   // VIS cull missed a walkable strip; treating [] as filtered yields NonWalk.
   if(candidateFaces?.length){
+    // Successive samples along one line usually land on the same face.
+    if(_walkFaceHintList === candidateFaces && _walkFaceHint?.pointInFace2d?.(point)){
+      return true;
+    }
     for(let i = 0, len = candidateFaces.length; i < len; i++){
-      if(candidateFaces[i]?.pointInFace2d?.(point)){
+      const f = candidateFaces[i];
+      if(f?.pointInFace2d?.(point)){
+        _walkFaceHint = f;
+        _walkFaceHintList = candidateFaces;
         return true;
       }
     }
@@ -309,6 +322,8 @@ export function hasWalkLineClear(
   const checkClip = options.skipClippedLine !== true;
   const walkHit = options.collectHitInfo ? createWalkHitInfo() : undefined;
   const candidateSource = (area as any).getWalkCandidatesForBox;
+  _walkFaceHint = undefined;
+  _walkFaceHintList = undefined;
   const candidates = typeof candidateSource === "function"
     ? candidateSource.call(
       area,

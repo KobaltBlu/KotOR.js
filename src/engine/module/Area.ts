@@ -84,6 +84,7 @@ import { AreaPartyBootstrap } from "@engine/module/area/AreaPartyBootstrap";
 import { AreaPostLoadRevealService } from "@engine/module/area/AreaPostLoadRevealService";
 import { AreaResourceBootstrap } from "@engine/module/area/AreaResourceBootstrap";
 import { AreaSceneBootstrap } from "@engine/module/area/AreaSceneBootstrap";
+import { getWalkFaceGrid } from "@engine/pathfinding/walk-face-grid";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -2508,13 +2509,14 @@ export class Area extends GameObject {
     return distance;
   }
 
+  /** First walk face (array order) containing the point in 2D, via the spatial grid. */
+  findWalkFaceAt(point: THREE.Vector3): OdysseyFace3 | undefined {
+    if(!this.walkFaces.length) return undefined;
+    return getWalkFaceGrid(this, this.walkFaces).findFace(point) as OdysseyFace3 | undefined;
+  }
+
   isPointWalkable(point: THREE.Vector3){
-    for(let i = 0, len = this.walkFaces.length; i < len; i++){
-      if(this.walkFaces[i].pointInFace2d(point)){
-        return true;
-      }
-    }
-    return false;
+    return this.findWalkFaceAt(point) !== undefined;
   }
 
   getNearestWalkablePoint(point: THREE.Vector3, safeDistance = 1.5){
@@ -2523,16 +2525,12 @@ export class Area extends GameObject {
     // across the room ("walk away then speak/use"). Still project Z onto the
     // containing face so findGround / locomotion do not keep a floating height.
     const tmpPoint = new THREE.Vector3();
-    if(this.isPointWalkable(point)){
+    const containing = this.findWalkFaceAt(point);
+    if(containing){
       const onFace = point.clone();
-      for(let i = 0, len = this.walkFaces.length; i < len; i++){
-        const f = this.walkFaces[i];
-        if(!f.pointInFace2d(point)) continue;
-        f.triangle.closestPointToPoint(point, tmpPoint);
-        if(Number.isFinite(tmpPoint.z)){
-          onFace.z = tmpPoint.z;
-        }
-        break;
+      containing.triangle.closestPointToPoint(point, tmpPoint);
+      if(Number.isFinite(tmpPoint.z)){
+        onFace.z = tmpPoint.z;
       }
       return onFace;
     }

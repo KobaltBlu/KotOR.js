@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { Area } from "@engine/module/Area";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
+import { getWalkFaceGrid } from "@engine/pathfinding/walk-face-grid";
 
 /**
  * Approximate ClippedLineSegmentWalkable
@@ -89,11 +90,7 @@ function findWalkFaceAt(
 ): OdysseyFace3 | undefined {
   const faces = area.walkFaces;
   if(!faces?.length) return undefined;
-  for(let i = 0, len = faces.length; i < len; i++){
-    const f = faces[i];
-    if(f?.pointInFace2d(point)) return f;
-  }
-  return undefined;
+  return getWalkFaceGrid(area, faces).findFace(point) as OdysseyFace3 | undefined;
 }
 
 const _offMeshNearest = new THREE.Vector3();
@@ -148,9 +145,9 @@ function findWalkFaceBeyondTransition(
   if(!faces?.length) return undefined;
   const sourceWok = sourceFace.walkmesh;
   let sameWokFallback: OdysseyFace3 | undefined;
-  for(let i = 0, len = faces.length; i < len; i++){
+  const grid = getWalkFaceGrid(area, faces);
+  for(let i = grid.nextFaceIndexAt(point); i >= 0; i = grid.nextFaceIndexAt(point, i)){
     const f = faces[i];
-    if(!f?.pointInFace2d(point)) continue;
     if(f === sourceFace) continue;
     if(f.walkmesh && sourceWok && f.walkmesh !== sourceWok){
       return f;
