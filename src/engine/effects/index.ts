@@ -46,6 +46,7 @@ export * from "@engine/effects/EffectForceResistanceIncrease";
 export * from "@engine/effects/EffectForceShield";
 export * from "@engine/effects/EffectForceSight";
 export * from "@engine/effects/EffectFury";
+export * from "@engine/effects/EffectForceBody";
 export * from "@engine/effects/EffectFPRegenModifier";
 export * from "@engine/effects/EffectVPRegenModifier";
 export * from "@engine/effects/EffectFactionModifier";

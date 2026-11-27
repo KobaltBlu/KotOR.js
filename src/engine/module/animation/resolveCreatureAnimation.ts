@@ -301,6 +301,16 @@ export function resolveCreatureAnimation(
     case ModuleCreatureAnimState.FLOURISH:
       return animations[flourishAnimationRow(context.weaponType)];
 
+    // TSL Force cast clips (fury / crush / monster fury).
+    case ModuleCreatureAnimState.CAST_FURY:
+      return context.gameKey == GameEngineType.TSL ? animations[461] : undefined;
+
+    case ModuleCreatureAnimState.CAST_CRUSH:
+      return context.gameKey == GameEngineType.TSL ? animations[459] : undefined;
+
+    case ModuleCreatureAnimState.CAST_MONSTER_FURY:
+      return context.gameKey == GameEngineType.TSL ? animations[279] : undefined;
+
     // Droid utility conjure/cast — K1 rows 392/393, TSL 537/538.
     case ModuleCreatureAnimState.DROID_UTILITY_USE:
       return animations[context.gameKey == GameEngineType.TSL ? 537 : 392];

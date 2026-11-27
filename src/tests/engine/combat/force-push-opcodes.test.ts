@@ -51,8 +51,9 @@ describe('Force Push port wiring', () => {
       srcPath('engine', 'effects', 'EffectSetStateInternal.ts'),
       'utf8'
     );
-    expect(src).toMatch(/PRONE_FORCE_PUSHED/);
-    expect(src).toMatch(/applyForcePushAIActivityMask/);
+    const helpers = fs.readFileSync(srcPath('engine', 'effects', 'set-state.ts'), 'utf8');
+    expect(helpers).toMatch(/FORCEPUSH:\s*return ModuleCreatureAmbientState\.PRONE_FORCE_PUSHED/);
+    expect(src).toMatch(/aiStateMaskForSetState/);
     expect(src).toMatch(/stampForcePushAttackSummary/);
   });
 
@@ -66,7 +67,7 @@ describe('Force Push port wiring', () => {
     );
   });
 
-  it('outer EffectSetState applies SETAISTATE -0x101 activity mask', () => {
+  it('outer EffectSetState applies a SetAIState 0xFEFF child', () => {
     const setState = fs.readFileSync(
       srcPath('engine', 'effects', 'EffectSetState.ts'),
       'utf8'
@@ -75,8 +76,8 @@ describe('Force Push port wiring', () => {
       srcPath('engine', 'effects', 'set-state.ts'),
       'utf8'
     );
-    expect(helpers).toMatch(/SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff/);
-    expect(setState).toMatch(/SET_STATE_OUTER_AI_ACTIVITY_MASK/);
+    expect(helpers).toMatch(/SET_STATE_OUTER_AI_STATE_MASK = 0xfeff/);
+    expect(setState).toMatch(/applySetAIStateChild\(creature, this, SET_STATE_OUTER_AI_STATE_MASK\)/);
   });
 
   it('setFacingVector writes xOrientation/yOrientation, not props', () => {

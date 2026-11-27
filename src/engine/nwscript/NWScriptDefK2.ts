@@ -5743,7 +5743,13 @@ NWScriptDefK2.Actions = {
     name: 'EffectForceBody',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectForceBody();
+      effect.setInt(0, args[0] | 0);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   771: {
     comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item',

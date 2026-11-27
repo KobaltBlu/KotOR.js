@@ -41,6 +41,7 @@ import { EffectForceResisted } from "@engine/effects/EffectForceResisted";
 import { EffectForceShield } from "@engine/effects/EffectForceShield";
 import { EffectForceSight } from "@engine/effects/EffectForceSight";
 import { EffectFury } from "@engine/effects/EffectFury";
+import { EffectForceBody } from "@engine/effects/EffectForceBody";
 import { EffectFPRegenModifier } from "@engine/effects/EffectFPRegenModifier";
 import { EffectVPRegenModifier } from "@engine/effects/EffectVPRegenModifier";
 import { EffectFactionModifier } from "@engine/effects/EffectFactionModifier";
@@ -203,6 +204,7 @@ export class GameEffectFactory {
   static EffectForceShield: typeof EffectForceShield = EffectForceShield;
   static EffectForceSight: typeof EffectForceSight = EffectForceSight;
   static EffectFury: typeof EffectFury = EffectFury;
+  static EffectForceBody: typeof EffectForceBody = EffectForceBody;
   static EffectFPRegenModifier: typeof EffectFPRegenModifier = EffectFPRegenModifier;
   static EffectVPRegenModifier: typeof EffectVPRegenModifier = EffectVPRegenModifier;
   static EffectFactionModifier: typeof EffectFactionModifier = EffectFactionModifier;
@@ -495,6 +497,9 @@ export class GameEffectFactory {
       break;
       case GameEffectType.EffectFury:
         effect = new EffectFury();
+        break;
+      case GameEffectType.EffectForceBody:
+        effect = new EffectForceBody();
       break;
       case GameEffectType.EffectFPRegenModifier:
         effect = new EffectFPRegenModifier();

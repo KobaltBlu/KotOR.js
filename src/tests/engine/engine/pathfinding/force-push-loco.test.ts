@@ -54,11 +54,9 @@ jest.mock('@core/utility/BitWise', () => ({
 }));
 
 import {
-  applyForcePushAIActivityMask,
   clipForcePushDestination,
   computeForcePushDestination,
   facingFromDirection,
-  FORCE_PUSH_AI_ACTIVITY_MASK,
   FORCE_PUSH_DEFAULT_DISTANCE,
   FORCE_PUSH_LOCO_STATE,
   FORCE_PUSH_SPEED,
@@ -293,23 +291,6 @@ describe('updateForcePushAnimFlags', () => {
 
     updateForcePushAnimFlags(creature, 1.5);
     expect(creature.fp_getup_played).toBe(true);
-  });
-});
-
-describe('applyForcePushAIActivityMask', () => {
-  it('ANDs activity with 0xFFFD (SETAISTATE -3)', () => {
-    const creature: any = { activity: 0xffff };
-    applyForcePushAIActivityMask(creature);
-    expect(creature.activity).toBe(FORCE_PUSH_AI_ACTIVITY_MASK);
-  });
-});
-
-describe('SET_STATE_OUTER_AI_ACTIVITY_MASK', () => {
-  it('clears bit 0x100 (SETAISTATE -0x101)', () => {
-    // Mirrors set-state.ts SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff
-    const mask = 0xfeff;
-    expect(0xffff & mask).toBe(0xfeff);
-    expect(0x0100 & mask).toBe(0);
   });
 });
 

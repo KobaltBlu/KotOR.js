@@ -187,14 +187,14 @@ export class TalentSpell extends TalentObject {
     return 'castoutlp1';
   }
 
-  /** conjure SetAnimation id from spells.2da ConjAnim. */
+  /** conjure SetAnimation id from spells.2da CastAnim. */
   getConjureAnimState(){
-    return getSpellConjureAnimState(this.conjanim);
+    return getSpellConjureAnimState(this.castanim);
   }
 
   /** cast SetAnimation id from spells.2da CastAnim (0 = skip). */
   getCastAnimState(){
-    return getSpellCastAnimState(this.castanim || this.conjanim);
+    return getSpellCastAnimState(this.castanim);
   }
 
   getCasterAnimation(){

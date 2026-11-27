@@ -46,6 +46,7 @@ describe('Force Jump port wiring', () => {
       'utf8'
     );
     expect(src).toMatch(/GameEffectSetStateType\.FORCEJUMP/);
-    expect(src).toMatch(/PRONE_FORCE_JUMP/);
+    const helpers = fs.readFileSync(srcPath('engine', 'effects', 'set-state.ts'), 'utf8');
+    expect(helpers).toMatch(/FORCEJUMP:\s*return ModuleCreatureAmbientState\.PRONE_FORCE_JUMP/);
   });
 });

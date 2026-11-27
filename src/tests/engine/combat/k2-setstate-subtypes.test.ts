@@ -57,7 +57,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
     expect(src).toMatch(/MIND_TRICK/);
     expect(src).toMatch(/DROID_SCRAMBLE/);
     expect(src).toMatch(/KNOCKDOWN/);
-    expect(src).toMatch(/ModuleCreatureAmbientState\.KNOCKDOWN/);
+    expect(src).toMatch(/ambientForSetState/);
     expect(src).toMatch(/VFX_STUN/);
     expect(src).toMatch(/DROID_SCRAMBLE[\s\S]*?DROID_SCRAMBLE|firesOnUserDefined/);
   });

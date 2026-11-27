@@ -178,6 +178,10 @@ export enum ModuleCreatureAnimState {
   POINT_DOWN = 10411,
   SCANNING = 10412,
   SHRUG = 10413,
+  /** spells.2da CastAnim "fury" (TSL). */
+  CAST_FURY = 10414,
+  /** spells.2da CastAnim "crush" (TSL). */
+  CAST_CRUSH = 10415,
   SIT_CHAIR = 10424,
   SIT_CHAIR_DRUNK = 10425,
   SIT_CHAIR_PAZAAK = 10426,
@@ -206,6 +210,9 @@ export enum ModuleCreatureAnimState {
 
   KNEEL_TALK_ANGRY = 10031,
   KNEEL_TALK_SAD = 10385,
+
+  /** spells.2da CastAnim "monsterfury" (TSL): plays animations.2da row 279 directly. */
+  CAST_MONSTER_FURY = 279,
 
   INVALID = 0xFFFFFFFF,
 };

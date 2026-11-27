@@ -58,14 +58,8 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
       srcPath('engine', 'effects', 'EffectSetStateInternal.ts'),
       'utf8'
     );
-    expect(src).toMatch(/ModuleCreatureAmbientState\.WHIRLWIND/);
-    expect(src).toMatch(/ModuleCreatureAmbientState\.CRUSH/);
-    expect(src).toMatch(/GameEffectSetStateType\.WHIRLWIND/);
-    expect(src).toMatch(/GameEffectSetStateType\.CRUSH/);
-    expect(src).toMatch(/applyForcePushAIActivityMask/);
-    expect(src).toMatch(
-      /state === GameEffectSetStateType\.CRUSH/
-    );
+    expect(src).toMatch(/ambientForSetState/);
+    expect(src).toMatch(/aiStateMaskForSetState/);
   });
 
   it('OnRemove OnUserDefined includes CRUSH', () => {
@@ -74,7 +68,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
       'utf8'
     );
     expect(src).toMatch(
-      /state === GameEffectSetStateType\.CRUSH[\s\S]*?CreatureOnUserDefined|CreatureOnUserDefined[\s\S]*?CRUSH/
+      /state >= GameEffectSetStateType\.KNOCKDOWN && state <= GameEffectSetStateType\.DROID_SCRAMBLE/
     );
   });
 

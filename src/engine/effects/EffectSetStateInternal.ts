@@ -8,10 +8,16 @@ import { ModuleCreatureAmbientState } from "@core/enums/module/ModuleCreatureAmb
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { GameState } from "@engine/runtime/GameState";
 import type { Creature } from "@engine/module/Creature";
-import { animForSetState, VFX_DROID_STUN, VFX_STUN } from "@engine/effects/set-state";
+import {
+  aiStateMaskForSetState,
+  ambientForSetState,
+  animForSetState,
+  applySetAIStateChild,
+  VFX_DROID_STUN,
+  VFX_STUN,
+} from "@engine/effects/set-state";
 import { isCreature } from "@engine/module/guards/isCreature";
 import {
-  applyForcePushAIActivityMask,
   isForcePushRecovering,
   stampForcePushAttackSummary,
 } from "@engine/pathfinding/force-push-loco";
@@ -23,23 +29,6 @@ import {
  *
  * @file EffectSetStateInternal.ts
  */
-
-/** States that AND activity with FORCE_PUSH_AI_ACTIVITY_MASK (0xFFFD). */
-function usesRestrictedAIActivityMask(state: number): boolean {
-  return (
-    state === GameEffectSetStateType.CHOKE ||
-    state === GameEffectSetStateType.CUT_SCENE_HORRIFIED ||
-    state === GameEffectSetStateType.FORCEPUSH ||
-    state === GameEffectSetStateType.WHIRLWIND ||
-    state === GameEffectSetStateType.KNOCKDOWN ||
-    state === GameEffectSetStateType.CRUSH ||
-    state === GameEffectSetStateType.HELD ||
-    state === GameEffectSetStateType.CUT_SCENE_STUNNED ||
-    state === GameEffectSetStateType.MIND_TRICK ||
-    state === GameEffectSetStateType.DROID_SCRAMBLE ||
-    state === GameEffectSetStateType.DROID_STUN
-  );
-}
 
 /** States that fire CreatureOnUserDefined onRemove. */
 function firesOnUserDefined(state: number): boolean {
@@ -85,8 +74,10 @@ export class EffectSetStateInternal extends GameEffect {
 
     this.applyChildEffects(creature, state);
 
-    if(usesRestrictedAIActivityMask(state)){
-      applyForcePushAIActivityMask(creature);
+    const aiStateMask = aiStateMaskForSetState(state);
+    if(aiStateMask){
+      const child = applySetAIStateChild(creature, this, aiStateMask);
+      if(child) this.children.push(child);
     }
 
     this.applyAmbientAndAnim(creature, state);
@@ -146,79 +137,32 @@ export class EffectSetStateInternal extends GameEffect {
   }
 
   private applyAmbientAndAnim(creature: Creature, state: number){
+    const ambient = ambientForSetState(state);
+    if(ambient !== ModuleCreatureAmbientState.IDLE || state === GameEffectSetStateType.HELD){
+      creature.ambientAnimState = ambient;
+    }
+
     switch(state){
-      case GameEffectSetStateType.FORCEPUSH:
-        creature.ambientAnimState = ModuleCreatureAmbientState.PRONE_FORCE_PUSHED;
-        {
-          const creator = this.getCreator();
-          if(isCreature(creator)){
-            stampForcePushAttackSummary(creator as Creature, creature);
-          }
+      case GameEffectSetStateType.FORCEPUSH: {
+        const creator = this.getCreator();
+        if(isCreature(creator)){
+          stampForcePushAttackSummary(creator as Creature, creature);
         }
         break;
+      }
       case GameEffectSetStateType.FORCEJUMP:
-        creature.ambientAnimState = ModuleCreatureAmbientState.PRONE_FORCE_JUMP;
-        break;
-      case GameEffectSetStateType.WHIRLWIND:
-        creature.ambientAnimState = ModuleCreatureAmbientState.WHIRLWIND;
-        creature.setAnimationState?.(animForSetState(state));
-        break;
-      case GameEffectSetStateType.KNOCKDOWN:
-        creature.ambientAnimState = ModuleCreatureAmbientState.KNOCKDOWN;
-        creature.setAnimationState?.(animForSetState(state));
-        break;
-      case GameEffectSetStateType.CRUSH:
-        creature.ambientAnimState = ModuleCreatureAmbientState.CRUSH;
-        creature.setAnimationState?.(animForSetState(state));
-        break;
-      case GameEffectSetStateType.CUT_SCENE_STUNNED:
-      case GameEffectSetStateType.MIND_TRICK:
-      case GameEffectSetStateType.DROID_SCRAMBLE:
-        creature.ambientAnimState = ModuleCreatureAmbientState.PAUSE_POISONED;
-        creature.setAnimationState?.(animForSetState(state));
-        break;
-      case GameEffectSetStateType.HELD:
-        // Held resets ambient to idle; animation still uses choke lock pose.
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-        creature.setAnimationState?.(animForSetState(state));
         break;
       default:
-        // DROID_CONFUSED leaves ambient unchanged; other states set anim only.
         creature.setAnimationState?.(animForSetState(state));
         break;
     }
   }
 
   private clearAmbient(creature: Creature, state: number){
-    const ambient = creature.ambientAnimState | 0;
-    if(state === GameEffectSetStateType.FORCEPUSH){
-      if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-      }
-    }else if(state === GameEffectSetStateType.FORCEJUMP){
-      if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_JUMP){
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-      }
-    }else if(state === GameEffectSetStateType.WHIRLWIND){
-      if(ambient === ModuleCreatureAmbientState.WHIRLWIND){
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-      }
-    }else if(state === GameEffectSetStateType.KNOCKDOWN){
-      if(ambient === ModuleCreatureAmbientState.KNOCKDOWN){
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-      }
-    }else if(state === GameEffectSetStateType.CRUSH){
-      if(ambient === ModuleCreatureAmbientState.CRUSH){
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-      }
-    }else if(
-      state === GameEffectSetStateType.CUT_SCENE_STUNNED ||
-      state === GameEffectSetStateType.MIND_TRICK ||
-      state === GameEffectSetStateType.DROID_SCRAMBLE
-    ){
-      if(ambient === ModuleCreatureAmbientState.PAUSE_POISONED){
-        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
-      }
+    const ambient = ambientForSetState(state);
+    if(ambient === ModuleCreatureAmbientState.IDLE) return;
+    if((creature.ambientAnimState | 0) === ambient){
+      creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
     }
   }
 

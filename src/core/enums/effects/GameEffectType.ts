@@ -104,6 +104,8 @@ export enum GameEffectType {
   EffectForceShield = 0x6B,
   EffectPureGoodPowers = 0x6C,
   EfffectPureEvilPowers = 0x6D,
+  /** K2 EffectForceBody — type 0x6E. */
+  EffectForceBody = 0x6E,
   /** K2 EffectForceSight — type 0x72. */
   EffectForceSight = 0x72,
   /** K2 EffectFury — type 0x6F. */

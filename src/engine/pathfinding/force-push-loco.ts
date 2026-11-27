@@ -42,9 +42,6 @@ export const FORCE_PUSH_DEFAULT_DISTANCE = 5.0;
 export const FORCE_PUSH_ANIM_LAND = 1.0666699409484863;
 export const FORCE_PUSH_ANIM_GETUP = 1.466670036315918;
 
-/** Clears AI activity bit 1 (mask applied on immobilizing force states). */
-export const FORCE_PUSH_AI_ACTIVITY_MASK = 0xfffd;
-
 const _origin = new THREE.Vector3();
 const _dest = new THREE.Vector3();
 const _dir = new THREE.Vector3();
@@ -222,16 +219,6 @@ export function clearForcePushLoco(creature: Creature): void {
   creature.forcePushDistanceTraveled = 0;
   creature.forcePushArrived = false;
   creature.forcePushArriveElapsed = 0;
-}
-
-/**
- * Clear AI activity bit 1 during immobilizing SetState onApply
- * (push, whirlwind, crush, choke, horror, knockdown, hold, stun, mind trick,
- * droid scramble / stun).
- */
-export function applyForcePushAIActivityMask(creature: Creature): void {
-  if(!creature) return;
-  creature.activity = (creature.activity | 0) & FORCE_PUSH_AI_ACTIVITY_MASK;
 }
 
 /**

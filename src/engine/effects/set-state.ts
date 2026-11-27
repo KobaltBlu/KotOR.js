@@ -3,6 +3,8 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameEffectSetStateType } from "@core/enums/effects/GameEffectSetStateType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
+import { ModuleCreatureAmbientState } from "@core/enums/module/ModuleCreatureAmbientState";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { GameState } from "@engine/runtime/GameState";
 import { hasImmunityType } from "@engine/effects/haste-slow";
@@ -35,10 +37,71 @@ export const VFX_DROID_STUN = 0x3ef;
 export const VFX_STUN = 0x7d2;
 
 /**
- * Outer SetState onApply clears activity bit 0x100
- * (`activity &= 0xFEFF`) before Internal is rebalanced.
+ * Outer SetState applies a child SetAIState with this mask for as long as
+ * the outer effect lasts.
  */
-export const SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff;
+export const SET_STATE_OUTER_AI_STATE_MASK = 0xfeff;
+
+/**
+ * AI-state mask the Internal effect applies for the winning state
+ * (0 = no SetAIState child).
+ */
+export function aiStateMaskForSetState(state: number): number {
+  switch(state){
+    case GameEffectSetStateType.CUT_SCENE_PARALYZE:
+      return 0xfff1;
+    case GameEffectSetStateType.SLEEP:
+      return 0xfea1;
+    case GameEffectSetStateType.DROID_STUN:
+    case GameEffectSetStateType.CUT_SCENE_STUNNED:
+    case GameEffectSetStateType.CHOKE:
+    case GameEffectSetStateType.CUT_SCENE_HORRIFIED:
+    case GameEffectSetStateType.FORCEPUSH:
+    case GameEffectSetStateType.WHIRLWIND:
+    case GameEffectSetStateType.KNOCKDOWN:
+    case GameEffectSetStateType.CRUSH:
+    case GameEffectSetStateType.HELD:
+    case GameEffectSetStateType.MIND_TRICK:
+    case GameEffectSetStateType.DROID_SCRAMBLE:
+      return 0xfffd;
+    default:
+      return 0;
+  }
+}
+
+/** Ambient animation state for a SetState (IDLE when the state has none). */
+export function ambientForSetState(state: number): ModuleCreatureAmbientState {
+  switch(state){
+    case GameEffectSetStateType.DROID_STUN:
+      return ModuleCreatureAmbientState.DISABLED;
+    case GameEffectSetStateType.CUT_SCENE_STUNNED:
+    case GameEffectSetStateType.MIND_TRICK:
+    case GameEffectSetStateType.DROID_SCRAMBLE:
+      return ModuleCreatureAmbientState.PAUSE_POISONED;
+    case GameEffectSetStateType.CUT_SCENE_PARALYZE:
+      return ModuleCreatureAmbientState.PARALYZED;
+    case GameEffectSetStateType.SLEEP:
+      return ModuleCreatureAmbientState.SLEEP;
+    case GameEffectSetStateType.CHOKE:
+      return ModuleCreatureAmbientState.CHOKE;
+    case GameEffectSetStateType.CUT_SCENE_HORRIFIED:
+      return ModuleCreatureAmbientState.HORROR;
+    case GameEffectSetStateType.FORCEPUSH:
+      return ModuleCreatureAmbientState.PRONE_FORCE_PUSHED;
+    case GameEffectSetStateType.WHIRLWIND:
+      return ModuleCreatureAmbientState.WHIRLWIND;
+    case 12:
+      return ModuleCreatureAmbientState.F2A2;
+    case GameEffectSetStateType.FORCEJUMP:
+      return ModuleCreatureAmbientState.PRONE_FORCE_JUMP;
+    case GameEffectSetStateType.KNOCKDOWN:
+      return ModuleCreatureAmbientState.KNOCKDOWN;
+    case GameEffectSetStateType.CRUSH:
+      return ModuleCreatureAmbientState.CRUSH;
+    default:
+      return ModuleCreatureAmbientState.IDLE;
+  }
+}
 
 export function getActiveSetStateType(creature: Creature): number {
   let highest = 0;
@@ -52,6 +115,12 @@ export function getActiveSetStateType(creature: Creature): number {
   return highest;
 }
 
+/** TSL: Mandalorian Courage also blocks fear and horror. */
+function hasMandalorianCourage(creature: Creature): boolean {
+  return GameState.GameKey == GameEngineType.TSL
+    && !!creature.getHasFeat?.(CombatFeatType.MANDALORIAN_COURAGE);
+}
+
 export function isSetStateImmune(
   creature: Creature,
   state: number,
@@ -62,7 +131,8 @@ export function isSetStateImmune(
     case GameEffectSetStateType.CONFUSED:
       return hasImmunityType(creature, IMMUNITY_CONFUSED, versus);
     case GameEffectSetStateType.FRIGHTENED:
-      return hasImmunityType(creature, IMMUNITY_FEAR, versus);
+      return hasImmunityType(creature, IMMUNITY_FEAR, versus)
+        || hasMandalorianCourage(creature);
     case GameEffectSetStateType.CUT_SCENE_STUNNED:
       if(ignoreImmunity) return false;
       return hasImmunityType(creature, IMMUNITY_STUN, versus)
@@ -76,7 +146,8 @@ export function isSetStateImmune(
       return hasImmunityType(creature, IMMUNITY_SLEEP, versus);
     case GameEffectSetStateType.CUT_SCENE_HORRIFIED:
       if(ignoreImmunity) return false;
-      return !!creature.getHasFeat?.(CombatFeatType.FORCE_IMMUNITY_FEAR);
+      return !!creature.getHasFeat?.(CombatFeatType.FORCE_IMMUNITY_FEAR)
+        || hasMandalorianCourage(creature);
     case GameEffectSetStateType.KNOCKDOWN:
       if(ignoreImmunity) return false;
       return hasImmunityType(creature, IMMUNITY_KNOCKDOWN, versus);
@@ -131,6 +202,24 @@ function copyMeta(from: GameEffect, to: GameEffect){
   to.setExpireTime(from.expireTime);
   to.setSubType(GameEffectSubType.MAGICAL);
   to.setSkipOnLoad(true);
+}
+
+/**
+ * Apply a SetAIState child that shares the parent's lifetime. The caller
+ * removes it when the parent goes away.
+ */
+export function applySetAIStateChild(
+  creature: Creature,
+  parent: GameEffect,
+  mask: number
+): GameEffect | undefined {
+  const Ctor = GameState.GameEffectFactory?.EffectSetAIState;
+  if(!Ctor) return undefined;
+  const child: GameEffect = new Ctor();
+  copyMeta(parent, child);
+  child.setInt(0, mask & 0xffff);
+  creature.addEffect(child, child.getDurationType(), child.duration);
+  return child;
 }
 
 function removeInternals(creature: Creature){

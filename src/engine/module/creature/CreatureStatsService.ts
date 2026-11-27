@@ -16,6 +16,7 @@ import {
   getSavingThrowEffectBonus,
 } from '@engine/effects/effect-bonuses';
 import { isCreatureBlind } from '@engine/effects/EffectBlindness';
+import { getForceBodyCostSplit } from "@engine/effects/EffectForceBody";
 import { hasImmunityType } from '@engine/effects/haste-slow';
 import { getAbilityModifier } from '@engine/rules/skill-points';
 import {
@@ -221,10 +222,34 @@ export class CreatureStatsService {
   unreadySpell(spell: { forcepoints?: number; goodEvil?: string } | null | undefined): boolean {
     if(!spell) return false;
     const cost = this.host.getAdjustedForcePointCost(spell);
-    if(cost > 0){
-      this.host.subtractFP(cost);
+    const split = getForceBodyCostSplit(this.getForceBodyLevel(), cost);
+    const temporary = this.host.temporaryForce | 0;
+    if(temporary >= split.fp){
+      this.host.temporaryForce = temporary - split.fp;
+      return true;
+    }
+    if(split.fp > 0){
+      this.host.subtractFP(split.fp);
+    }
+    // Force Body: the same share comes out of vitality once temporary
+    // Force points run short.
+    if(split.hp > 0){
+      this.host.subtractHP(split.hp);
+      if(this.host.getHP() < 0) this.host.setHP(0);
     }
     return true;
+  }
+
+  /** Level of the first Force Body effect, or -1 without one. */
+  getForceBodyLevel(): number {
+    const effects = this.host.effects || [];
+    for(let i = 0; i < effects.length; i++){
+      const e = effects[i];
+      if(e?.type === GameEffectType.EffectForceBody){
+        return e.getInt(0) | 0;
+      }
+    }
+    return -1;
   }
 
   getForceSpellClassIndex(): number {

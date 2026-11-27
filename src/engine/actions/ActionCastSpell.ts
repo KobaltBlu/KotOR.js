@@ -157,7 +157,7 @@ export class ActionCastSpell extends Action {
 
   private applyConjureAnim(owner: Creature, castSpell: any){
     const anim = castSpell?.getConjureAnimState?.()
-      ?? getSpellConjureAnimState(castSpell?.conjanim);
+      ?? getSpellConjureAnimState(castSpell?.castanim);
     if(owner.combatRound?.action){
       owner.combatRound.action.animation = anim;
     }
@@ -166,7 +166,7 @@ export class ActionCastSpell extends Action {
 
   private applyCastAnim(owner: Creature, castSpell: any){
     const anim = castSpell?.getCastAnimState?.()
-      ?? getSpellCastAnimState(castSpell?.castanim || castSpell?.conjanim);
+      ?? getSpellCastAnimState(castSpell?.castanim);
     if(!anim) return;
     if(owner.combatRound?.action){
       owner.combatRound.action.animation = anim;

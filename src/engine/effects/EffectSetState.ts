@@ -2,7 +2,12 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@core/enums/effects/GameEffectSetStateType";
 import type { Creature } from "@engine/module/Creature";
-import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK } from "@engine/effects/set-state";
+import {
+  applySetAIStateChild,
+  isSetStateImmune,
+  rebalanceSetState,
+  SET_STATE_OUTER_AI_STATE_MASK,
+} from "@engine/effects/set-state";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -14,6 +19,8 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * @file EffectSetState.ts
  */
 export class EffectSetState extends GameEffect {
+  private aiStateChild?: GameEffect;
+
   constructor(){
     super();
     this.type = GameEffectType.EffectSetState;
@@ -43,12 +50,16 @@ export class EffectSetState extends GameEffect {
     }
 
     super.onApply();
-    creature.activity = (creature.activity | 0) & SET_STATE_OUTER_AI_ACTIVITY_MASK;
+    this.aiStateChild = applySetAIStateChild(creature, this, SET_STATE_OUTER_AI_STATE_MASK);
     rebalanceSetState(creature, this);
   }
 
   onRemove(){
     super.onRemove();
+    if(this.aiStateChild){
+      this.object?.removeEffect?.(this.aiStateChild);
+      this.aiStateChild = undefined;
+    }
     if(isCreature(this.object)){
       rebalanceSetState(this.object as Creature);
     }
