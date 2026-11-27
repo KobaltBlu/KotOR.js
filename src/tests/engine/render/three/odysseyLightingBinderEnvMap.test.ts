@@ -60,4 +60,49 @@ describe('OdysseyLightingBinder envmap rotation', () => {
 
     expect(second).not.toEqual(first);
   });
+
+  test('per-draw hook follows the render camera without another bind', () => {
+    // Area binds are throttled and cached; the draw-time hook must track the camera.
+    const material = new THREE.ShaderMaterial({
+      defines: { USE_ENVMAP: '' },
+      uniforms: { envMapRotation: { value: new THREE.Matrix3() } },
+    });
+    const camera = new THREE.PerspectiveCamera();
+    camera.updateMatrixWorld(true);
+    OdysseyLightingBinder.writeEnvMapRotation(material, camera);
+    material.uniformsNeedUpdate = false;
+
+    camera.rotation.set(0.1, 0.7, 0);
+    camera.updateMatrixWorld(true);
+    const draw = material.onBeforeRender as unknown as (...args: unknown[]) => void;
+    draw.call(material, null, null, camera, null, null, null);
+
+    const expected = new THREE.Matrix3().setFromMatrix4(camera.matrixWorld);
+    const actual = material.uniforms.envMapRotation.value as THREE.Matrix3;
+    for(let i = 0; i < 9; i++){
+      expect(actual.elements[i]).toBeCloseTo(expected.elements[i], 6);
+    }
+    expect(material.uniformsNeedUpdate).toBe(true);
+
+    // Unchanged camera: no redundant upload request.
+    material.uniformsNeedUpdate = false;
+    draw.call(material, null, null, camera, null, null, null);
+    expect(material.uniformsNeedUpdate).toBe(false);
+  });
+
+  test('hook installed before USE_ENVMAP starts tracking once the define appears', () => {
+    const material = new THREE.ShaderMaterial({ uniforms: {} });
+    const camera = new THREE.PerspectiveCamera();
+    OdysseyLightingBinder.writeEnvMapRotation(material, camera);
+    expect(material.uniforms.envMapRotation).toBeUndefined();
+
+    material.defines = { USE_ENVMAP: '' };
+    camera.rotation.set(0, 0.4, 0);
+    camera.updateMatrixWorld(true);
+    const draw = material.onBeforeRender as unknown as (...args: unknown[]) => void;
+    draw.call(material, null, null, camera, null, null, null);
+    const expected = new THREE.Matrix3().setFromMatrix4(camera.matrixWorld);
+    expect((material.uniforms.envMapRotation.value as THREE.Matrix3).elements[2])
+      .toBeCloseTo(expected.elements[2], 6);
+  });
 });

@@ -13,7 +13,7 @@ import {
   MAX_ODYSSEY_SHADOW_MAPS,
 } from "@engine/render/shaders/chunks/OdysseyShadow";
 import { OdysseyLightingDebug } from "@engine/render/odysseyLightingDebug";
-import { envMapRotationFromCamera } from "@engine/render/envMapRotation";
+import { applyEnvMapRotation, installEnvMapRotationHook } from "@engine/render/envMapRotation";
 import {
   OdysseyUniformBuffers,
   type OdysseyLightUboSetId,
@@ -56,8 +56,6 @@ export class OdysseyLightingBinder {
   private static _viewSunCacheKey = 0;
   private static _viewSunCacheDir = new THREE.Vector3();
   private static _bindSeen = new Set<THREE.Material>();
-  private static _envMapRotation = new THREE.Matrix3();
-  private static _envMapRotationFp = 0;
   /** Materials with USE_ODYSSEY_SHADOW — avoids full scene.traverse on refresh. */
   private static _shadowReceivers = new Set<THREE.ShaderMaterial>();
   private static _shadowPackMatrices: THREE.Matrix4[] = Array.from({ length: MAX_ODYSSEY_SHADOW_MAPS }, () => new THREE.Matrix4());
@@ -212,35 +210,14 @@ export class OdysseyLightingBinder {
   }
 
   /**
-   * DoEnvMapTransform — upload camera world rotation for cubemap sample.
-   * Called for USE_ENVMAP materials even when IGNORE_LIGHTING skips light arrays.
+   * DoEnvMapTransform — upload camera world rotation for cubemap sample, and
+   * install the per-draw hook that keeps it in step with the render camera.
    */
   static writeEnvMapRotation(material: THREE.ShaderMaterial, camera?: THREE.Camera){
     if(!material.uniforms){ return; }
-    const defines = material.defines || {};
-    if(!Object.prototype.hasOwnProperty.call(defines, 'USE_ENVMAP')){
-      return;
-    }
-    if(!material.uniforms.envMapRotation){
-      material.uniforms.envMapRotation = { value: new THREE.Matrix3() };
-    }
-    const viewFp = this.cameraViewFingerprint(camera);
-    if(material.userData.odysseyEnvMapRotFp === viewFp &&
-      material.userData.odysseyEnvMapRotOwned === true){
-      return;
-    }
-    // Own the Matrix3 — ShaderLib clone aliases the same identity across materials.
-    if(material.userData.odysseyEnvMapRotOwned !== true){
-      material.uniforms.envMapRotation.value = new THREE.Matrix3();
-      material.userData.odysseyEnvMapRotOwned = true;
-    }
-    if(viewFp !== this._envMapRotationFp){
-      envMapRotationFromCamera(camera, this._envMapRotation);
-      this._envMapRotationFp = viewFp;
-    }
-    (material.uniforms.envMapRotation.value as THREE.Matrix3).copy(this._envMapRotation);
-    material.userData.odysseyEnvMapRotFp = viewFp;
-    material.uniformsNeedUpdate = true;
+    installEnvMapRotationHook(material);
+    camera?.updateMatrixWorld();
+    applyEnvMapRotation(material, camera);
   }
 
   static bindMaterial(

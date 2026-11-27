@@ -1,5 +1,9 @@
+import { describe, expect, test } from "@jest/globals";
 import * as THREE from "three";
-import { envMapRotationFromCamera } from "@engine/render/envMapRotation";
+import {
+  envMapRotationFromCamera,
+  installEnvMapRotationHook,
+} from "@engine/render/envMapRotation";
 
 describe("envMapRotationFromCamera", () => {
   test("identity when camera is missing", () => {
@@ -32,4 +36,25 @@ describe("envMapRotationFromCamera", () => {
       expect(m2.elements[i]).toBeCloseTo(expected.elements[i], 5);
     }
   });
+
+  test("cloned materials get their own draw hook", () => {
+    const source = new THREE.ShaderMaterial({
+      defines: { USE_ENVMAP: "" },
+      uniforms: { envMapRotation: { value: new THREE.Matrix3() } },
+    });
+    installEnvMapRotationHook(source);
+    const clone = source.clone();
+    installEnvMapRotationHook(clone);
+
+    const camera = new THREE.PerspectiveCamera();
+    camera.rotation.set(0, 0.6, 0);
+    camera.updateMatrixWorld(true);
+    const draw = clone.onBeforeRender as unknown as (...args: unknown[]) => void;
+    draw.call(clone, null, null, camera, null, null, null);
+
+    const expected = new THREE.Matrix3().setFromMatrix4(camera.matrixWorld);
+    const actual = clone.uniforms.envMapRotation.value as THREE.Matrix3;
+    expect(actual.elements[2]).toBeCloseTo(expected.elements[2], 6);
+  });
 });
+
