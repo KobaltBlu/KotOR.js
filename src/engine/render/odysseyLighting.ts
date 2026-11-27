@@ -21,8 +21,8 @@ export const ODYSSEY_LIGHT_ATTEN_MIN_RADIUS = 0.1;
  * CM_Baremetal only contribute sparse highlights; LERP (dest==0) would replace
  * armor albedo with near-black and crush chrome. Water still uses MIX.
  *
- * Sampling uses view-space reflect + DoEnvMapTransform camera rotation
- * (`envMapRotation`), with ENV_WORLDPOS defined for Three envmap/worldpos
+ * Sampling reflects in view space, then rotates by the camera orientation
+ * (via viewMatrix), with ENV_WORLDPOS defined for Three envmap/worldpos
  * varyings. Shader edits require a full page reload (materials snapshot GLSL
  * at create; HMR does not recompile live materials).
  */

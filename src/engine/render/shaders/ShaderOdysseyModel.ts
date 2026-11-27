@@ -152,20 +152,22 @@ export class ShaderOdysseyModel extends Shader {
       vec3 albedo = materialDiffuseColor;
       vec4 envColor = vec4( 0.0 );
       #ifdef USE_ENVMAP
-        // Per-fragment sample (ENV_WORLDPOS define keeps Three worldpos/envmap varyings).
-        // FFP uses GL_REFLECTION_MAP (eye-space) then DoEnvMapTransform multiplies the
-        // texture matrix by camera orientation → world-space cubemap direction.
+        // Retail: reflect in eye space (GL_REFLECTION_MAP), then rotate by the camera
+        // orientation into world space. viewMatrix is the inverse camera transform,
+        // so inverseTransformDirection applies that rotation for whatever camera
+        // three is drawing with.
         vec3 reflectVec;
         #ifdef ENVMAP_MODE_REFLECTION
           reflectVec = reflect( -normalize( vViewPosition ), normalize( normal ) );
         #else
           reflectVec = refract( -normalize( vViewPosition ), normalize( normal ), refractionRatio );
         #endif
-        reflectVec = envMapRotation * reflectVec;
+        reflectVec = inverseTransformDirection( reflectVec, viewMatrix );
+        // envMapRotation keeps Three's meaning (rotating the environment); identity by default.
         #ifdef ENVMAP_TYPE_CUBE
-          envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
+          envColor = textureCube( envMap, envMapRotation * vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
         #elif defined( ENVMAP_TYPE_CUBE_UV )
-          envColor = textureCubeUV( envMap, reflectVec, 0.0 );
+          envColor = textureCubeUV( envMap, envMapRotation * reflectVec, 0.0 );
         #elif defined( ENVMAP_TYPE_EQUIREC )
           reflectVec = normalize( reflectVec );
           vec2 sampleUV = equirectUv( reflectVec );

@@ -13,7 +13,6 @@ import {
   MAX_ODYSSEY_SHADOW_MAPS,
 } from "@engine/render/shaders/chunks/OdysseyShadow";
 import { OdysseyLightingDebug } from "@engine/render/odysseyLightingDebug";
-import { applyEnvMapRotation, installEnvMapRotationHook } from "@engine/render/envMapRotation";
 import {
   OdysseyUniformBuffers,
   type OdysseyLightUboSetId,
@@ -209,17 +208,6 @@ export class OdysseyLightingBinder {
     }
   }
 
-  /**
-   * DoEnvMapTransform — upload camera world rotation for cubemap sample, and
-   * install the per-draw hook that keeps it in step with the render camera.
-   */
-  static writeEnvMapRotation(material: THREE.ShaderMaterial, camera?: THREE.Camera){
-    if(!material.uniforms){ return; }
-    installEnvMapRotationHook(material);
-    camera?.updateMatrixWorld();
-    applyEnvMapRotation(material, camera);
-  }
-
   static bindMaterial(
     material: THREE.ShaderMaterial,
     lightSet: IOdysseyLightUniformSlot,
@@ -230,7 +218,6 @@ export class OdysseyLightingBinder {
   ){
     if(!material.uniforms){ return; }
 
-    this.writeEnvMapRotation(material, camera);
     const shadowManager = GameState.odysseyShadowManager;
     if(!this.shadowUniformsAreCurrent(material, shadowManager)){
       this.bindScreenSpaceShadowUniforms(material, undefined, camera);
@@ -876,12 +863,6 @@ export class OdysseyLightingBinder {
   ){
     const focusPos = focus ?? model.getWorldPosition(this._scratchWorldPos);
     const fp = this.areaFingerprint(lightManager, camera);
-    // Env-map transform applies the current camera orientation every
-    // render. Lighting cache keys intentionally exclude the camera now that
-    // light arrays are world-space, so update env rotations outside the
-    // potentially cached light-uniform path.
-    this.bindModelEnvMapRotations(model, camera);
-
     if(lightPath === 'gob'){
       const nearestFp = lightManager.fingerprintNearestLights(focusPos);
       const objectFp = this.mixHash(
@@ -960,23 +941,6 @@ export class OdysseyLightingBinder {
   ){
     const seen = this._bindSeen;
     seen.clear();
-    this.bindMaterialsUnique(model.materials, bindOne, seen);
-    model.traverse((obj) => {
-      if(obj !== model && (obj as OdysseyModel3D).materials){
-        this.bindMaterialsUnique((obj as OdysseyModel3D).materials, bindOne, seen);
-      }
-    });
-  }
-
-  private static bindModelEnvMapRotations(
-    model: OdysseyModel3D,
-    camera?: THREE.Camera
-  ){
-    const seen = this._bindSeen;
-    seen.clear();
-    const bindOne = (material: THREE.ShaderMaterial) => {
-      this.writeEnvMapRotation(material, camera);
-    };
     this.bindMaterialsUnique(model.materials, bindOne, seen);
     model.traverse((obj) => {
       if(obj !== model && (obj as OdysseyModel3D).materials){

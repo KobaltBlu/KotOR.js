@@ -224,7 +224,7 @@ export function createOdysseyMaterialBaseUniforms(): Record<string, { value: unk
     // samples cubemaps with GL_REFLECTION_MAP (no X flip). Three defaults
     // CubeTexture to -1 for its loader convention; TPC faces are uploaded in GL order.
     flipEnvMap: { value: 1 },
-    /** DoEnvMapTransform — camera world rotation; identity until binder uploads. */
+    /** Three's environment rotation; the camera rotation comes from viewMatrix in the shader. */
     envMapRotation: { value: new THREE.Matrix3() },
     reflectivity: { value: 1 },
     refractionRatio: { value: 0.98 },

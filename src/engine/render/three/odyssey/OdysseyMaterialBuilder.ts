@@ -19,7 +19,6 @@ import {
   syncOdysseyMapTransforms,
 } from "@engine/render/shaders/chunks/OdysseyLighting";
 import { enableOdysseyMaterialShadowReceive } from "@engine/render/shaders/chunks/OdysseyShadow";
-import { installEnvMapRotationHook } from "@engine/render/envMapRotation";
 import { nodeMaterialCacheShareable } from "@engine/render/three/odyssey/nodeMaterialCacheShareable";
 import type { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
 
@@ -198,8 +197,6 @@ export class OdysseyMaterialBuilder {
           if(material.uniforms.reflectivity){
             material.uniforms.reflectivity.value = 1;
           }
-          // Hidden rooms are not bound until visible; track the camera from the first draw.
-          installEnvMapRotationHook(material);
           material.uniformsNeedUpdate = true;
         }
 
