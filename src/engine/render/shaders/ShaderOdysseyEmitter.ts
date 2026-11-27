@@ -220,27 +220,27 @@ export class ShaderOdysseyEmitter extends Shader {
       float framesY = textureAnimation.y;
       float loopCount = textureAnimation.w;
       float totalFrames = textureAnimation.z;
-      // updateParticleFrame: frames advance only when fps > 0.
-      // fps <= 0 → stay on frameStart. Non-random clamps at frameEnd (one-shot).
+      // Frames advance only when fps > 0; fps <= 0 stays on frameStart.
+      // Past frameEnd the frame wraps back to frameStart when the emitter has
+      // the RANDOM flag or a non-zero loop field; otherwise it holds on frameEnd.
       float startF = frameRange.x;
       float endF = frameRange.y;
       float span = max(endF - startF, 0.0) + 1.0;
 
       #ifdef FPS
-        float frameNumber = clamp(startF + floor(age * fps), startF, endF);
+        float framesElapsed = floor(age * fps);
       #else
-        float frameNumber = startF;
+        float framesElapsed = 0.0;
       #endif
 
       #ifdef RANDOM_PLAYBACK
-        // ids holds birth frame from Fountain Update RANDOM (bit 5) @ birth
-        frameNumber = mod( ids + (frameNumber - startF), span ) + startF;
+        // ids holds the birth frame picked in [frameStart, frameEnd] at spawn
+        float frameNumber = mod( (ids - startF) + framesElapsed, span ) + startF;
+      #else
+        float frameNumber = loopCount >= 1.0
+          ? mod( framesElapsed, span ) + startF
+          : min( startF + framesElapsed, endF );
       #endif
-
-      // Clamp frame when loop is disabled (Single update emitters)
-      if(loopCount < 1.0 && frameNumber > endF) {
-        frameNumber = endF;
-      }
 
       float column = floor(mod( frameNumber, framesX ));
       float row = floor( (frameNumber - column) / framesX );
