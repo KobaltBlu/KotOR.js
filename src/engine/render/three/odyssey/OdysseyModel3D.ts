@@ -106,6 +106,30 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   effects: any[] = [];
 
+  constructor(...args: ConstructorParameters<typeof OdysseyObject3D>){
+    super(...args);
+    this.addEventListener('added', OdysseyModel3D.onAddedToParent);
+  }
+
+  /**
+   * A model attached under another (weapon, head, VFX) brings materials the
+   * ancestors' cached light binds have never seen; drop those caches so the
+   * next bind reaches the new materials even if nothing else changed.
+   */
+  private static onAddedToParent(event: { target: THREE.Object3D }){
+    OdysseyModel3D.invalidateLightingBinds(event.target.parent);
+  }
+
+  static invalidateLightingBinds(from: THREE.Object3D | null | undefined){
+    for(let obj = from; obj; obj = obj.parent){
+      const ud = obj.userData;
+      if(!ud){ continue; }
+      delete ud.odysseyObjectBindFp;
+      delete ud.odysseyBindFp;
+      delete ud.odysseyShadowBoundEpoch;
+    }
+  }
+
   puppeteer: any = undefined; 
   oddFrame = false;
 
@@ -432,6 +456,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       for(let i = 0; i < head.materials.length; i++){
         this.materials.push(head.materials[i]);
       }
+      OdysseyModel3D.invalidateLightingBinds(this);
     }
 
   }

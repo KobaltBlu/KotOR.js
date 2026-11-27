@@ -14,6 +14,15 @@ import {
   ODYSSEY_LIGHTING_DEBUG_KEYS,
 } from "@engine/render/odysseyLightingDebug";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
+import {
+  describeGamepadsForConsole,
+  rumbleActivePad,
+  selectActivePad,
+  setGlyphOverride,
+  setPromptsEnabled,
+  getPromptsEnabled,
+  setSimulatedPad,
+} from "@engine/controls/gamepad-debug";
 
 /**
  * CheatConsoleManager class.
@@ -388,6 +397,68 @@ export class CheatConsoleManager {
     player.skills[skillIndex].rank = n;
   }
 
+  static printLines(lines: string[]){
+    for(const line of lines){
+      console.log(line);
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+    }
+  }
+
+  /** padinfo — connected pads, active pad, held buttons and stick values. */
+  static padInfo(){
+    CheatConsoleManager.printLines(describeGamepadsForConsole());
+  }
+
+  /** padselect <index> — make that pad the one the game reads. */
+  static padSelect(raw: string | undefined){
+    const index = CheatConsoleManager.parseIntParam(raw, -1);
+    const ok = index >= 0 && selectActivePad(index);
+    CheatConsoleManager.printLines([ok ? `padselect: pad ${index} active` : `padselect: no connected pad ${raw ?? ''}`]);
+  }
+
+  /** padglyphs <auto|xbox|ps> — force which button symbols are drawn. */
+  static padGlyphs(raw: string | undefined){
+    const map: Record<string, number> = { '0': 0, auto: 0, '1': 1, xbox: 1, '2': 2, ps: 2, playstation: 2 };
+    const value = map[(raw || '').toLowerCase()];
+    if(value === undefined){
+      CheatConsoleManager.printLines(['padglyphs: usage padglyphs <auto|xbox|ps>']);
+      return;
+    }
+    setGlyphOverride(value);
+    CheatConsoleManager.printLines([`padglyphs: ${['auto', 'xbox', 'playstation'][value]}`]);
+  }
+
+  /** padprompts [on|off] — toggle or set the on-screen pad prompts. */
+  static padPrompts(raw: string | undefined){
+    const arg = (raw || '').toLowerCase();
+    const next = arg === 'on' || arg === '1' ? true : arg === 'off' || arg === '0' ? false : !getPromptsEnabled();
+    setPromptsEnabled(next);
+    CheatConsoleManager.printLines([`padprompts: ${next ? 'on' : 'off'}`]);
+  }
+
+  /** padsim <off|xbox|ps> — pretend a pad is plugged in so its prompts and symbols show. */
+  static padSim(raw: string | undefined){
+    const map: Record<string, 'xbox' | 'playstation' | null> = { off: null, '0': null, xbox: 'xbox', '1': 'xbox', ps: 'playstation', playstation: 'playstation', '2': 'playstation' };
+    const value = map[(raw || '').toLowerCase()];
+    if(value === undefined){
+      CheatConsoleManager.printLines(['padsim: usage padsim <off|xbox|ps>']);
+      return;
+    }
+    setSimulatedPad(value ?? undefined);
+    CheatConsoleManager.printLines([`padsim: ${value ?? 'off'}`]);
+  }
+
+  /** padrumble [ms] [strong] [weak] — test the active pad's rumble. */
+  static padRumble(ms?: string, strong?: string, weak?: string){
+    void rumbleActivePad(
+      CheatConsoleManager.parseIntParam(ms, 400),
+      CheatConsoleManager.parseFloatParam(strong, 1),
+      CheatConsoleManager.parseFloatParam(weak, 1),
+    ).then((ok) => {
+      if(!ok) CheatConsoleManager.printLines(['padrumble: active pad cannot rumble']);
+    });
+  }
+
   /** Sorted unique console command names (+ KotOR.js aliases). */
   static getCommandNames(): string[] {
     return [
@@ -434,6 +505,12 @@ export class CheatConsoleManager {
       'lightget',
       'lightset',
       'lightreset',
+      'padinfo',
+      'padselect',
+      'padglyphs',
+      'padprompts',
+      'padrumble',
+      'padsim',
     ].slice().sort((a, b) => a.localeCompare(b));
   }
 
@@ -441,7 +518,8 @@ export class CheatConsoleManager {
     const args = command.trim().toLowerCase().split(/\s+/);
     const cmd = args.shift();
     const params = args;
-    if(cmd){
+    // Controller diagnostics do not change the game, so they do not count as cheats.
+    if(cmd && !cmd.startsWith('pad')){
       GameState.PartyManager.CheatUsed = true;
     }
     switch(cmd){
@@ -568,6 +646,24 @@ export class CheatConsoleManager {
         break;
       case 'lightreset':
         CheatConsoleManager.lightReset(params[0]);
+        break;
+      case 'padinfo':
+        CheatConsoleManager.padInfo();
+        break;
+      case 'padselect':
+        CheatConsoleManager.padSelect(params[0]);
+        break;
+      case 'padglyphs':
+        CheatConsoleManager.padGlyphs(params[0]);
+        break;
+      case 'padprompts':
+        CheatConsoleManager.padPrompts(params[0]);
+        break;
+      case 'padsim':
+        CheatConsoleManager.padSim(params[0]);
+        break;
+      case 'padrumble':
+        CheatConsoleManager.padRumble(params[0], params[1], params[2]);
         break;
     }
   }

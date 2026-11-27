@@ -32,6 +32,8 @@ import { getInstructionHandler } from "@engine/nwscript/instructionHandlers";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class NWScriptInstance {
+  /** Instructions one run may execute before it is treated as a runaway loop. */
+  static maxInstructionsPerRun = 4_000_000;
   uuid: string = crypto.randomUUID();
   parentUUID: string;
   name: string;
@@ -630,7 +632,21 @@ export class NWScriptInstance {
       this.delayCommands = [];
     }
 
+    let instructionBudget = NWScriptInstance.maxInstructionsPerRun;
     while(this.running && !this._disposed){
+
+      // A script that never terminates would freeze the whole game; abort it
+      // instead and report where it was spinning.
+      if(--instructionBudget < 0){
+        console.error('[NWScript VM] instruction limit exceeded, aborting script', {
+          script: this.name,
+          address: this.currentInstruction?.address,
+          caller: (this.caller as any)?.tag,
+          limit: NWScriptInstance.maxInstructionsPerRun,
+        });
+        this.running = false;
+        break;
+      }
 
       if(this.currentInstruction)
         this.prevByteCode = this.currentInstruction.code;

@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useApp } from "@apps/game/context/AppContext";
 import * as KotOR from "@apps/game/KotOR";
+import { GamepadDebugSection } from "./GamepadDebugSection";
 
 const EngineDebugType = KotOR.EngineDebugType;
 type EngineDebugType = KotOR.EngineDebugType;
 
-type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'combat' | 'lighting';
+type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'combat' | 'lighting' | 'gamepad';
 
 const DEBUG_GROUPS: { id: SectionId; label: string; types: EngineDebugType[] }[] = [
   {
@@ -47,6 +48,7 @@ const DEFAULT_OPEN: Record<SectionId, boolean> = {
   walkmesh: false,
   combat: false,
   lighting: false,
+  gamepad: false,
 };
 
 function formatDebugLabel(label: string) {
@@ -422,6 +424,15 @@ export const DebugToolsPanel: React.FC = () => {
               Reset Lighting
             </button>
           </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          id="gamepad"
+          title="Gamepad"
+          open={openSections.gamepad}
+          onToggle={onToggleSection}
+        >
+          <GamepadDebugSection />
         </CollapsibleSection>
       </div>
     </div>

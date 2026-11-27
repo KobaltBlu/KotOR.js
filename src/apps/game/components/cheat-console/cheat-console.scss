@@ -478,6 +478,114 @@
     text-align: right;
   }
 
+  // —— Gamepad section ——
+  .console-pad-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .console-pad-item {
+    text-align: left;
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .console-pad-meta {
+    color: var(--panel-dim);
+    font-size: 0.75rem;
+    margin: 2px 0 8px;
+  }
+
+  .console-pad-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 3px;
+    margin: 6px 0;
+  }
+
+  .console-pad-button {
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 2px 4px;
+    border: 1px solid rgba(var(--panel-accent-rgb), 0.3);
+    border-radius: 3px;
+    color: var(--panel-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &.held {
+      background: rgba(var(--panel-accent-rgb), 0.35);
+      border-color: var(--panel-accent);
+      color: var(--panel-text);
+    }
+  }
+
+  .console-pad-sticks {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin: 6px 0;
+  }
+
+  .console-pad-stick {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border: 1px solid rgba(var(--panel-accent-rgb), 0.4);
+    border-radius: 50%;
+
+    .raw, .dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      margin: -3px 0 0 -3px;
+      border-radius: 50%;
+    }
+
+    .raw { background: var(--panel-dim); opacity: 0.6; }
+    .dot { background: var(--panel-accent); }
+
+    .deadzone {
+      position: absolute;
+      border: 1px dashed rgba(var(--panel-accent-rgb), 0.3);
+      border-radius: 50%;
+    }
+  }
+
+  .console-pad-trigger {
+    width: 10px;
+    height: 56px;
+    border: 1px solid rgba(var(--panel-accent-rgb), 0.4);
+    position: relative;
+
+    .fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--panel-accent);
+    }
+  }
+
+  .console-pad-caption {
+    color: var(--panel-dim);
+    font-size: 0.65rem;
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  .console-pad-axes {
+    font-family: monospace;
+    font-size: 0.7rem;
+    color: var(--panel-dim);
+    word-break: break-all;
+  }
+
   // —— TSL theme ——
   &.TSL {
     .cheat-console-bar:before {

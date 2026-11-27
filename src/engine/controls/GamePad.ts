@@ -199,6 +199,12 @@ export class GamePad {
    * Returns undefined when no pad is available.
    */
   static pollActive(): Gamepad | undefined {
+    if(GamePad.simulatedFamily){
+      const sim = GamePad.getSimulatedPad();
+      GamePad.CurrentGamePadIndex = sim.index;
+      GamePad.CurrentGamePad = sim;
+      return sim;
+    }
     const pads = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
       ? navigator.getGamepads()
       : [];
@@ -246,6 +252,51 @@ export class GamePad {
     globalThis.addEventListener("gamepaddisconnected", function(e: GamepadEvent) { gamepadHandler(e, false); }, false);
   }
 
+
+  /**
+   * Debug: when set, the game reads an idle pad of this family instead of
+   * the real ones, so pad prompts and button symbols show with no controller
+   * plugged in.
+   */
+  static simulatedFamily: PadFamily | undefined = undefined;
+  static readonly SIMULATED_PAD_INDEX = 99;
+  static #simulatedPad: Gamepad | undefined;
+
+  /** The idle stand-in pad used while `simulatedFamily` is set. */
+  static getSimulatedPad(): Gamepad {
+    const family = GamePad.simulatedFamily || 'xbox';
+    const id = family === 'playstation'
+      ? 'Simulated DualSense Wireless Controller (Vendor: 054c)'
+      : 'Simulated Xbox Wireless Controller (Vendor: 045e)';
+    if(GamePad.#simulatedPad?.id === id) return GamePad.#simulatedPad;
+    const fields = {
+      id,
+      index: GamePad.SIMULATED_PAD_INDEX,
+      connected: true,
+      mapping: 'standard',
+      timestamp: 0,
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+      axes: [0, 0, 0, 0],
+      vibrationActuator: null as any,
+    };
+    // Built on the real prototype so `instanceof Gamepad` checks accept it.
+    const proto = typeof Gamepad === 'function' ? Gamepad.prototype : Object.prototype;
+    const pad = Object.create(proto) as Gamepad;
+    for(const [key, value] of Object.entries(fields)){
+      Object.defineProperty(pad, key, { value, enumerable: true });
+    }
+    GamePad.#simulatedPad = pad;
+    return pad;
+  }
+
+  /** Turn the simulated pad on with a family, or off with undefined. */
+  static setSimulatedFamily(family: PadFamily | undefined){
+    GamePad.simulatedFamily = family;
+    if(!family && GamePad.CurrentGamePadIndex === GamePad.SIMULATED_PAD_INDEX){
+      GamePad.CurrentGamePadIndex = -1;
+      GamePad.CurrentGamePad = undefined;
+    }
+  }
 
   static CurrentGamePad: Gamepad | undefined;
   static CurrentGamePadIndex: number = -1;

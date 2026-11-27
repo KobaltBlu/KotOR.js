@@ -232,6 +232,9 @@ export class GameLoop {
     }
 
     GameState.GameOverManager.UpdateDeathSequence(delta);
+    // The K1 death sequence returns to the main menu when its fade ends, which
+    // unloads the module mid-frame.
+    if(!GameState.module?.area){ return; }
     const MAX_SIM_DELTA = 0.1;
     const simDelta = Math.min(
       delta * (GameState.timeScale > 0 ? GameState.timeScale : 1),
@@ -242,9 +245,11 @@ export class GameLoop {
       GameLoop.updateTime(simDelta);
     }
 
-    if(
-      GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length
-    ){
+    // The death message box is a modal, but the death sequence keeps the world
+    // running (in slow motion) behind it so the fallen party finishes dying.
+    const modalPauses = GameState.MenuManager.activeModals.length > 0 &&
+      !GameState.GameOverManager.GetGameOver();
+    if(GameState.State == EngineState.PAUSED || modalPauses){
       GameState.module.tickPaused(simDelta);
     }else{
       GameState.module.tick(simDelta);

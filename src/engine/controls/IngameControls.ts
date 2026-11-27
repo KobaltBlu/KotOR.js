@@ -753,7 +753,9 @@ export class IngameControls {
     const override = Number(GameState.iniConfig?.getProperty?.('Game Options.Controller Glyphs')) || 0;
     const family = resolvePadFamily(this.gamePad.gamePad?.id, override);
     this.quickMenu.render(host, this.quickMenuAvailability(), family);
-    if(!enabled || !this.gamePad.gamePad || !this.controllerHidesCursor || this.touchInputActive || this.quickMenu.isOpen){
+    // A simulated pad keeps its prompts up while the mouse is in use.
+    const padInputActive = this.controllerHidesCursor || !!GamePad.simulatedFamily;
+    if(!enabled || !this.gamePad.gamePad || !padInputActive || this.touchInputActive || this.quickMenu.isOpen){
       this.padPrompts.hide();
       this.padButtonGlyphs.hide();
       return;

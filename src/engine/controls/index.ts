@@ -13,3 +13,4 @@ export * from "@engine/controls/GamepadPrompts";
 export * from "@engine/controls/GamepadQuickMenu";
 export * from "@engine/controls/gamepad-glyphs";
 export * from "@engine/controls/GamepadButtonGlyphs";
+export * from "@engine/controls/gamepad-debug";

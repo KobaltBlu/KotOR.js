@@ -896,8 +896,10 @@ export class FollowerCamera {
     else if(yawDeg >= 360) yawDeg -= 360;
     FollowerCamera.deathYaw = yawDeg;
 
-    // pitch blend toward desired (uses 90 - desired_pitch offset; desired=90 → level)
-    const desiredPitchDeg = 90.0 - FollowerCamera.DEATH_DESIRED_PITCH_DEG;
+    // Pitch blend toward desired. Pitch here is measured from straight down
+    // (0° = looking at the floor, 90° = level), the same frame the follow
+    // camera uses, so desired 90 keeps the orbit level.
+    const desiredPitchDeg = FollowerCamera.DEATH_DESIRED_PITCH_DEG;
     FollowerCamera.deathPitch =
       (desiredPitchDeg - FollowerCamera.deathPitch) * FollowerCamera.DEATH_LOG_PITCH +
       FollowerCamera.deathPitch;
@@ -920,11 +922,24 @@ export class FollowerCamera {
     const distance = FollowerCamera.deathDistance;
     const camZ = targetPos.z + headZ + FollowerCamera.deathHeight;
 
-    FollowerCamera.camera.position.set(
+    FollowerCamera.tmpDesiredCam.set(
       targetPos.x + distance * Math.cos(yawRad),
       targetPos.y + distance * Math.sin(yawRad),
       camZ
     );
+    // Keep the orbit out of walls and props, like the follow camera.
+    // hitCheckCamera casts along FollowerCamera.facing, so set it first.
+    FollowerCamera.facing = yawRad;
+    const area = GameState.module?.area;
+    if(area){
+      FollowerCamera.tmpOrigin.set(targetPos.x, targetPos.y, camZ);
+      FollowerCamera.hitCheckCamera(
+        area, target, FollowerCamera.tmpOrigin, FollowerCamera.tmpDesiredCam, FollowerCamera.tmpSafeCam
+      );
+      FollowerCamera.camera.position.copy(FollowerCamera.tmpSafeCam);
+    }else{
+      FollowerCamera.camera.position.copy(FollowerCamera.tmpDesiredCam);
+    }
 
     FollowerCamera.facing = yawRad;
     FollowerCamera.pitch = pitchRad;
