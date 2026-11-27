@@ -6,6 +6,7 @@ import { Action } from "@engine/actions/Action";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isItem } from "@engine/module/guards/isItem";
+import { canCreatureEquipItem } from "@engine/menu/action-menu-usable";
 
 /**
  * ActionEquipItem class.
@@ -36,6 +37,11 @@ export class ActionEquipItem extends Action {
       const item = this.getParameter<Item>(0);
       const slot = this.getParameter<ModuleCreatureArmorSlot>(1);
       const instant = !!this.getParameter<number>(2);
+      // RunEquip → CanEquipItem: refuse items the creature lacks the
+      // proficiency feats or use limits for.
+      if(!canCreatureEquipItem(this.owner, item)){
+        return ActionStatus.FAILED;
+      }
       // Stamp hand slots sync inside equipItem; model load continues async.
       void this.owner.equipItem(slot, item);
 

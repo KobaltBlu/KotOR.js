@@ -4,6 +4,7 @@ import { WeaponWield } from "@core/enums/combat/WeaponWield";
 import { getAttackEffectBonus } from "@engine/effects/effect-bonuses";
 import type { Creature } from "@engine/module/Creature";
 import type { Item } from "@engine/module/Item";
+import { canCreatureEquipItem } from "@engine/menu/action-menu-usable";
 
 /** GuiInGameEquipSlotInfo — empty icon stem + TLK slot names (human/droid). */
 export interface EquipSlotInfo {
@@ -135,14 +136,19 @@ export function isOffHandSlot(slot: ModuleCreatureArmorSlot): boolean {
 
 /**
  * Equip-list canUse code for a candidate item in a slot.
- * 1 = ok, 3 = weapon style conflict (dual-wield mismatch).
+ * 1 = ok, 2 = creature can't equip it (proficiency / use limits),
+ * 3 = weapon style conflict (dual-wield mismatch).
  */
 export function getItemEquipCanUse(
   item: Item,
   slot: ModuleCreatureArmorSlot,
   mainWeapon: Item | undefined,
   offWeapon: Item | undefined,
+  creature?: Creature,
 ): number {
+  if (creature && !canCreatureEquipItem(creature, item)) {
+    return 2;
+  }
   if (isMainHandSlot(slot) && offWeapon) {
     const a = item.getWeaponWield();
     const b = offWeapon.getWeaponWield();

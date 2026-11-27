@@ -13,6 +13,7 @@ import {
   checkItemAlignmentRestrictions,
   checkItemClassRestrictions,
   checkItemFeatRestrictions,
+  checkProficienciesPure,
   checkItemRaceRestrictionsPure,
   getSimpleAlignmentGoodEvil,
   isMedicalItemType,
@@ -33,6 +34,7 @@ export {
   checkItemAlignmentRestrictions,
   checkItemClassRestrictions,
   checkItemFeatRestrictions,
+  checkProficienciesPure,
   checkItemRaceRestrictionsPure,
   isMedicalItemType,
   isOtherCastSpellItemType,
@@ -144,6 +146,31 @@ export function canUseItemForMenu(creature: Creature, item: Item): boolean {
     return false;
   }
   return true;
+}
+
+/**
+ * CheckProficiencies against the item's base item reqfeat columns.
+ */
+export function passesItemProficiencies(creature: Creature, item: Item): boolean {
+  if(!creature || !item) return false;
+  const base = item.baseItem;
+  if(!base) return false;
+  return checkProficienciesPure(
+    base.equipableSlots | 0,
+    [base.requiredFeat0, base.requiredFeat1, base.requiredFeat2, base.requiredFeat3, base.requiredFeat4],
+    (featId) => !!creature.getHasFeat?.(featId),
+    !!creature.getHasFeat?.(CombatFeatType.PROFICIENCY_ALL)
+  );
+}
+
+/**
+ * CanEquipItem gates in retail order: proficiency, then the item's
+ * alignment / class / race / feat use limits. The PC-only min level and
+ * the weapon size / hand checks are not covered here.
+ */
+export function canCreatureEquipItem(creature: Creature, item: Item): boolean {
+  if(!passesItemProficiencies(creature, item)) return false;
+  return canUseItemForMenu(creature, item);
 }
 
 /**

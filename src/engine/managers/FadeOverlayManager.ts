@@ -21,7 +21,12 @@ import { commitGuiTransform } from "@engine/gui/guiMatrix";
 export class FadeOverlayManager {
 
   static geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-  static material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.FrontSide, transparent: true, opacity: 0} );
+  /**
+   * No depth write / test: the plane sits at z=499 and draws before modal
+   * panels, so writing depth would hide depth-tested GUI quads drawn after it
+   * (e.g. list box render targets inside the death message box).
+   */
+  static material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.FrontSide, transparent: true, opacity: 0, depthWrite: false, depthTest: false} );
   static plane = new THREE.Mesh( FadeOverlayManager.geometry, FadeOverlayManager.material );
 
   /** Fade length (seconds) — SetFade. */
@@ -50,8 +55,15 @@ export class FadeOverlayManager {
    */
   static holdForScript: boolean = false;
 
-  /** renderOrder so video player (9999991+) can always draw on top of the fade */
-  static readonly FADE_RENDER_ORDER = 9999990;
+  /**
+   * renderOrder for the fade plane: above every non-modal menu layer
+   * (MenuManager stacks them at i * GUI_LAYER_STRIDE) but just below
+   * MenuManager.GUI_MODAL_BASE. Like the retail fade panel, which is a normal
+   * panel, modal panels such as the death message box draw over the fade.
+   * Kept a few steps under the base so modal backgrounds (bias - 6) and the
+   * root panel chrome (bias - 1) also clear it. The cursor (9999999) stays on top.
+   */
+  static readonly FADE_RENDER_ORDER = 99990;
 
   /**
    * post-LevelLoad world fade-in (MainLoop → StartGlobalFade

@@ -9,6 +9,7 @@ import { CombatInformation } from '@engine/combat/CombatInformation';
 import { isGrenadeItemType } from '@engine/combat/item-cast-grenade';
 import { getForceResistanceBonus } from '@engine/effects/effect-bonuses';
 import { Item } from '@engine/module/Item';
+import { canCreatureEquipItem } from '@engine/menu/action-menu-usable';
 import { OdysseyModel3D } from '@engine/render/three/odyssey';
 import { GameState } from '@engine/runtime/GameState';
 import type { Creature } from '@engine/module/Creature';
@@ -55,7 +56,7 @@ export class CreatureEquipmentService {
     return candidates;
   }
 
-  private static pickMostDamagingWeapon(
+  private pickMostDamagingWeapon(
     candidates: Item[],
     predicate: (item: Item) => boolean
   ): Item | undefined {
@@ -64,6 +65,9 @@ export class CreatureEquipmentService {
     for(let i = 0; i < candidates.length; i++){
       const item = candidates[i];
       if(!item || !predicate(item)) continue;
+      // Only weapons the creature can actually equip are scored
+      // (e.g. no lightsaber without Weapon Proficiency: Lightsaber).
+      if(!canCreatureEquipItem(this.host, item)) continue;
       const score = (item.baseItem?.dieToRoll || 0) * (item.baseItem?.numDice || 0);
       if(!best || score > bestScore){
         best = item;
@@ -77,16 +81,16 @@ export class CreatureEquipmentService {
     const equipped = offHand ? this.host.equipment.LEFTHAND : this.host.equipment.RIGHTHAND;
     const candidates = this.collectWeaponCandidates(equipped);
     return (
-      CreatureEquipmentService.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isMeleeWeaponItem) ||
-      CreatureEquipmentService.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isRangedWeaponItem)
+      this.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isMeleeWeaponItem) ||
+      this.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isRangedWeaponItem)
     );
   }
 
   findMostDamagingRanged(): Item | undefined {
     const candidates = this.collectWeaponCandidates(this.host.equipment.RIGHTHAND);
     return (
-      CreatureEquipmentService.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isRangedWeaponItem) ||
-      CreatureEquipmentService.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isMeleeWeaponItem)
+      this.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isRangedWeaponItem) ||
+      this.pickMostDamagingWeapon(candidates, CreatureEquipmentService.isMeleeWeaponItem)
     );
   }
 

@@ -115,6 +115,27 @@ function hasUseableProp(props: UseLimitationProp[], propertyName: number): boole
 }
 
 /**
+ * CheckProficiencies: the item must have an equipable slot, and the creature
+ * must own every baseitems reqfeat0..4 the item lists (AND, not OR).
+ * Bypass when HasFeat(PROFICIENCY_ALL / 0x5d).
+ */
+export function checkProficienciesPure(
+  equipableSlots: number,
+  requiredFeats: number[],
+  hasFeat: (featId: number) => boolean,
+  hasProficiencyAll: boolean
+): boolean {
+  if(!(equipableSlots | 0)) return false;
+  if(hasProficiencyAll) return true;
+  for(let i = 0; i < requiredFeats.length; i++){
+    const featId = requiredFeats[i];
+    if(typeof featId !== 'number' || featId < 0) continue;
+    if(!hasFeat(featId)) return false;
+  }
+  return true;
+}
+
+/**
  * CheckItemAlignmentRestrictions.
  * Bypass when HasFeat(PROFICIENCY_ALL / 0x5d).
  */

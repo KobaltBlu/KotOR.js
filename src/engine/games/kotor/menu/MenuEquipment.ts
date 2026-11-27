@@ -531,7 +531,7 @@ export class MenuEquipment extends GameMenu {
       }
       for (let i = 0; i < inv.length; i++) {
         const item = inv[i] as Item & { equipCanUse?: number };
-        item.equipCanUse = getItemEquipCanUse(item, slot, mainWeapon, offWeapon);
+        item.equipCanUse = getItemEquipCanUse(item, slot, mainWeapon, offWeapon, currentPC);
         tx.add(item);
       }
     });
