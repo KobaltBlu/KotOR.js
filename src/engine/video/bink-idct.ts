@@ -165,9 +165,9 @@ export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array)
     out[5] = (a1 - a3 + a2 - b3 + 0x7F) >> 8;
     out[6] = (a1 + a3 - a2 - b2 + 0x7F) >> 8;
     out[7] = (a0 + a2 - b0 + 0x7F) >> 8;
+    // Bink adds residuals modulo 256 (no saturation); the encoder relies on the wrap.
     for (let c = 0; c < 8; c++) {
-      const v = (dest[base + c] + out[c]) | 0;
-      dest[base + c] = Math.max(0, Math.min(255, v));
+      dest[base + c] = (dest[base + c] + out[c]) & 0xFF;
     }
   }
 }
@@ -192,8 +192,8 @@ export function addPixels8(pixels: Uint8Array, block: Int16Array, lineSize: numb
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       const idx = p + j;
-      const v = (pixels[idx] + block[b++]) | 0;
-      pixels[idx] = Math.max(0, Math.min(255, v));
+      // Modulo-256 add, same as idctAdd.
+      pixels[idx] = (pixels[idx] + block[b++]) & 0xFF;
     }
     p += lineSize;
   }
