@@ -26,10 +26,10 @@ jest.mock('@core/utility/BitWise', () => ({
 import { CombatRoundAction } from '@engine/combat/CombatRoundAction';
 import { CombatFeatType } from '@core/enums/combat/CombatFeatType';
 
-function makeAction(featId?: number) {
+function makeAction(featId?: number, wield = 1) {
   const owner = {
     getCombatAnimationAttackType: () => 'm',
-    getCombatAnimationWeaponType: () => 1,
+    getCombatAnimationWeaponType: () => wield,
     isDuelingObject: () => false,
   };
   const action = new CombatRoundAction(owner as any);
@@ -65,6 +65,25 @@ describe('CombatRoundAction.calculateAttackAnimation feats', () => {
 
   it('uses basic m1a1 without a feat', () => {
     const action = makeAction();
+    action.calculateAttackAnimation();
+    expect(action.animationName).toBe('m1a1');
+  });
+
+  it.each([
+    [CombatFeatType.FORCE_JUMP, 2, 'f2a4'],
+    [CombatFeatType.FORCE_JUMP_ADVANCED, 3, 'f3a4'],
+    [CombatFeatType.FORCE_JUMP_MASTERY, 4, 'f4a4'],
+  ])('Force Jump feat %i with wield %i leaps with %s', (featId, wield, name) => {
+    // The jump stamps only featId on the round action (no talent object).
+    const action = makeAction(undefined, wield);
+    action.featId = featId;
+    action.calculateAttackAnimation();
+    expect(action.animationName).toBe(name);
+  });
+
+  it('Force Jump without a lightsaber wield falls back to a basic attack', () => {
+    const action = makeAction(undefined, 1);
+    action.featId = CombatFeatType.FORCE_JUMP;
     action.calculateAttackAnimation();
     expect(action.animationName).toBe('m1a1');
   });

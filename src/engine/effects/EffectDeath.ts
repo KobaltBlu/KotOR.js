@@ -1,4 +1,5 @@
 import { GameEffect } from "@engine/effects/GameEffect";
+import { clearAIStateMask } from "@engine/module/creature/ai-state";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { SSFType } from "@core/enums/resource/SSFType";
@@ -40,6 +41,8 @@ export class EffectDeath extends GameEffect {
       this.object.setHP(1);
       return;
     }
+
+    if(isCreature(this.object)) clearAIStateMask(this.object as Creature);
 
     // Absolute HP — Creature.setHP must invert the same formula as getHP
     // (beast/wookiee subrace uses hitPoints+currentHitPoints).

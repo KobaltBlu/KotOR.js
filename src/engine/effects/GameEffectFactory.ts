@@ -68,6 +68,7 @@ import { EffectSavingThrowIncrease } from "@engine/effects/EffectSavingThrowIncr
 import { EffectSeeInvisible } from "@engine/effects/EffectSeeInvisible";
 import { EffectSetState } from "@engine/effects/EffectSetState";
 import { EffectSetStateInternal } from "@engine/effects/EffectSetStateInternal";
+import { EffectSetAIState } from "@engine/effects/EffectSetAIState";
 import { EffectSkillDecrease } from "@engine/effects/EffectSkillDecrease";
 import { EffectSkillIncrease } from "@engine/effects/EffectSkillIncrease";
 import { EffectSlow } from "@engine/effects/EffectSlow";
@@ -128,7 +129,7 @@ export class GameEffectFactory {
   static EffectKnockdown: typeof EffectKnockdown = EffectKnockdown;
   static EffectDeaf: typeof EffectDeaf = EffectDeaf;
   static EffectImmunity: typeof EffectImmunity = EffectImmunity;
-  // static EffectSetAIState: typeof EffectSetAIState = EffectSetAIState;
+  static EffectSetAIState: typeof EffectSetAIState = EffectSetAIState;
   // static EffectEnemyAttackBonus: typeof EffectEnemyAttackBonus = EffectEnemyAttackBonus;
   static EffectArcaneSpellFailure: typeof EffectArcaneSpellFailure = EffectArcaneSpellFailure;
   static EffectSavingThrowIncrease: typeof EffectSavingThrowIncrease = EffectSavingThrowIncrease;
@@ -509,6 +510,9 @@ export class GameEffectFactory {
       break;
       case GameEffectType.EffectSetStateInternal:
         effect = new EffectSetStateInternal();
+      break;
+      case GameEffectType.EffectSetAIState:
+        effect = new EffectSetAIState();
       break;
       case GameEffectType.EffectTrueseeing: //TrueSeeing
         effect = new EffectTrueSeeing();

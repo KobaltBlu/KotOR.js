@@ -68,8 +68,14 @@ import {
   resolveForcePushOrigin,
   stampForcePushAttackSummary,
   updateForcePushAnimFlags,
+  startForcePushSequence,
+  tickForcePushSequence,
+  isForcePushRecovering,
+  FORCE_PUSH_ANIM_LAND,
+  FORCE_PUSH_ANIM_GETUP,
 } from '@engine/pathfinding/force-push-loco';
 import { hasWalkLineClear } from '@engine/pathfinding/walk-line-clear';
+import { CreatureLocoState } from '@engine/pathfinding/creature-loco';
 
 function mockEffect(ints: number[] = [], floats: number[] = []) {
   return {
@@ -230,9 +236,11 @@ describe('tickForcePushLoco', () => {
     expect(result).toBe('arrived');
     expect(creature.position.x).toBeCloseTo(5, 4);
     expect(creature.forcePushArrived).toBe(true);
+    // Arrival drops the slide loco to Paused so the creature can walk again.
+    expect(creature.creatureLocoState).toBe(CreatureLocoState.Paused);
 
     result = tickForcePushLoco(creature, 0.1);
-    expect(result).toBe('arrived');
+    expect(result).toBe('idle');
   });
 
   it('moves partially across smaller deltas', () => {
@@ -316,5 +324,65 @@ describe('stampForcePushAttackSummary', () => {
     expect(attack.setStateType).toBe(9);
     expect(attack.setStateApplied).toBe(true);
     expect(attack.reactObject).toBe(target);
+  });
+});
+
+describe('Force Push recovery sequence', () => {
+  function pushedCreature(overrides: any = {}){
+    const creature: any = {
+      position: new THREE.Vector3(0, 0, 0),
+      area: undefined,
+      creatureLocoState: 0,
+      ambientAnimState: 0,
+      combatData: { combatState: true },
+      _path: undefined as any,
+      setComputedPath(p: any){ this._path = p; },
+      getComputedPath(){ return this._path; },
+      hasSetState: jest.fn(() => false),
+      isDead: jest.fn(() => false),
+      setAnimationState: jest.fn(),
+      ...overrides,
+    };
+    return creature;
+  }
+
+  it('stays recovering through slide, land and get-up, then releases', () => {
+    const creature = pushedCreature();
+    installForcePushPath(creature, new THREE.Vector3(0, 0, 0), new THREE.Vector3(5, 0, 0));
+    startForcePushSequence(creature);
+    // The zero-delta seed tick must not end the slide.
+    expect(creature.creatureLocoState).toBe(FORCE_PUSH_LOCO_STATE);
+    expect(isForcePushRecovering(creature)).toBe(true);
+
+    tickForcePushSequence(creature, 0.05);
+    expect(creature.fp_push_played).toBeFalsy();
+
+    tickForcePushLoco(creature, 0.5);
+    expect(creature.creatureLocoState).toBe(CreatureLocoState.Paused);
+
+    tickForcePushSequence(creature, FORCE_PUSH_ANIM_LAND);
+    expect(creature.fp_land_played).toBe(true);
+    expect(isForcePushRecovering(creature)).toBe(true);
+
+    tickForcePushSequence(creature, FORCE_PUSH_ANIM_GETUP);
+    expect(isForcePushRecovering(creature)).toBe(false);
+    expect(creature.setAnimationState).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the pose alone while the FORCEPUSH state is still applied', () => {
+    const creature = pushedCreature({ hasSetState: jest.fn(() => true) });
+    installForcePushPath(creature, new THREE.Vector3(0, 0, 0), new THREE.Vector3(5, 0, 0));
+    startForcePushSequence(creature);
+    tickForcePushLoco(creature, 0.5);
+    tickForcePushSequence(creature, FORCE_PUSH_ANIM_LAND + FORCE_PUSH_ANIM_GETUP);
+    expect(isForcePushRecovering(creature)).toBe(false);
+    expect(creature.setAnimationState).not.toHaveBeenCalled();
+  });
+
+  it('drops the sequence when the creature dies', () => {
+    const creature = pushedCreature({ isDead: jest.fn(() => true) });
+    startForcePushSequence(creature);
+    tickForcePushSequence(creature, 0.1);
+    expect(isForcePushRecovering(creature)).toBe(false);
   });
 });

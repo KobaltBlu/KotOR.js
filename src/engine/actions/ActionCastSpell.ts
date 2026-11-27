@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { canUseForcePowersByAIState } from "@engine/module/creature/ai-state";
 import { Action } from "@engine/actions/Action";
 import { SpellCastInstance } from "@engine/combat";
 import {
@@ -124,7 +125,9 @@ export class ActionCastSpell extends Action {
   }
 
   private isCasterBlocked(owner: Creature): boolean {
-    return !!(owner.isDead() || owner.isDebilitated() || owner.plot || owner.silenced);
+    // A dazed AI state (e.g. just after Force Push) also locks out Force powers.
+    return !!(owner.isDead() || owner.isDebilitated() || owner.plot || owner.silenced) ||
+      !canUseForcePowersByAIState(owner);
   }
 
   /** ArcaneSpellFailure percent → random cast fail */

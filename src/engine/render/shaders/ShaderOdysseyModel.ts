@@ -250,8 +250,12 @@ export class ShaderOdysseyModel extends Shader {
       #endif
 
       #ifdef SABER
-        sampledDiffuseColor = texture2D( map, vMapUv );
-        gl_FragColor = sampledDiffuseColor;
+        // Blades are unlit: the raw blade texture, or the flat diffuse until it binds.
+        #ifdef USE_MAP
+          gl_FragColor = texture2D( map, vMapUv );
+        #else
+          gl_FragColor = diffuseColor;
+        #endif
       #elif defined( USE_ENVMAP )
         // Diffuse tex alpha is the reflection mask (already applied to RGB above), NOT
         // framebuffer alpha. Writing the mask as.a made chrome composite wrong on the

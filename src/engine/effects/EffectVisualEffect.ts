@@ -198,9 +198,11 @@ export class EffectVisualEffect extends GameEffect {
     if(this.pendingImpactLoads > 0) return;
     if(this.impactProgFXTimerMs != null && this.impactProgFXTimerMs >= 0) return;
     if(this.impact_model || this.impact_root_model || this.impact_head_model || this.model) return;
-    if(this.object){
+    if(this.object && this.object.effects?.includes(this)){
       this.object.removeEffect(this);
     }else{
+      // Nothing to show while still applying: never join the effect list.
+      this.discardAfterApply = true;
       this.onRemove();
     }
   }

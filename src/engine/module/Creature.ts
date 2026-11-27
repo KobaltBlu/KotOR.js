@@ -179,7 +179,7 @@ import { resetWalkSpeedFactor } from "@engine/pathfinding/tick-creature-walk";
 import {
   tickForcePushLoco,
   isForcePushLocoActive,
-  updateForcePushAnimFlags,
+  tickForcePushSequence,
 } from "@engine/pathfinding/force-push-loco";
 import {
   CreatureLocoState,
@@ -521,6 +521,11 @@ export class Creature extends GameObject {
   forcePushArrived: boolean;
   /** Seconds since force-push arrival (drives fp_land / fp_getup). */
   forcePushArriveElapsed: number;
+  /** Force Push slide / land / get-up still running. */
+  forcePushSequenceActive: boolean;
+  forcePushAnimPhase: number;
+  /** AI-state mask; SetAIState effects AND bits out while they last. */
+  aiStateMask: number = 0xffff;
   /**
    * creature walk update — previous frame speed factor.
    */
@@ -881,6 +886,8 @@ export class Creature extends GameObject {
     this.forcePushDistanceTraveled = 0;
     this.forcePushArrived = false;
     this.forcePushArriveElapsed = 0;
+    this.forcePushSequenceActive = false;
+    this.forcePushAnimPhase = -1;
 
     // this.groundFace = undefined;
     this.groundTilt = new THREE.Vector3();
@@ -982,7 +989,6 @@ export class Creature extends GameObject {
     // Force Push / Force Jump run even while paused or debilitated.
     if(isForcePushLocoActive(this)){
       tickForcePushLoco(this, delta);
-      updateForcePushAnimFlags(this, delta);
       this._creatureLocoThisFrame = true;
       return;
     }
@@ -1168,6 +1174,8 @@ export class Creature extends GameObject {
       }
 
       this.action = this.actionQueue[0];
+
+      tickForcePushSequence(this, delta);
 
       this.deathCorpseService.updateDeathTransition();
       if(!this.isDead()){

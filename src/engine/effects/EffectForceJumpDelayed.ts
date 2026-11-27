@@ -44,8 +44,8 @@ export class EffectForceJumpDelayed extends GameEffect {
 
     jumper.setFacingObject?.(target);
 
-    const engaged = !!jumper.combatRound?.engaged;
-    const desired = desiredAttackRange(jumper, target, engaged);
+    // Landing spot uses the engaged (duel) attack range.
+    const desired = desiredAttackRange(jumper, target, true);
     const computed = computeForceJumpDestination(
       jumper.position,
       target.position,

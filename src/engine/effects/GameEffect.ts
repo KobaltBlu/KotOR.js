@@ -29,6 +29,8 @@ export class GameEffect {
   subType: number;
   skipOnLoad: boolean;
   applied: boolean;
+  /** One-shot effect: it does its work in onApply and never joins the effect list. */
+  discardAfterApply: boolean = false;
   initialized: boolean;
   durationEnded: boolean;
   numIntegers: number;

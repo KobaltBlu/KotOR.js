@@ -17,6 +17,8 @@ import { GameObjectConstant, SSFType } from "@core/enums";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
+import { canAttackByAIState } from "@engine/module/creature/ai-state";
+import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
 import type { Creature } from "@engine/module/Creature";
@@ -174,6 +176,11 @@ export class ActionPhysicalAttacks extends Action {
 
     this.owner.resetExcitedDuration();
 
+    // Dazed creatures (e.g. just after Force Push) give up the attack.
+    if(!canAttackByAIState(this.owner)){
+      return ActionStatus.FAILED;
+    }
+
     // Load cutscene precomputed results onto the current combat action.
     const combatRound = this.owner.combatRound;
     if(combatRound?.action){
@@ -254,8 +261,15 @@ export class ActionPhysicalAttacks extends Action {
       const isBackoff = tooClose && !tooFar && !isPartyMember && !this.owner.isRangedEquipped();
 
       // Force-jump approach when LOS is clear — skip the move on success.
+      // hasLos is capped at attack range; the leap needs a clear line over the
+      // full distance, so retest uncapped when out of range.
       let forceJumped = false;
-      if(!isBackoff && hasLos){
+      const jumpLos = hasLos || (
+        tooFar &&
+        !!this.owner.getHasFeat?.(CombatFeatType.FORCE_JUMP) &&
+        hasCombatLineOfSight(this.owner, this.target, dist + 1)
+      );
+      if(!isBackoff && jumpLos){
         const featOut = { featId: this.getParameter<number>(6) | 0 };
         if(tryForceJumpApproach(this.owner, this.target, featOut)){
           this.setParameter(6, ActionParameterType.INT, featOut.featId);

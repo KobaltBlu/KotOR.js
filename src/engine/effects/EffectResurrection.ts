@@ -1,4 +1,5 @@
 import { GameEffect } from "@engine/effects/GameEffect";
+import { resetAIStateMask } from "@engine/module/creature/ai-state";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import type { Creature } from "@engine/module/Creature";
@@ -29,6 +30,7 @@ export class EffectResurrection extends GameEffect {
       return;
     }
     const creature = this.object as Creature;
+    resetAIStateMask(creature);
 
     const pct = this.getInt(0) || 0;
     if(pct > 0 && creature.getMaxHP()){

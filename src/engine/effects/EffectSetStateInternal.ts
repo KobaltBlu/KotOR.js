@@ -12,9 +12,8 @@ import { animForSetState, VFX_DROID_STUN, VFX_STUN } from "@engine/effects/set-s
 import { isCreature } from "@engine/module/guards/isCreature";
 import {
   applyForcePushAIActivityMask,
-  clearForcePushLoco,
+  isForcePushRecovering,
   stampForcePushAttackSummary,
-  updateForcePushAnimFlags,
 } from "@engine/pathfinding/force-push-loco";
 
 /**
@@ -95,14 +94,6 @@ export class EffectSetStateInternal extends GameEffect {
 
   update(delta: number = 0){
     super.update(delta);
-    if(this.getInt(0) === GameEffectSetStateType.FORCEPUSH){
-      if(isCreature(this.object)){
-        const creature = this.object as Creature;
-        if(!creature._creatureLocoThisFrame){
-          updateForcePushAnimFlags(creature, delta);
-        }
-      }
-    }
     this.elapsed += delta;
   }
 
@@ -111,11 +102,24 @@ export class EffectSetStateInternal extends GameEffect {
     if(isCreature(this.object)){
       const creature = this.object as Creature;
       const state = this.getInt(0) | 0;
-      this.clearAmbient(creature, state);
       if(state === GameEffectSetStateType.FORCEPUSH){
-        clearForcePushLoco(creature);
-        creature.setComputedPath?.(undefined);
+        // The 0.1 s push state ends long before the slide / land / get-up;
+        // only the user-defined script and visible list run here.
+        if(!isForcePushRecovering(creature)){
+          this.clearAmbient(creature, state);
+        }
+        if(firesOnUserDefined(state)){
+          const onUserDefined = creature.scripts?.[ScriptHook.CreatureOnUserDefined];
+          onUserDefined?.run?.(creature, 0);
+        }
+        creature.clearVisibleList?.();
+        for(let i = 0; i < this.children.length; i++){
+          this.object?.removeEffect?.(this.children[i]);
+        }
+        this.children.length = 0;
+        return;
       }
+      this.clearAmbient(creature, state);
       const round = creature.combatRound;
       if(round){
         round.infinitePause = false;

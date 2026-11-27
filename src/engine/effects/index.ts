@@ -77,6 +77,7 @@ export * from "@engine/effects/EffectSavingThrowIncrease";
 export * from "@engine/effects/EffectSeeInvisible";
 export * from "@engine/effects/EffectSetState";
 export * from "@engine/effects/EffectSetStateInternal";
+export * from "@engine/effects/EffectSetAIState";
 export * from "@engine/effects/set-state";
 export * from "@engine/effects/EffectSilence";
 export * from "@engine/effects/EffectSkillDecrease";

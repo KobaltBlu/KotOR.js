@@ -39,7 +39,7 @@ import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from '@engine/mo
 import type { Item } from '@engine/module/Item';
 import { OdysseyModelAnimation } from '@engine/odyssey';
 import { coalesceDriveAnimRun, coalesceDriveAnimWalk } from '@engine/pathfinding/movement-rate';
-import { isForcePushLocoActive } from '@engine/pathfinding/force-push-loco';
+import { finishForcePushSequence, isForcePushRecovering } from '@engine/pathfinding/force-push-loco';
 import { OdysseyModel3D } from '@engine/render/three/odyssey';
 import type { SWAnimation } from '@engine/rules/SWAnimation';
 import { EngineMode } from '@engine/enums/engine/EngineMode';
@@ -96,9 +96,12 @@ export class CreatureAnimationService {
     }
 
     // Dialog listen/talk owns the pose while stationary (AnimationDialog drive block).
+    // Debilitated poses are exempt: the force-push land clip carries the dialog flag.
     if(
       !this.host.isDead() &&
       !this.host.speed &&
+      !this.host.isDebilitated() &&
+      !isForcePushRecovering(this.host) &&
       (
         ((getDefaultRuntimeContext().getMode() == EngineMode.DIALOG) && this.host.dialogAnimation) ||
         isDialogAnimation(this.host.animationState.animation)
@@ -147,6 +150,9 @@ export class CreatureAnimationService {
               this.host.animationState.speed < 0 ? this.host.animationState.speed : (this.host.animationState.speed || 1);
           }
           this.host.syncAnimationFlagSideEffects(this.host.animationState.animation, this.host.animationState.index);
+        }else if(isForcePushRecovering(this.host) && this.host.fp_land_played){
+          // Get-up clip finished a frame ahead of the recovery timer.
+          finishForcePushSequence(this.host);
         }else if(
           this.host.animationState.index == ModuleCreatureAnimState.DIE ||
           this.host.animationState.index == ModuleCreatureAnimState.DIE1
@@ -479,8 +485,11 @@ export class CreatureAnimationService {
   animationConstantToAnimation( animation_constant = 10000 ): SWAnimation | undefined {
     const animations = getDefaultRuntimeContext().getSWRuleSet?.()?.animations;
 
+    // The push pose sequence outlives the 0.1 s FORCEPUSH state.
+    const debilitatedState = this.host.getDebilitatedState() ||
+      (isForcePushRecovering(this.host) ? GameEffectSetStateType.FORCEPUSH : 0);
     const debilitated = resolveDebilitatedCreatureAnimation(
-      this.host.getDebilitatedState(),
+      debilitatedState,
       {
         simple: this.host.isSimpleCreature(),
         fp_push_played: this.host.fp_push_played,

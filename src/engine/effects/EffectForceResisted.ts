@@ -1,5 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameState } from "@engine/runtime/GameState";
 import { AttackSummaryStrRef } from "@engine/combat/attack-summary-feedback";
@@ -21,6 +22,7 @@ export class EffectForceResisted extends GameEffect {
     super();
     this.type = GameEffectType.EffectForceResisted;
     // objectList[0] : oTarget 
+    this.discardAfterApply = true;
   }
 
   onApply(){
@@ -40,6 +42,11 @@ export class EffectForceResisted extends GameEffect {
       this.object.addEffect(vfx, GameEffectDurationType.INSTANT);
     }catch(_e){
       // VFX table may not have 0xFC5 in all contexts
+    }
+
+    // The resisting creature throws up a Force block.
+    if(isCreature(this.object) && !this.object.isDead() && !(this.object as any).isDebilitated?.()){
+      (this.object as any).setAnimationState?.(ModuleCreatureAnimState.FBLOCK);
     }
 
     const target = this.getObject(0) || this.object;

@@ -46,6 +46,9 @@ export class GameObjectEffectService {
         if(!child) continue;
         child.setDurationType(type);
         child.setDuration(duration);
+        // Children share the link's expiry; without it a temporary child never counts down.
+        child.setExpireDay(linked.expireDay);
+        child.setExpireTime(linked.expireTime);
         this.host.addEffect(child, type, duration);
       }
       return;
@@ -57,7 +60,7 @@ export class GameObjectEffectService {
     effect.setAttachedObject(this.host);
     effect.loadModel();
     effect.onApply(this.host);
-    if(!effect.applied) return;
+    if(!effect.applied || effect.discardAfterApply) return;
     if(
       effect.type === GameEffectType.EffectDamage ||
       effect.type === GameEffectType.EffectResurrection ||

@@ -9,6 +9,7 @@ import { CombatRound } from "@engine/combat/CombatRound";
 import { resolveSpellCastTarget, parseForceMenuIndex } from "@engine/combat/spell-self-target";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isGameObject } from "@engine/module/guards/isGameObject";
+import { isForcePushRecovering } from "@engine/pathfinding/force-push-loco";
 
 /**
  * ActionCombat class.
@@ -55,6 +56,8 @@ export class ActionCombat extends Action {
 
     // Round paused → stay in progress.
     if(combatRound.roundPaused) return ActionStatus.IN_PROGRESS;
+    // Force-pushed creatures cannot act until they are back on their feet.
+    if(isForcePushRecovering(this.owner)) return ActionStatus.IN_PROGRESS;
     if(!scheduledActionList.length){
       // Empty pending with round started → stay in progress; else complete.
       return combatRound.roundStarted ? ActionStatus.IN_PROGRESS : ActionStatus.COMPLETE;

@@ -2747,9 +2747,10 @@ export class CombatRound {
     // row), or GetClientMeleeAnimation via calculateAttackAnimation for cutscene
     // rows / live melee feats (Power Attack → f*a3, Flurry → f*a2, Crit → f*a1).
     // Basic engaged choreography (c*aN) stays below when no feat stamped a name.
+    // Force Jump stamps a bare featId (no talent) for the f*a4 leap-strike.
     if(
       combatAction.resultsCalculated ||
-      (combatAction.feat && !combatAction.animationName)
+      ((combatAction.feat || combatAction.featId > 0) && !combatAction.animationName)
     ){
       combatAction.calculateAttackAnimation();
     }

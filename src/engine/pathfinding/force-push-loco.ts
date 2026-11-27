@@ -13,6 +13,8 @@ import {
 import { MovementSource } from "@engine/movement/types";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { isCreature } from "@engine/module/guards/isCreature";
+import { ModuleCreatureAmbientState } from "@core/enums/module/ModuleCreatureAmbientState";
+import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import {
   FORCE_PUSH_LOCO_STATE,
   CreatureLocoState,
@@ -269,6 +271,29 @@ export function tickForcePushLoco(
   if(!isForcePushLocoActive(creature)){
     return "idle";
   }
+  const result = stepForcePushLoco(creature, delta);
+  if(result === "arrived" && delta > 0){
+    endForcePushLocoOnArrival(creature);
+  }
+  return result;
+}
+
+/**
+ * Leaving loco 4/5/6 once the quick-walk arrives drops the creature to the
+ * paused loco state, so a jumper or shoved creature can path-walk again.
+ * The zero-delta seed tick on install never ends the slide.
+ */
+function endForcePushLocoOnArrival(creature: Creature): void {
+  if(!creature.forcePushArrived) return;
+  setCreatureLocoState(creature, CreatureLocoState.Paused);
+  creature.forcePushDistanceTraveled = 0;
+  creature.setComputedPath?.(undefined);
+}
+
+function stepForcePushLoco(
+  creature: Creature,
+  delta: number
+): ForcePushLocoResult {
 
   if(creature.forcePushArrived){
     return "arrived";
@@ -335,6 +360,77 @@ export function tickForcePushLoco(
   }
 
   return "moving";
+}
+
+/**
+ * Force Push recovery: the pushed / land / get-up sequence outlives the
+ * 0.1 s FORCEPUSH state. Started by EffectForcePushed, ticked every frame.
+ */
+export function startForcePushSequence(creature: Creature): void {
+  if(!creature) return;
+  creature.forcePushSequenceActive = true;
+  creature.forcePushAnimPhase = -1;
+  creature.fp_push_played = false;
+  creature.fp_land_played = false;
+  creature.fp_getup_played = false;
+  creature.forcePushArriveElapsed = 0;
+}
+
+/** Pushed creature still sliding, lying down or getting up. */
+export function isForcePushRecovering(creature: Creature | undefined): boolean {
+  return !!creature?.forcePushSequenceActive;
+}
+
+/**
+ * Per-frame recovery tick: advances the land / get-up timers once the slide
+ * has arrived and ends the sequence after get-up.
+ */
+export function tickForcePushSequence(creature: Creature, delta: number): void {
+  if(!creature?.forcePushSequenceActive) return;
+  if(creature.isDead?.()){
+    creature.forcePushSequenceActive = false;
+    return;
+  }
+  updateForcePushAnimFlags(creature, delta);
+  if(creature.fp_getup_played){
+    finishForcePushSequence(creature);
+    return;
+  }
+  // Slide, land and get-up each have their own clip; re-resolve the current
+  // animation whenever the phase advances.
+  const phase = getForcePushAnimPhase(creature);
+  if(phase !== creature.forcePushAnimPhase){
+    creature.forcePushAnimPhase = phase;
+    const index = creature.animationState?.index;
+    if(index) creature.setAnimationState?.(index);
+  }
+}
+
+function getForcePushAnimPhase(creature: Creature): number {
+  if(!creature.fp_push_played) return 0;
+  if(!creature.fp_land_played) return 1;
+  return 2;
+}
+
+/** Get-up done: restore the ambient pose and the idle / ready animation. */
+export function finishForcePushSequence(creature: Creature): void {
+  creature.forcePushSequenceActive = false;
+  creature.forcePushArriveElapsed = 0;
+  if(getCreatureLocoState(creature) === FORCE_PUSH_LOCO_STATE){
+    setCreatureLocoState(creature, CreatureLocoState.Paused);
+    creature.setComputedPath?.(undefined);
+  }
+  if(creature.hasSetState?.(9)) return;
+  if((creature.ambientAnimState | 0) === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
+    creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+  }
+  if(!creature.isDead?.()){
+    creature.setAnimationState?.(
+      creature.combatData?.combatState
+        ? ModuleCreatureAnimState.READY
+        : ModuleCreatureAnimState.PAUSE
+    );
+  }
 }
 
 /**

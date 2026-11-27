@@ -137,10 +137,18 @@ export class CombatRoundAction {
       isRanged = true;
     }
 
-    if(this.feat){
+    // Force Jump stamps only featId; regular combat feats carry the talent.
+    const featId = this.feat?.id ?? (this.featId > 0 ? this.featId : 0);
+    if(featId && isForceJumpFeat(featId)){
+      // Leap-strike rows exist for lightsaber wields 2-4 only (f2a4 / f3a4 / f4a4).
+      if(attackKey == 'm' && weaponWield >= 2 && weaponWield <= 4){
+        attackKey = 'f';
+        attackType = 4;
+      }
+    }else if(featId){
       if(attackKey == 'm'){
         attackKey = 'f';
-        switch(this.feat.id){
+        switch(featId){
           case CombatFeatType.CRITICAL_STRIKE:
           case CombatFeatType.IMPROVED_CRITICAL_STRIKE:
           case CombatFeatType.MASTER_CRITICAL_STRIKE:
@@ -158,7 +166,7 @@ export class CombatRoundAction {
           break;
         }
       }else if(attackKey == 'b'){
-        switch(this.feat.id){
+        switch(featId){
           case CombatFeatType.RAPID_SHOT:
           case CombatFeatType.IMPROVED_RAPID_SHOT:
           case CombatFeatType.MASTER_RAPID_SHOT:
@@ -268,4 +276,10 @@ export function resolveAnimations2DARow(animationRow: number): SWAnimation | und
   const animFromId = GameState.SWRuleSet.animationIdMap.get(animationRow);
   if(animFromId) return animFromId;
   return GameState.SWRuleSet.animations[animationRow];
+}
+
+function isForceJumpFeat(featId: number): boolean {
+  return featId === CombatFeatType.FORCE_JUMP ||
+    featId === CombatFeatType.FORCE_JUMP_ADVANCED ||
+    featId === CombatFeatType.FORCE_JUMP_MASTERY;
 }

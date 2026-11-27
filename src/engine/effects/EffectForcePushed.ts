@@ -13,7 +13,12 @@ import {
   installForcePushPath,
   resolveForcePushDistance,
   resolveForcePushOrigin,
+  startForcePushSequence,
 } from "@engine/pathfinding/force-push-loco";
+import {
+  FORCE_PUSH_RECOVERY_AI_STATE,
+  FORCE_PUSH_RECOVERY_DURATION,
+} from "@engine/module/creature/ai-state";
 
 /**
  * EffectForcePushed — onApply (K2).
@@ -78,10 +83,7 @@ export class EffectForcePushed extends GameEffect {
     );
 
     installForcePushPath(creature, creature.position, clipped);
-
-    creature.fp_push_played = false;
-    creature.fp_land_played = false;
-    creature.fp_getup_played = false;
+    startForcePushSequence(creature);
 
     const eSetState = new GameState.GameEffectFactory.EffectSetState();
     eSetState.setDurationType(GameEffectDurationType.TEMPORARY);
@@ -94,5 +96,27 @@ export class EffectForcePushed extends GameEffect {
     eSetState.setInt(0, GameEffectSetStateType.FORCEPUSH);
     eSetState.initialize();
     creature.addEffect(eSetState);
+  }
+
+  onRemove(){
+    super.onRemove();
+    if(!isCreature(this.object)) return;
+    // The target stays dazed after the push: no attacks, no powers and
+    // flat-footed for a short window.
+    const eAIState = new GameState.GameEffectFactory.EffectSetAIState();
+    eAIState.setDurationType(GameEffectDurationType.TEMPORARY);
+    eAIState.setDuration(FORCE_PUSH_RECOVERY_DURATION);
+    const future = GameState.module?.timeManager?.getFutureTimeFromSeconds(FORCE_PUSH_RECOVERY_DURATION);
+    if(future){
+      eAIState.setExpireDay(future.pauseDay);
+      eAIState.setExpireTime(future.pauseTime);
+    }else{
+      // No module clock: still give the timer a non-zero expiry so it counts down.
+      eAIState.setExpireTime(1);
+    }
+    eAIState.setSkipOnLoad(true);
+    eAIState.setInt(0, FORCE_PUSH_RECOVERY_AI_STATE);
+    eAIState.initialize();
+    this.object.addEffect(eAIState);
   }
 }

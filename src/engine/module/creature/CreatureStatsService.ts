@@ -1,4 +1,5 @@
 import { GameEffectType } from '@core/enums/effects/GameEffectType';
+import { isFlatFootedByAIState } from "@engine/module/creature/ai-state";
 import { WeaponType } from '@core/enums/combat/WeaponType';
 import { WeaponWield } from '@core/enums/combat/WeaponWield';
 import { CombatFeatType } from '@core/enums/combat/CombatFeatType';
@@ -278,9 +279,13 @@ export class CreatureStatsService {
 
     // Flat-footed / can't see attacker: deny positive DEX (negative still hurts).
     // : GetInvisible(attacker, defender) || !(SEEN bit) → no GetDEXMod / dodge field.
+    // A dazed AI state (e.g. just after Force Push) is flat-footed against everyone.
     const loseDex =
-      !!attacker &&
-      (this.host.isInvisibleToObserver(attacker) || !this.host.hasSeenObject(attacker));
+      isFlatFootedByAIState(this.host as any) ||
+      (
+        !!attacker &&
+        (this.host.isInvisibleToObserver(attacker) || !this.host.hasSeenObject(attacker))
+      );
 
     const armor = this.host.equipment.ARMOR;
     let dexBonus = Math.floor((this.host.getDEX() - 10) / 2);

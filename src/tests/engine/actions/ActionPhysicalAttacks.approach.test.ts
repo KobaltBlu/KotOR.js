@@ -143,7 +143,9 @@ describe('ActionPhysicalAttacks approach queue', () => {
   beforeEach(() => {
     queued.length = 0;
     (hasCombatLineOfSight as jest.Mock).mockReturnValue(true);
+    (tryForceJumpApproach as jest.Mock).mockReset();
     (tryForceJumpApproach as jest.Mock).mockReturnValue(false);
+    (hasCombatLineOfSight as jest.Mock).mockImplementation(() => true);
   });
 
   function makeOwner(pos: THREE.Vector3){
@@ -310,5 +312,60 @@ describe('ActionPhysicalAttacks approach queue', () => {
     expect((owner as any).combatRound.action.featId).toBe(CombatFeatType.FORCE_JUMP_MASTERY);
     expect(startCombatRound).toHaveBeenCalled();
     expect(status).toBe(ActionStatus.COMPLETE);
+  });
+  it('Force Jump tries an uncapped line of sight when the capped one fails', () => {
+    (hasCombatLineOfSight as jest.Mock).mockImplementation(
+      (_a: unknown, _b: unknown, range?: number) => range !== undefined && range > 10
+    );
+    (tryForceJumpApproach as jest.Mock).mockImplementation(
+      (_a: unknown, _t: unknown, out: { featId: number }) => {
+        out.featId = CombatFeatType.FORCE_JUMP;
+        return true;
+      }
+    );
+    const owner = makeOwner(new THREE.Vector3(0, 0, 0));
+    (owner as any).getHasFeat = (id: number) => id === CombatFeatType.FORCE_JUMP;
+    (owner as any).combatRound = {
+      action: { featId: 0 },
+      roundPaused: false,
+      roundStarted: true,
+      startCombatRound: jest.fn(),
+      calculateAttackDamage: jest.fn(),
+      pauseRound: jest.fn(),
+      newAttackTarget: undefined,
+      setAttackTarget: jest.fn(),
+    };
+    (owner as any).setFacing = jest.fn();
+    (owner as any).playSoundSet = jest.fn();
+    const target = makeTarget(new THREE.Vector3(15, 0, 0));
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    action.setParameter(6, ActionParameterType.INT, 0);
+    (action as any).target = target;
+
+    action.update(0);
+
+    expect(tryForceJumpApproach).toHaveBeenCalled();
+    expect(queued.length).toBe(0);
+  });
+
+  it('without the Force Jump feat a long-range LOS miss walks instead', () => {
+    (hasCombatLineOfSight as jest.Mock).mockImplementation(
+      (_a: unknown, _b: unknown, range?: number) => range !== undefined && range > 10
+    );
+    const owner = makeOwner(new THREE.Vector3(0, 0, 0));
+    (owner as any).getHasFeat = () => false;
+    const target = makeTarget(new THREE.Vector3(15, 0, 0));
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    action.setParameter(6, ActionParameterType.INT, 0);
+    (action as any).target = target;
+
+    action.update(0);
+
+    expect(tryForceJumpApproach).not.toHaveBeenCalled();
+    expect(queued.length).toBeGreaterThan(0);
   });
 });
