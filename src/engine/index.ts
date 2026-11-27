@@ -35,6 +35,7 @@ export * from "@engine/rules";
 export * from "@engine/pathfinding";
 export * from "@engine/talents";
 export * from "@engine/menu/ActionMenuManager";
+export * from "@engine/games/mobile-hud/touch-hud-setting";
 export * from "@engine/actions/ActionFactory";
 export * from "@engine/effects/GameEffectFactory";
 export * from "@engine/events/GameEventFactory";

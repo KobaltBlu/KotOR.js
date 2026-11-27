@@ -415,7 +415,7 @@ export class InGameOverlay extends K1_InGameOverlay {
   }
 
   resize() {
-    this.recalculatePosition();
+    super.resize();
   }
   
 }

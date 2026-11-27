@@ -15,6 +15,13 @@ import {
 } from "@engine/render/odysseyLightingDebug";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
 import {
+  getTouchHudMode,
+  parseTouchHudMode,
+  setTouchHudMode,
+  touchHudWanted,
+  TOUCH_HUD_MODE_NAMES,
+} from '@engine/games/mobile-hud/touch-hud-setting';
+import {
   describeGamepadsForConsole,
   rumbleActivePad,
   selectActivePad,
@@ -448,6 +455,20 @@ export class CheatConsoleManager {
     CheatConsoleManager.printLines([`padsim: ${value ?? 'off'}`]);
   }
 
+  /** touchhud [auto|on|off] — show or set when the touch HUD is used. */
+  static touchHud(raw: string | undefined){
+    if(raw !== undefined){
+      const mode = parseTouchHudMode(raw);
+      if(mode === undefined){
+        CheatConsoleManager.printLines(['touchhud: usage touchhud <auto|on|off>']);
+        return;
+      }
+      setTouchHudMode(mode);
+    }
+    const mode = getTouchHudMode();
+    CheatConsoleManager.printLines([`touchhud: ${TOUCH_HUD_MODE_NAMES[mode]} (${touchHudWanted(mode) ? 'showing' : 'hidden'})`]);
+  }
+
   /** padrumble [ms] [strong] [weak] — test the active pad's rumble. */
   static padRumble(ms?: string, strong?: string, weak?: string){
     void rumbleActivePad(
@@ -511,6 +532,7 @@ export class CheatConsoleManager {
       'padprompts',
       'padrumble',
       'padsim',
+      'touchhud',
     ].slice().sort((a, b) => a.localeCompare(b));
   }
 
@@ -518,8 +540,8 @@ export class CheatConsoleManager {
     const args = command.trim().toLowerCase().split(/\s+/);
     const cmd = args.shift();
     const params = args;
-    // Controller diagnostics do not change the game, so they do not count as cheats.
-    if(cmd && !cmd.startsWith('pad')){
+    // Controller and HUD settings do not change the game, so they do not count as cheats.
+    if(cmd && !cmd.startsWith('pad') && cmd !== 'touchhud'){
       GameState.PartyManager.CheatUsed = true;
     }
     switch(cmd){
@@ -664,6 +686,9 @@ export class CheatConsoleManager {
         break;
       case 'padrumble':
         CheatConsoleManager.padRumble(params[0], params[1], params[2]);
+        break;
+      case 'touchhud':
+        CheatConsoleManager.touchHud(params[0]);
         break;
     }
   }

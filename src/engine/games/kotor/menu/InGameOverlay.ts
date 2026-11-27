@@ -30,6 +30,7 @@ import {
   type TargetMenuBounds,
   type TargetMenuPoint,
 } from "@engine/games/ingame-overlay-utils";
+import { MobileHud } from "@engine/games/mobile-hud/MobileHud";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 
@@ -215,6 +216,8 @@ export class InGameOverlay extends GameMenu {
   /** GUI layout gaps / width from GUI init. */
   targetMenuLayout: TargetMenuLayout;
   targetScreenPosition: THREE.Vector3 = new THREE.Vector3();
+  /** Touch layout; rearranges this overlay when playing on a touch screen. */
+  mobileHud: MobileHud;
   reticlePosition: THREE.Vector3 = new THREE.Vector3();
   reticleScreenPosition: THREE.Vector3 = new THREE.Vector3();
   #menuPointScratch: MenuPointScratch = {
@@ -227,6 +230,7 @@ export class InGameOverlay extends GameMenu {
     super();
     this.#menuPointScratch.reticlePosition = this.reticlePosition;
     this.#menuPointScratch.reticleScreenPosition = this.reticleScreenPosition;
+    this.mobileHud = new MobileHud(this);
     this.gui_resref = 'mipc28x6';
     this.background = '';
     this.voidFill = false;
@@ -1040,6 +1044,11 @@ export class InGameOverlay extends GameMenu {
     const reticlePoint = this.getReticleScreenPoint(selected);
     this.updateArrow(selected, reticlePoint);
 
+    if (this.mobileHud?.active) {
+      this.mobileHud.updateTargetPanel(!!GameState.ActionMenuManager.targetActionCount());
+      return;
+    }
+
     const layout = this.targetMenuLayout;
     const menuWidth = layout?.menuWidth || this.LBL_NAME.extent.width;
     const nameOffsetLeft = layout?.nameOffsetLeft ?? 0;
@@ -1293,6 +1302,7 @@ export class InGameOverlay extends GameMenu {
     if (!this.bVisible)
       return;
 
+    this.mobileHud?.sync();
     this.updateMiniMapVisibility();
     if (GameState.module.area.miniGame) { return; }
 
@@ -1394,6 +1404,10 @@ export class InGameOverlay extends GameMenu {
     } else {
       this.hideCombatUI();
     }
+
+    if (this.mobileHud?.active) {
+      this.mobileHud.afterUpdate();
+    }
   }
 
   show() {
@@ -1409,6 +1423,9 @@ export class InGameOverlay extends GameMenu {
 
   resize() {
     this.recalculatePosition();
+    if (this.mobileHud?.active) {
+      this.mobileHud.relayout(true);
+    }
   }
 
   triggerControllerAPress() {

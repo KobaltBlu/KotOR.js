@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useApp } from "@apps/game/context/AppContext";
 import * as KotOR from "@apps/game/KotOR";
 import { GamepadDebugSection } from "./GamepadDebugSection";
+import { TouchHudDebugSection } from "./TouchHudDebugSection";
 
 const EngineDebugType = KotOR.EngineDebugType;
 type EngineDebugType = KotOR.EngineDebugType;
 
-type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'combat' | 'lighting' | 'gamepad';
+type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'combat' | 'lighting' | 'gamepad' | 'touch';
 
 const DEBUG_GROUPS: { id: SectionId; label: string; types: EngineDebugType[] }[] = [
   {
@@ -49,6 +50,7 @@ const DEFAULT_OPEN: Record<SectionId, boolean> = {
   combat: false,
   lighting: false,
   gamepad: false,
+  touch: false,
 };
 
 function formatDebugLabel(label: string) {
@@ -433,6 +435,15 @@ export const DebugToolsPanel: React.FC = () => {
           onToggle={onToggleSection}
         >
           <GamepadDebugSection />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          id="touch"
+          title="Touch"
+          open={openSections.touch}
+          onToggle={onToggleSection}
+        >
+          <TouchHudDebugSection />
         </CollapsibleSection>
       </div>
     </div>
