@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog, ForgeInput, ForgeInputGroup } from "@/apps/forge/components/ui";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { writeNewModuleFiles } from "@/apps/forge/helpers/createNewModule";
-import { normalizeResRef } from "@/apps/forge/helpers/createUntitledModuleGff";
-import { openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog, ForgeInput, ForgeInputGroup } from "@apps/forge/components/ui";
+import { ProjectType } from "@apps/forge/enum/ProjectType";
+import { writeNewModuleFiles } from "@apps/forge/helpers/createNewModule";
+import { normalizeResRef } from "@apps/forge/helpers/createUntitledModuleGff";
+import { openResRefBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { Project } from "@apps/forge/Project";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export const ModalNewModule = (props: BaseModalProps) => {
   const modal = props.modal;

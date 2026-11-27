@@ -1,26 +1,26 @@
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeButton, ForgeInput } from "@apps/forge/components/ui";
+import { ForgeTreeView } from "@apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@apps/forge/components/treeview/ListItemNode";
+import { useContextMenu } from "@apps/forge/components/common/ContextMenu";
 import {
   createGFFFieldContextMenuItems,
   createGFFStructContextMenuItems,
-} from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
-import { GFFProperties } from "@/apps/forge/components/tabs/tab-gff-editor/GFFProperties";
-import { clampGffLabel, fieldPreview, gffTypeName, structListTitle } from "@/apps/forge/helpers/gffFieldValue";
+} from "@apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
+import { GFFProperties } from "@apps/forge/components/tabs/tab-gff-editor/GFFProperties";
+import { clampGffLabel, fieldPreview, gffTypeName, structListTitle } from "@apps/forge/helpers/gffFieldValue";
 import {
   countGffFields,
   GFF_ROOT_PATH,
   gffChildStructPath,
   gffFieldPath,
-} from "@/apps/forge/helpers/gffTreePath";
-import { getGffMemoryClipboard } from "@/apps/forge/helpers/gffJsonCodec";
-import { forgeGffSettings, truncateGffPreview } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/helpers/gffTreePath";
+import { getGffMemoryClipboard } from "@apps/forge/helpers/gffJsonCodec";
+import { forgeGffSettings, truncateGffPreview } from "@apps/forge/settings/forgeEditorsSettings";
 import "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor.scss";
 
 export const TabGFFEditor = function(props: BaseTabProps){

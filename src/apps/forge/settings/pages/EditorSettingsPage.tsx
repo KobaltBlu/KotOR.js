@@ -7,11 +7,11 @@
  */
 
 import React, { useState } from "react";
-import { ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeInput, ForgeSelect } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 import {
   FORGE_EDITOR_FONT_SIZE_MAX,
   FORGE_EDITOR_FONT_SIZE_MIN,
@@ -24,7 +24,7 @@ import {
   getEditorSettings,
   removeForgeEditorSettingsListener,
   setEditorSettings,
-} from "@/apps/forge/settings/forgeEditorSettings";
+} from "@apps/forge/settings/forgeEditorSettings";
 
 export function EditorSettingsPage() {
   const [, setRevision] = useState(0);

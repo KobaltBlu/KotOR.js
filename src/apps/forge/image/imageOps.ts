@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { clearPsdPassthrough, hasPaintBuffer, isSelected, transparentPixels } from "@/apps/forge/image/imageDocument";
-import type { ImageDocument, ImageLayer, ImageRect } from "@/apps/forge/image/imageTypes";
+import { clearPsdPassthrough, hasPaintBuffer, isSelected, transparentPixels } from "@apps/forge/image/imageDocument";
+import type { ImageDocument, ImageLayer, ImageRect } from "@apps/forge/image/imageTypes";
 
 function pixelCount(width: number, height: number): number {
   return width * height * 4;

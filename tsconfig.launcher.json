@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "ESNext",
-    "module": "commonjs",
+    "module": "esnext",
     "declaration": false,
     "noImplicitAny": true,
     "removeComments": true,
@@ -18,9 +17,13 @@
     "skipLibCheck": true,
     "jsx": "react",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@core": ["./src/core/index.ts"],
+      "@core/*": ["./src/core/*"],
+      "@engine": ["./src/engine/index.ts"],
+      "@engine/*": ["./src/engine/*"],
+      "@apps/*": ["./src/apps/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@/*": ["./src/*"]
     },
     "types": [
       "@types/wicg-file-system-access",
@@ -39,7 +42,8 @@
     "src/apps/launcher/**/*.tsx",
     "src/apps/common/**/*.ts",
     "src/apps/common/**/*.tsx",
-    "src/types",
+    "src/core/types",
+    "src/types/**/*.d.ts",
     "src/index.d.ts"
   ],
   "exclude": ["node_modules", "src/**/*.spec.ts"]

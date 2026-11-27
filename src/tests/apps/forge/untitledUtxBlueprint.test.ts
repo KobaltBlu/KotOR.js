@@ -1,18 +1,34 @@
 import { describe, expect, test, jest } from "@jest/globals";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFObject } from "@/resource/GFFObject";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GFFObject } from "@core/resource/GFFObject";
+import { pathParse } from "@apps/forge/helpers/PathParse";
 
-jest.mock("@/apps/forge/KotOR", () => {
-  const { GFFObject } = jest.requireActual("@/resource/GFFObject") as typeof import("@/resource/GFFObject");
-  const { GFFField } = jest.requireActual("@/resource/GFFField") as typeof import("@/resource/GFFField");
-  const { GFFStruct } = jest.requireActual("@/resource/GFFStruct") as typeof import("@/resource/GFFStruct");
-  const { GFFDataType } = jest.requireActual("@/enums/resource/GFFDataType") as typeof import("@/enums/resource/GFFDataType");
-  const { CExoLocString } = jest.requireActual("@/resource/CExoLocString") as typeof import("@/resource/CExoLocString");
-  const { ApplicationProfile } = jest.requireActual("@/utility/ApplicationProfile") as typeof import("@/utility/ApplicationProfile");
-  const { GameEngineType } = jest.requireActual("@/enums/engine/GameEngineType") as typeof import("@/enums/engine/GameEngineType");
-  const { ModuleCreatureArmorSlot } = jest.requireActual("@/enums/module/ModuleCreatureArmorSlot") as typeof import("@/enums/module/ModuleCreatureArmorSlot");
-  const { ResourceTypes } = jest.requireActual("@/resource/ResourceTypes") as typeof import("@/resource/ResourceTypes");
+jest.mock("@apps/forge/ProjectFileSystem", () => ({
+  ProjectFileSystem: {
+    hasRoot: () => false,
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+    readdir: jest.fn(async () => []),
+    exists: jest.fn(async () => false),
+  },
+}));
+jest.mock("@apps/forge/states/ForgeState", () => ({
+  ForgeState: {
+    project: undefined,
+    getProject: () => undefined,
+  },
+}));
+
+jest.mock("@apps/forge/KotOR", () => {
+  const { GFFObject } = jest.requireActual("@core/resource/GFFObject") as typeof import("@core/resource/GFFObject");
+  const { GFFField } = jest.requireActual("@core/resource/GFFField") as typeof import("@core/resource/GFFField");
+  const { GFFStruct } = jest.requireActual("@core/resource/GFFStruct") as typeof import("@core/resource/GFFStruct");
+  const { GFFDataType } = jest.requireActual("@core/enums/resource/GFFDataType") as typeof import("@core/enums/resource/GFFDataType");
+  const { CExoLocString } = jest.requireActual("@core/resource/CExoLocString") as typeof import("@core/resource/CExoLocString");
+  const { ApplicationProfile } = jest.requireActual("@core/utility/ApplicationProfile") as typeof import("@core/utility/ApplicationProfile");
+  const { GameEngineType } = jest.requireActual("@core/enums/engine/GameEngineType") as typeof import("@core/enums/engine/GameEngineType");
+  const { ModuleCreatureArmorSlot } = jest.requireActual("@core/enums/module/ModuleCreatureArmorSlot") as typeof import("@core/enums/module/ModuleCreatureArmorSlot");
+  const { ResourceTypes } = jest.requireActual("@core/resource/ResourceTypes") as typeof import("@core/resource/ResourceTypes");
   return {
     GFFObject,
     GFFField,
@@ -26,15 +42,15 @@ jest.mock("@/apps/forge/KotOR", () => {
   };
 });
 
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgeItem } from "@apps/forge/module-editor/ForgeItem";
+import { ForgeStore } from "@apps/forge/module-editor/ForgeStore";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
 
 function labels(gff: GFFObject): string[] {
   return gff.RootNode.fields.map((f) => f.label);
@@ -77,7 +93,7 @@ describe("blank UT* blueprints", () => {
     expect(gff.RootNode.hasField("ActionList")).toBe(false);
   });
 
-  test("other UT* blank FileTypes match retail templates", () => {
+  test("other UT* blank FileTypes match engine templates", () => {
     expect(new ForgeCreature(undefined, "new_creature").blueprint.FileType).toBe("UTC ");
     expect(new ForgeDoor(undefined, "new_door").blueprint.FileType).toBe("UTD ");
     expect(new ForgeEncounter(undefined, "new_encounter").blueprint.FileType).toBe("UTE ");

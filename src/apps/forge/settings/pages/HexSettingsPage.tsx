@@ -7,12 +7,12 @@
  */
 
 import React from "react";
-import { ForgeSelect } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeHexSettings, type HexBytesPerRow, type HexOffsetDisplay } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ForgeSelect } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeHexSettings, type HexBytesPerRow, type HexOffsetDisplay } from "@apps/forge/settings/forgeEditorsSettings";
 
 export function HexSettingsPage() {
   const [settings, setSettings] = useForgeSettings(forgeHexSettings);

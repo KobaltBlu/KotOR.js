@@ -1,0 +1,73 @@
+import type { GFFObject } from '@core/resource/GFFObject';
+import type { GFFStruct } from '@core/resource/GFFStruct';
+
+/**
+ * Context for Serializer.deserialize — no registration, I/O, or script execution.
+ */
+export interface DeserializeContext {
+  /** Optional game key when K1/K2 field differences are known. */
+  gameKey?: 'k1' | 'k2';
+  /** Active controlled-party index when hydration needs player-specific data. */
+  controlledNpcIndex?: number;
+  /**
+   * Injected ActionFactory.FromStruct (or equivalent).
+   * When set, object serializers hydrate ActionList during deserialize.
+   */
+  actionFromStruct?: (struct: GFFStruct) => any | undefined;
+  /**
+   * Injected GameEffectFactory.EffectFromStruct (or equivalent).
+   * When set, object serializers hydrate EffectList during deserialize.
+   */
+  effectFromStruct?: (struct: GFFStruct) => any | undefined;
+}
+
+/**
+ * Context for Serializer.serialize — emit fresh GFF from runtime fields only.
+ */
+export interface SerializeContext {
+  /** Optional game key when K1/K2 field differences are known. */
+  gameKey?: 'k1' | 'k2';
+  /** Explicitly include or omit the PC level-up history. */
+  includePcLevelStats?: boolean;
+  /** Active controlled-party index; -1 identifies direct PC control. */
+  controlledNpcIndex?: number;
+  /** Player UTC facade supplied by the module save boundary. */
+  playerUtc?: any;
+  /** Optional late-bound player lookup for isolated module serialization. */
+  getPlayerSerializeDelegate?: () => any | undefined;
+}
+
+/**
+ * Populate an already-constructed runtime object from GFF, and emit fresh GFF
+ * from runtime fields. Serializers must not touch GameState, ResourceLoader,
+ * NWScript, scene graph, or filesystem.
+ */
+export interface GameObjectSerializer<
+  TObject,
+  TSource = GFFObject | GFFStruct,
+  TOutput = GFFObject,
+> {
+  deserialize(target: TObject, source: TSource, context?: DeserializeContext): void;
+  serialize(source: TObject, context?: SerializeContext): TOutput;
+}
+
+/** Source root: GFFObject.RootNode or a list child GFFStruct. */
+export type GffRoot = {
+  hasField: (label: string) => boolean;
+  getFieldByLabel: (label: string) => {
+    getValue: () => any;
+    getCExoLocString?: () => any;
+    getChildStructs?: () => GFFStruct[];
+    getOrientation?: () => { x: number; y: number; z: number; w: number };
+    getVector?: () => { x: number; y: number; z: number };
+  };
+  type?: number;
+};
+
+export function gffRootOf(source: GFFObject | GFFStruct): GffRoot {
+  const anySource = source as any;
+  if (anySource?.RootNode) {
+    return anySource.RootNode as GffRoot;
+  }
+  return source as GffRoot;
+}

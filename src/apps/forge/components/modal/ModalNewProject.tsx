@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeInput, ForgeSelect, ForgeInputGroup, ForgeDialog } from "@/apps/forge/components/ui";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { Project } from "@/apps/forge/Project";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeInput, ForgeSelect, ForgeInputGroup, ForgeDialog } from "@apps/forge/components/ui";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@apps/forge/ForgeFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { Project } from "@apps/forge/Project";
 import {
   canCreateForgeProject,
   resolveProjectGame,
   type ProjectStorageMode,
-} from "@/apps/forge/helpers/projectCreateOptions";
-import { createForgeProject } from "@/apps/forge/helpers/createForgeProject";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+} from "@apps/forge/helpers/projectCreateOptions";
+import { createForgeProject } from "@apps/forge/helpers/createForgeProject";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 interface ProjectDirectory {
   path?: string;

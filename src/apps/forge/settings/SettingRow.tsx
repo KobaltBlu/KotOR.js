@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { settingMatchesQuery, useSettingsSearch } from "@/apps/forge/settings/settingsRegistry";
+import { settingMatchesQuery, useSettingsSearch } from "@apps/forge/settings/settingsRegistry";
 
 export interface SettingRowProps {
   label: string;

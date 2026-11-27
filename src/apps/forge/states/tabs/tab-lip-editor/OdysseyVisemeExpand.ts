@@ -1,5 +1,5 @@
-import { LIPShape } from "@/enums/resource/LIPShape";
-import type { TimedPhoneme } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
+import { LIPShape } from "@core/enums/resource/LIPShape";
+import type { TimedPhoneme } from "@apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 
 const PHN_INVALID = -1;
 const PHN_EE = LIPShape.EE;

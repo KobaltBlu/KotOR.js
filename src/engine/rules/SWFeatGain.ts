@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 interface IFeatGainClass {
   index: number;
@@ -10,9 +10,9 @@ interface IFeatGainClass {
 /**
  * class SWFeatGain
  * - used to get feat gain points for a class per level
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWFeatGain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -25,11 +25,8 @@ export class SWFeatGain {
   classMap: Map<string, IFeatGainClass> = new Map();
 
   /**
-   * **Unused** by the odyssey engine
-   * https://lucasforumsarchive.com/thread/121440-more-feats#post-11
-   * @param classCode
-   * @returns number[]
-   * @deprecated
+   * Bonus feat picks per level (featgain.2da *_bon).
+   * Used by CalcLevelUpNumberFeats second out-param.
    */
   getBonus(classCode: string): number[] {
     return this.classMap.get(classCode.toLowerCase())?.bonuses || [];
@@ -38,7 +35,7 @@ export class SWFeatGain {
   /**
    * Get the number of feat points gained for a class per level
    * @param classCode
-   * @returns number[]
+   * @returns number
    */
   getRegular(classCode: string): number[] {
     return this.classMap.get(classCode.toLowerCase())?.points || [];

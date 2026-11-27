@@ -1,19 +1,19 @@
 import React from "react";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@apps/forge/helpers/UTxEditorHelpers";
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTCEditor } from "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTCEditor } from "@apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
 import {
   attachUtxModelPreview,
   bindUtxPreviewOnGameData,
   utxShouldShow3DPreview,
-} from "@/apps/forge/helpers/utxPreview3D";
+} from "@apps/forge/helpers/utxPreview3D";
 
 export class TabUTCEditorState extends TabState {
   tabName: string = `UTC`;
@@ -120,19 +120,19 @@ export class TabUTCEditorState extends TabState {
 
     // if(this.moduleCreature && this.moduleCreature.model){
 
-    //   let currentAnimation = this.moduleCreature.model.getAnimationName();
-    //   let animation = this.moduleCreature.animationConstantToAnimation(this.moduleCreature.animState);
-    //   if(animation){
-    //     if(currentAnimation != animation.name.toLowerCase()){
-    //       let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-    //       const anim = this.moduleCreature.model.playAnimation(animation.name.toLowerCase(), aLooping);
-    //       if(!aLooping){
-    //         setTimeout( () => {
-    //           this.moduleCreature.animState = ModuleCreatureAnimState.PAUSE;
-    //         }, anim ? anim.length * 1000 : 1500 );
-    //       }
-    //     }
-    //   }
+    // let currentAnimation = this.moduleCreature.model.getAnimationName;
+    // let animation = this.moduleCreature.animationConstantToAnimation(this.moduleCreature.animState);
+    // if(animation){
+    // if(currentAnimation != animation.name.toLowerCase){
+    // let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+    // const anim = this.moduleCreature.model.playAnimation(animation.name.toLowerCase, aLooping);
+    // if(!aLooping){
+    // setTimeout(=> {
+    // this.moduleCreature.animState = ModuleCreatureAnimState.PAUSE;
+    // }, anim ? anim.length * 1000 : 1500);
+    // }
+    // }
+    // }
     // }
     
   }

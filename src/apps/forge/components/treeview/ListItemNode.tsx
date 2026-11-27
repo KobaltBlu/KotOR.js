@@ -152,7 +152,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       onClick();
     }
     // if (onSelect) {
-    //   onSelect(id);
+    // onSelect(id);
     // }
   }, [id, onClick, onSelect]);
 

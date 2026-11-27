@@ -1,0 +1,1333 @@
+import * as THREE from "three";
+import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
+import {
+  markOdysseySkeletonDirty,
+  markOdysseySkeletonsDirtyUnder,
+} from "@engine/render/three/odyssey/OdysseySkeletonBind";
+import { RenderPerfStats } from "@engine/render/RenderPerfStats";
+import type { OdysseyModelAnimation } from "@engine/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationNode } from "@engine/odyssey/OdysseyModelAnimationNode";
+import { OdysseyController } from "@engine/odyssey/controllers/OdysseyController";
+import { PositionController } from "@engine/odyssey/controllers/PositionController";
+import { OrientationController } from "@engine/odyssey/controllers/OrientationController";
+import { IOdysseyControllerFrameGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "@core/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelAnimationManagerState } from "@core/enums/odyssey/OdysseyModelAnimationManagerState";
+import { AuroraAnimationFlag } from "@core/enums/animation/AuroraAnimationFlag";
+import {
+  ANIM_RUN_STACK_CAP,
+  AnimRun,
+  createAnimRun,
+  invalidateAnimRunFrameCursors,
+  isAdditiveRun,
+  isLoopingRun,
+  isOverlayRun,
+  isQueuedRun,
+} from "@engine/odyssey/AnimRun";
+import {
+  bindAnimation,
+  ensureRunFrameCursorArray,
+  ensureStateFrameCursorArray,
+  type BoundAnimation,
+  type BoundController,
+} from "@engine/odyssey/BoundAnimation";
+import {
+  buildAnimationTransformBinding,
+  collectAffectedSkeletons,
+  type AnimationTransformBinding,
+} from "@engine/odyssey/AnimationTransformBinding";
+import {
+  binarySearchFrameCursor,
+  isPlaybackDiscontinuity,
+  resolveFrameCursor,
+} from "@engine/odyssey/resolveFrameCursor";
+
+/**
+ * OdysseyModelAnimationManager — multi-clip AnimRun stack.
+ *
+ * Transform / matrix / skeleton ownership:
+ * - Controllers (and external writers via markNodeTransformDirty) write locals.
+ * - During pose batches, controller dirty marks are deferred; the manager
+ *   compares final TRS and marks nodes once when values actually change.
+ * - flushTouchedNodeMatrices updateMatrix + selective skeleton dirty.
+ * - OdysseySkeletonBind fingerprints gate boneTexture GPU uploads.
+ * - animateFrame gates pose/animLoops sampling; stack timing still advances.
+ *
+ * External bone writers that must call markNodeTransformDirty (or equivalent):
+ * LipSyncPlayer, applyHeadTrackingToHturn / CreatureAnimationService,
+ * EffectVisualEffect node copy, OdysseyModel3DEditorSync.
+ *
+ * @file OdysseyModelAnimationManager.ts
+ */
+export class OdysseyModelAnimationManager {
+  model: OdysseyModel3D;
+
+  /** AnimRun stack — oldest first, newest last. */
+  runs: AnimRun[] = [];
+
+  /**
+   * @deprecated Compatibility — prefer runs. Synced from primary base run.
+   * Direct assignment still supported for cutscene / forge / pose paths.
+   */
+  lastAnimation: OdysseyModelAnimation;
+  lastAnimationState: OdysseyModelAnimationManagerState;
+  trans: boolean;
+  lastFrame: number;
+  modelNode: OdysseyObject3D;
+
+  headModel: OdysseyModel3D;
+  headModelNode: OdysseyObject3D;
+
+  /** @deprecated Weight ramp replaces transtime dual-clip path. */
+  transElapsed: number = 0;
+
+  /** Contiguous per-animLoop playback states (index == animLoops index). */
+  animLoopStates: OdysseyModelAnimationManagerState[] = [];
+
+  _vec3: THREE.Vector3 = new THREE.Vector3();
+  _quat: THREE.Quaternion = new THREE.Quaternion();
+  _animPosition: THREE.Vector3 = new THREE.Vector3();
+  _animQuaternion: THREE.Quaternion = new THREE.Quaternion();
+  _animPosition2: THREE.Vector3 = new THREE.Vector3();
+  _animQuaternion2: THREE.Quaternion = new THREE.Quaternion();
+  _prevPosition: THREE.Vector3 = new THREE.Vector3();
+  _prevQuaternion: THREE.Quaternion = new THREE.Quaternion();
+  _prevScale: THREE.Vector3 = new THREE.Vector3();
+
+  private _emptyState: OdysseyModelAnimationManagerState;
+  private _matrixBatchDepth = 0;
+  /** When true, controller markNodeTransformDirty is a no-op (manager compares). */
+  private _deferControllerDirty = false;
+  private _touchedTransformNodes: OdysseyObject3D[] = [];
+  private _touchedTransformNodeSet = new Set<OdysseyObject3D>();
+  private _affectedSkeletons: THREE.Skeleton[] = [];
+  /** Model-local bound animation cache (targets are instance-specific). */
+  private _boundAnimations = new WeakMap<OdysseyModelAnimation, BoundAnimation>();
+  private _transformBinding: AnimationTransformBinding | undefined;
+  private _transformBindingBuilt = false;
+
+  constructor(model: OdysseyModel3D){
+    this.model = model;
+    this._emptyState = this.createAnimationState();
+    this.lastAnimation = undefined;
+    this.lastAnimationState = this.createAnimationState();
+    this.trans = false;
+    this.modelNode = undefined;
+  }
+
+  /**
+   * Notify that a node's local TRS changed. Safe for animation controllers and
+   * external writers (lip sync, head look, VFX, Forge).
+   */
+  markNodeTransformDirty(node: OdysseyObject3D = this.modelNode): void {
+    if(!node) return;
+    if(this._deferControllerDirty){
+      return;
+    }
+    if(this._matrixBatchDepth === 0){
+      node.updateMatrix();
+      node.matrixWorldNeedsUpdate = true;
+      this.invalidateSkeletonsForNodes([node]);
+      if(this.model){
+        (this.model as OdysseyModel3D & { posedThisFrame?: boolean }).posedThisFrame = true;
+      }
+      return;
+    }
+    if(!this._touchedTransformNodeSet.has(node)){
+      this._touchedTransformNodeSet.add(node);
+      this._touchedTransformNodes.push(node);
+    }
+  }
+
+  private beginMatrixBatch(): void {
+    this._matrixBatchDepth++;
+  }
+
+  private endMatrixBatch(): void {
+    this._matrixBatchDepth = Math.max(0, this._matrixBatchDepth - 1);
+    if(this._matrixBatchDepth === 0){
+      this.flushTouchedNodeMatrices();
+    }
+  }
+
+  private ensureTransformBinding(): AnimationTransformBinding | undefined {
+    if(!this._transformBindingBuilt){
+      this._transformBindingBuilt = true;
+      this._transformBinding = buildAnimationTransformBinding(this.model);
+    }
+    return this._transformBinding;
+  }
+
+  /** Rebuild node→skeleton map after skins/head merge change. */
+  invalidateTransformBinding(): void {
+    this._transformBindingBuilt = false;
+    this._transformBinding = undefined;
+  }
+
+  private invalidateSkeletonsForNodes(nodes: Array<OdysseyObject3D | THREE.Object3D>): void {
+    const binding = this.ensureTransformBinding();
+    if(!binding || !nodes.length){
+      markOdysseySkeletonsDirtyUnder(this.model);
+      if(RenderPerfStats.enabled){
+        RenderPerfStats.animSkeletonInvalidations++;
+      }
+      return;
+    }
+    let missing = false;
+    for(let i = 0; i < nodes.length; i++){
+      const node = nodes[i];
+      if(node && !binding.nodeSkeletons.has(node.uuid)){
+        missing = true;
+        break;
+      }
+    }
+    const n = collectAffectedSkeletons(binding, nodes, this._affectedSkeletons);
+    if(!missing && n > 0){
+      for(let i = 0; i < n; i++){
+        markOdysseySkeletonDirty(this._affectedSkeletons[i]);
+      }
+      if(RenderPerfStats.enabled){
+        RenderPerfStats.animSkeletonInvalidations += n;
+      }
+      return;
+    }
+    // Unknown dependency — fall back to whole-model dirty.
+    markOdysseySkeletonsDirtyUnder(this.model);
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.animSkeletonInvalidations++;
+    }
+  }
+
+  private flushTouchedNodeMatrices(): void {
+    const perf = RenderPerfStats.enabled;
+    const t0 = perf && typeof performance !== "undefined" ? performance.now() : 0;
+    const len = this._touchedTransformNodes.length;
+    for(let i = 0; i < len; i++){
+      const node = this._touchedTransformNodes[i];
+      node.updateMatrix();
+      node.matrixWorldNeedsUpdate = true;
+    }
+    if(perf){
+      RenderPerfStats.animDirtyNodes += len;
+      RenderPerfStats.animLocalMatrixUpdates += len;
+    }
+    if(len > 0){
+      this.invalidateSkeletonsForNodes(this._touchedTransformNodes);
+      if(this.model){
+        (this.model as OdysseyModel3D & { posedThisFrame?: boolean }).posedThisFrame = true;
+      }
+    }
+    this._touchedTransformNodes.length = 0;
+    this._touchedTransformNodeSet.clear();
+    if(perf){
+      RenderPerfStats.animMatrixFlushMs += performance.now() - t0;
+    }
+  }
+
+  createAnimationState(): OdysseyModelAnimationManagerState {
+    return {
+      loop: false,
+      cFrame: 0,
+      elapsed: 0,
+      elapsedCount: 0,
+      lastTime: 0,
+      delta: 0,
+      lastEvent: -1,
+      events: [],
+      frameCursors: new Map(),
+    };
+  }
+
+  destroy(){
+    this.model = undefined;
+    this.runs = [];
+  }
+
+  // --- Compatibility accessors (active/newest base / newest overlay) ---
+
+  /**
+   * Newest non-overlay run — target of the latest base PlayAnimation.
+   * Used by currentAnimation accessors (not oldest; oldest stays for pose blend).
+   */
+  getActiveBaseRun(): AnimRun | undefined {
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      const r = this.runs[i];
+      if(!isOverlayRun(r) && !r.done && !isQueuedRun(r)){
+        return r;
+      }
+    }
+    return undefined;
+  }
+
+  /** @deprecated Use getActiveBaseRun — kept as alias. */
+  getPrimaryBaseRun(): AnimRun | undefined {
+    return this.getActiveBaseRun();
+  }
+
+  getNewestOverlayRun(): AnimRun | undefined {
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      if(isOverlayRun(this.runs[i]) && !this.runs[i].done){
+        return this.runs[i];
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * True if a non-overlay run with this clip name is active (not done / not fading out).
+   */
+  hasActiveBaseNamed(name: string): boolean {
+    if(!name) return false;
+    const want = name.toLowerCase();
+    for(let i = 0; i < this.runs.length; i++){
+      const r = this.runs[i];
+      if(isOverlayRun(r) || r.done || r.fadingOut || isQueuedRun(r)) continue;
+      if(r.animation?.name?.toLowerCase() === want) return true;
+    }
+    return false;
+  }
+
+  get currentAnimation(): OdysseyModelAnimation {
+    return this.getActiveBaseRun()?.animation;
+  }
+
+  set currentAnimation(anim: OdysseyModelAnimation){
+    if(!anim){
+      this.clearBaseRuns(true);
+      return;
+    }
+    const base = this.getActiveBaseRun();
+    if(base){
+      base.animation = anim;
+      return;
+    }
+    this.playAnimation(anim, AuroraAnimationFlag.LOOPING, { loop: true });
+  }
+
+  get currentAnimationState(): OdysseyModelAnimationManagerState {
+    return this.getActiveBaseRun()?.state ?? this._emptyState;
+  }
+
+  set currentAnimationState(state: OdysseyModelAnimationManagerState){
+    const base = this.getActiveBaseRun();
+    if(base && state){
+      base.state = state;
+      if(state.loop){
+        base.flags |= AuroraAnimationFlag.LOOPING;
+      }
+    }
+  }
+
+  get overlayAnimation(): OdysseyModelAnimation {
+    return this.getNewestOverlayRun()?.animation;
+  }
+
+  set overlayAnimation(anim: OdysseyModelAnimation){
+    if(!anim){
+      this.stopOverlayAnimation(AuroraAnimationFlag.OVERLAY_STOP);
+      return;
+    }
+    this.playOverlayAnimation(anim, AuroraAnimationFlag.OVERLAY_SLOT);
+  }
+
+  get overlayAnimationState(): OdysseyModelAnimationManagerState {
+    return this.getNewestOverlayRun()?.state ?? this._emptyState;
+  }
+
+  set overlayAnimationState(state: OdysseyModelAnimationManagerState){
+    const overlay = this.getNewestOverlayRun();
+    if(overlay && state){
+      overlay.state = state;
+    }
+  }
+
+  // --- Play / stop ---
+
+  /**
+   * Insert an AnimRun (PlayAnimation).
+   * @returns the new or reused run
+   */
+  playAnimation(
+    anim: OdysseyModelAnimation,
+    flags: number = 0,
+    state?: Partial<OdysseyModelAnimationManagerState>
+  ): AnimRun | undefined {
+    if(!anim || anim.type !== "OdysseyModelAnimation"){
+      return undefined;
+    }
+
+    const incomingQueued = !!(flags & AuroraAnimationFlag.QUEUE);
+    const skipSameName = !!(flags & AuroraAnimationFlag.REUSE);
+
+    // Additive same-name: OR flags and refresh (0x400 path)
+    if(flags & AuroraAnimationFlag.ADDITIVE_GESTURE){
+      for(let i = 0; i < this.runs.length; i++){
+        const existing = this.runs[i];
+        if(
+          isAdditiveRun(existing) &&
+          existing.animation?.name === anim.name &&
+          !existing.done
+        ){
+          existing.flags |= flags;
+          existing.fadingOut = false;
+          existing.done = false;
+          existing.queued = false;
+          existing.flags &= ~AuroraAnimationFlag.QUEUE;
+          existing.weight = Math.max(existing.weight, 0.01);
+          existing.state.elapsed = state?.elapsed ?? 0;
+          existing.state.lastTime = 0;
+          existing.state.events.length = 0;
+          existing.state.lastEvent = -1;
+          existing.state.elapsedCount = 0;
+          invalidateAnimRunFrameCursors(existing);
+          if(typeof state?.speed === "number") existing.state.speed = state.speed;
+          if(state?.animation !== undefined) existing.state.animation = state.animation;
+          return existing;
+        }
+      }
+    }
+
+    const incomingOverlay =
+      !!(flags & AuroraAnimationFlag.OVERLAY_SLOT) ||
+      !!(flags & AuroraAnimationFlag.ADDITIVE_GESTURE);
+
+    // Same-name base replace when REUSE (0x40) is clear — default.
+    // When REUSE is set, skip and allocate a new run.
+    if(!incomingOverlay && !incomingQueued && !skipSameName){
+      const want = anim.name?.toLowerCase();
+      let matchIdx = -1;
+      for(let i = 0; i < this.runs.length; i++){
+        const existing = this.runs[i];
+        if(isOverlayRun(existing) || existing.done || isQueuedRun(existing)) continue;
+        if(existing.animation?.name?.toLowerCase() === want){
+          matchIdx = i;
+          break;
+        }
+      }
+      if(matchIdx >= 0){
+        const existing = this.runs[matchIdx];
+        existing.fadingOut = false;
+        existing.done = false;
+        existing.queued = false;
+        existing.flags &= ~AuroraAnimationFlag.QUEUE;
+        if(state?.loop || (flags & AuroraAnimationFlag.LOOPING)){
+          existing.state.loop = true;
+          existing.flags |= AuroraAnimationFlag.LOOPING;
+        }
+        if(flags & AuroraAnimationFlag.FIRE_FORGET){
+          existing.flags |= AuroraAnimationFlag.FIRE_FORGET;
+        }
+        if(typeof state?.speed === "number") existing.state.speed = state.speed;
+        if(state?.animation !== undefined) existing.state.animation = state.animation;
+        existing.weight = 1;
+        if(matchIdx !== this.runs.length - 1){
+          this.runs.splice(matchIdx, 1);
+          this.runs.push(existing);
+        }
+        this.purgeOlderNonOverlay(existing);
+        this.syncLegacyLastAnimation();
+        return existing;
+      }
+    }
+
+    const run = createAnimRun(anim, flags, state);
+    if(state?.loop || (flags & AuroraAnimationFlag.LOOPING)){
+      run.state.loop = true;
+      run.flags |= AuroraAnimationFlag.LOOPING;
+    }
+
+    // transtime fades between two clips. With no partner base, weight-0
+    // lerps from a static skeleton (freeze/slide) — start fully visible.
+    // Queued runs stay at weight 0 until promoted.
+    if(!incomingOverlay && !incomingQueued){
+      const hasPartnerBase = this.runs.some(
+        (r) => !isOverlayRun(r) && !r.done && !isQueuedRun(r)
+      );
+      if(!hasPartnerBase){
+        run.weight = 1;
+      }
+    }
+
+    this.ensureStackCapacity(incomingOverlay, incomingQueued);
+    this.runs.push(run);
+
+    // Non-overlay non-QUEUE at full weight: purge older bases.
+    // REUSE (0x40) keeps the prior same-name on stack for crossfade until
+    // the new run reaches weight 1 (inserts without same-name remove).
+    if(!incomingOverlay && !incomingQueued && !skipSameName && run.weight >= 1){
+      this.purgeOlderNonOverlay(run);
+    }
+
+    this.syncLegacyLastAnimation();
+    return run;
+  }
+
+  /**
+   * Overlay insert — does not clear locomotion base.
+   */
+  playOverlayAnimation(
+    anim: OdysseyModelAnimation,
+    flags: number = AuroraAnimationFlag.OVERLAY_SLOT,
+    state?: Partial<OdysseyModelAnimationManagerState>
+  ): AnimRun | undefined {
+    let f = flags;
+    if(!(f & AuroraAnimationFlag.OVERLAY_SLOT) && !(f & AuroraAnimationFlag.ADDITIVE_GESTURE)){
+      f |= AuroraAnimationFlag.OVERLAY_SLOT;
+    }
+    return this.playAnimation(anim, f, state);
+  }
+
+  /**
+   * Compatibility shim — base PlayAnimation via setCurrentAnimation.
+   */
+  setCurrentAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state === "undefined"){
+      console.warn("setCurrentAnimation: state is undefined");
+      state = this.createAnimationState();
+    }
+    if(!anim){
+      this.clearBaseRuns(false);
+      return;
+    }
+    let flags = 0;
+    if(state.loop) flags |= AuroraAnimationFlag.LOOPING;
+    else flags |= AuroraAnimationFlag.FIRE_FORGET;
+
+    // Keep previous base on stack so weight ramp can crossfade
+    this.playAnimation(anim, flags, state);
+  }
+
+  /** @deprecated Weight ramp replaces lastAnimation dual-clip. */
+  setLastAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state === "undefined"){
+      state = this.createAnimationState();
+    }
+    this.transElapsed = 0;
+    this.lastAnimation = anim;
+    this.lastAnimationState = Object.assign({}, state);
+  }
+
+  setLastFromCurrentAnimation(){
+    this.setLastAnimation(this.currentAnimation, this.currentAnimationState);
+  }
+
+  /**
+   * Compatibility shim — overlay slot.
+   */
+  setOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state === "undefined"){
+      console.warn("setOverlayAnimation: state is undefined");
+      state = this.createAnimationState();
+    }
+    if(!anim){
+      this.stopOverlayAnimation(AuroraAnimationFlag.OVERLAY_STOP);
+      return;
+    }
+    let flags = AuroraAnimationFlag.OVERLAY_SLOT;
+    if(state.loop) flags |= AuroraAnimationFlag.LOOPING;
+    else flags |= AuroraAnimationFlag.FIRE_FORGET;
+    this.playOverlayAnimation(anim, flags, state);
+  }
+
+  /** Clear all runs (full stop). Overlays are cleared too. */
+  stopAnimation(){
+    this.runs = [];
+    this.lastAnimation = undefined;
+    this.lastAnimationState = this.createAnimationState();
+    this.transElapsed = 0;
+  }
+
+  /**
+   * Clear non-overlay runs. When keepOverlay is true, overlay/additive runs remain.
+   */
+  clearBaseRuns(keepOverlay: boolean = true){
+    if(keepOverlay){
+      this.runs = this.runs.filter((r) => isOverlayRun(r) && !r.done);
+    }else{
+      this.runs = [];
+    }
+    this.syncLegacyLastAnimation();
+  }
+
+  /**
+   * Filter-remove overlay runs by stop flag (0x80 / 0x400).
+   * - 0x400: fade out additive (0x400) runs
+   * - 0x80: remove non-additive overlays; fade additives
+   * - neither: clear all overlays (legacy single-slot)
+   */
+  stopOverlayAnimation(stopFlag: number = AuroraAnimationFlag.OVERLAY_STOP){
+    const wantAdditive = !!(stopFlag & AuroraAnimationFlag.ADDITIVE_GESTURE);
+    const wantOverlayStop = !!(stopFlag & AuroraAnimationFlag.OVERLAY_STOP);
+
+    if(!wantAdditive && !wantOverlayStop){
+      for(let i = this.runs.length - 1; i >= 0; i--){
+        if(isOverlayRun(this.runs[i])) this.runs.splice(i, 1);
+      }
+      return;
+    }
+
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      const run = this.runs[i];
+      if(!isOverlayRun(run)) continue;
+      const isAdd = isAdditiveRun(run);
+
+      if(wantAdditive && isAdd){
+        run.fadingOut = true;
+        continue;
+      }
+      if(wantOverlayStop){
+        if(isAdd){
+          run.fadingOut = true;
+        }else{
+          this.runs.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  // --- Per-frame ---
+
+  update(delta = 0){
+    if(!this.model) return;
+
+    const perf = RenderPerfStats.enabled;
+    const t0 = perf && typeof performance !== "undefined" ? performance.now() : 0;
+
+    // Promote queued runs whose predecessors have finished (QUEUE flag 0x20).
+    this.promoteQueuedRuns();
+
+    // Advance + weight ramp (skip still-queued)
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      if(isQueuedRun(this.runs[i])) continue;
+      this.advanceRun(this.runs[i], delta);
+    }
+
+    // After FAF finish starts fading, promote any queued sibling under it.
+    this.promoteQueuedRuns();
+
+    // Purge done / zero-weight
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      const run = this.runs[i];
+      if(run.done || (run.fadingOut && run.weight <= 1e-4)){
+        this.runs.splice(i, 1);
+      }
+    }
+
+    // When a non-overlay run reaches full weight, drop older bases
+    for(let i = 0; i < this.runs.length; i++){
+      const run = this.runs[i];
+      if(!isOverlayRun(run) && !isQueuedRun(run) && run.weight >= 1 && !run.fadingOut){
+        this.purgeOlderNonOverlay(run);
+      }
+    }
+
+    this.beginMatrixBatch();
+    try{
+      // Pose: oldest -> newest, blend by weight (skip queued / zero contribution)
+      // Paused (speed 0) still contributes frozen pose via run.weight.
+      if(this.model.bonesInitialized && this.model.animateFrame){
+        let activeRuns = 0;
+        for(let i = 0; i < this.runs.length; i++){
+          const run = this.runs[i];
+          if(!run.animation || isQueuedRun(run)) continue;
+          if(run.weight <= 1e-4) continue;
+          activeRuns++;
+          this.applyRunPose(run, run.weight);
+        }
+        if(perf) RenderPerfStats.animActiveRuns += activeRuns;
+      }
+
+      // World Model Animation Loops — BoundAnimation + typed cursors.
+      // Same animateFrame gate as applyRunPose — off-screen rooms/creatures skip.
+      if(this.model.bonesInitialized && this.model.animateFrame && this.model.animLoops.length){
+        for(let i = 0, len = this.model.animLoops.length; i < len; i++){
+          if(!this.animLoopStates[i]){
+            this.animLoopStates[i] = {
+              loop: true,
+              cFrame: 0,
+              elapsed: 0,
+              elapsedCount: 0,
+              lastTime: 0,
+              delta: 0,
+              lastEvent: -1,
+              events: [],
+              frameCursors: new Map(),
+            };
+          }
+          this.updateAnimation(this.model.animLoops[i], this.animLoopStates[i], delta);
+        }
+      }
+    }finally{
+      this.endMatrixBatch();
+    }
+
+    this.syncLegacyLastAnimation();
+    if(perf){
+      RenderPerfStats.animCpuMs += performance.now() - t0;
+    }
+  }
+
+  /**
+   * Clear QUEUE on the oldest queued run that has no active non-queued
+   * predecessor (Animate promotes when FAF ends / tip is queued).
+   */
+  private promoteQueuedRuns(){
+    for(let i = 0; i < this.runs.length; i++){
+      const run = this.runs[i];
+      if(!isQueuedRun(run) || run.done) continue;
+
+      let blocked = false;
+      for(let j = 0; j < i; j++){
+        const prev = this.runs[j];
+        if(isQueuedRun(prev) || prev.done) continue;
+        // Overlays do not block base QUEUE handoff
+        if(isOverlayRun(prev)) continue;
+        // Predecessor still playing (not yet finished / fading out)
+        if(!prev.fadingOut){
+          blocked = true;
+          break;
+        }
+      }
+      if(blocked) continue;
+
+      run.queued = false;
+      run.flags &= ~AuroraAnimationFlag.QUEUE;
+      // Start visible unless MDL transition requires a ramp
+      if(!(run.transition > 0)){
+        run.weight = 1;
+      }
+      // Only one promote per pass (FIFO queue)
+      break;
+    }
+  }
+
+  private advanceRun(run: AnimRun, delta: number){
+    if(!run.animation){
+      run.done = true;
+      return;
+    }
+    const state = run.state;
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const step = delta * rate;
+    state.delta = step;
+    state.lastTime = state.elapsed;
+    state.elapsed += step;
+
+    const len = run.animation.length > 0 ? run.animation.length : 0;
+
+    if(rate >= 0){
+      if(len > 0 && state.elapsed >= len){
+        this.updateAnimationEvents(run.animation, state);
+        if(isLoopingRun(run)){
+          state.elapsed = ((state.elapsed % len) + len) % len;
+          state.elapsedCount++;
+          state.events.length = 0;
+          state.lastEvent = -1;
+        }else{
+          state.elapsed = len;
+          state.lastTime = len;
+          state.elapsedCount++;
+          // Fire-forget / non-loop: fade or finish
+          if(isAdditiveRun(run) || (run.flags & AuroraAnimationFlag.FIRE_FORGET)){
+            run.fadingOut = true;
+          }else if(isOverlayRun(run)){
+            run.fadingOut = true;
+          }else{
+            // Non-loop base finished — mark done (caller may replace)
+            run.done = true;
+          }
+        }
+      }
+    }else{
+      // Reverse
+      if(state.elapsed < 0){
+        if(isLoopingRun(run) && len > 0){
+          state.elapsed = ((state.elapsed % len) + len) % len;
+          state.elapsedCount++;
+          state.events.length = 0;
+          state.lastEvent = -1;
+        }else{
+          state.elapsed = 0;
+          run.done = true;
+        }
+      }
+    }
+
+    this.updateAnimationEvents(run.animation, state);
+
+    // Weight ramp
+    const trans = run.transition > 0 ? run.transition : 0;
+    if(run.fadingOut){
+      if(trans > 0){
+        run.weight = Math.max(0, run.weight - Math.abs(delta) / trans);
+      }else{
+        run.weight = 0;
+      }
+      if(run.weight <= 1e-4){
+        run.weight = 0;
+        run.done = true;
+      }
+    }else if(run.weight < 1){
+      if(trans > 0){
+        run.weight = Math.min(1, run.weight + Math.abs(delta) / trans);
+      }else{
+        run.weight = 1;
+      }
+    }
+  }
+
+  private getBoundAnimation(anim: OdysseyModelAnimation): BoundAnimation {
+    if(!this._boundAnimations){
+      this._boundAnimations = new WeakMap();
+    }
+    let bound = this._boundAnimations.get(anim);
+    if(!bound){
+      bound = bindAnimation(this.model, anim);
+      this._boundAnimations.set(anim, bound);
+    }
+    return bound;
+  }
+
+  private applyRunPose(run: AnimRun, blendWeight: number){
+    if(!run.animation) return;
+    const bound = this.getBoundAnimation(run.animation);
+    ensureRunFrameCursorArray(run, bound);
+    const state = run.state;
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    for(let i = 0, nl = bound.nodes.length; i < nl; i++){
+      this.updateAnimationNode(run, bound.nodes[i], blendWeight, discontinuity);
+    }
+  }
+
+  private purgeOlderNonOverlay(keep: AnimRun){
+    const keepIdx = this.runs.indexOf(keep);
+    if(keepIdx < 0) return;
+    // When a non-overlay run hits weight 1, remove older bases only.
+    // Preserve queued runs that are waiting behind the keep run.
+    for(let i = keepIdx - 1; i >= 0; i--){
+      const r = this.runs[i];
+      if(isOverlayRun(r) || isQueuedRun(r)) continue;
+      this.runs.splice(i, 1);
+    }
+  }
+
+  /**
+   * Evict to make room for a new run. Prefer done → oldest finished-looking
+   * overlay → oldest non-overlay (when inserting base). Never evict a queued
+   * run that is the sole pending handoff behind an active FAF, and prefer
+   * not evicting that FAF predecessor either.
+   */
+  private ensureStackCapacity(incomingOverlay: boolean, incomingQueued: boolean = false){
+    while(this.runs.length >= ANIM_RUN_STACK_CAP){
+      let idx = this.runs.findIndex((r) => r.done);
+      if(idx < 0){
+        // Prefer evicting an overlay that is not the only stack content
+        idx = this.runs.findIndex((r) => isOverlayRun(r));
+      }
+      if(idx < 0 && !incomingOverlay && !incomingQueued){
+        idx = this.runs.findIndex(
+          (r) => !isOverlayRun(r) && !isQueuedRun(r) && !this.isQueueHandoffPredecessor(r)
+        );
+      }
+      if(idx < 0){
+        idx = this.runs.findIndex(
+          (r) => !isQueuedRun(r) && !this.isQueueHandoffPredecessor(r)
+        );
+      }
+      if(idx < 0) idx = 0;
+      this.runs.splice(idx, 1);
+    }
+  }
+
+  /** True if this run is an active base with a queued successor (galaxy handoff). */
+  private isQueueHandoffPredecessor(run: AnimRun): boolean {
+    if(isOverlayRun(run) || isQueuedRun(run) || run.done) return false;
+    const idx = this.runs.indexOf(run);
+    if(idx < 0) return false;
+    for(let i = idx + 1; i < this.runs.length; i++){
+      if(isQueuedRun(this.runs[i]) && !this.runs[i].done) return true;
+    }
+    return false;
+  }
+
+  private syncLegacyLastAnimation(){
+    // Reverse scan for newest two eligible bases (no filter alloc)
+    let newest: AnimRun | undefined;
+    let prev: AnimRun | undefined;
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      const r = this.runs[i];
+      if(isOverlayRun(r) || r.done || isQueuedRun(r)) continue;
+      if(!newest){
+        newest = r;
+        continue;
+      }
+      prev = r;
+      break;
+    }
+    if(prev && newest){
+      this.lastAnimation = prev.animation;
+      this.lastAnimationState = prev.state;
+      this.transElapsed = prev.transition > 0 ? prev.weight * prev.transition : 0;
+      this.trans = true;
+    }else{
+      this.lastAnimation = undefined;
+      this.trans = false;
+      this.transElapsed = 0;
+    }
+  }
+
+  // --- Legacy helpers kept for animLoops / node sampling ---
+
+  updateAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
+    if(typeof state === "undefined"){
+      state = this.createAnimationState();
+    }
+    state.delta = delta;
+    if(!state.elapsedCount) state.elapsedCount = 0;
+    this.trans = false;
+
+    if(!this.model.bonesInitialized){
+      return false;
+    }
+
+    const standaloneMatrixBatch = this._matrixBatchDepth === 0;
+    if(standaloneMatrixBatch) this.beginMatrixBatch();
+    try{
+      if(this.model.animateFrame && anim){
+        const bound = this.getBoundAnimation(anim);
+        ensureStateFrameCursorArray(state, bound);
+        const rate = typeof state.speed === "number" ? state.speed : 1;
+        const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+        for(let i = 0, nl = bound.nodes.length; i < nl; i++){
+          this.updateAnimationNodeBound(bound.nodes[i], anim, state, 1, discontinuity, state.frameCursorArray);
+        }
+      }
+    }finally{
+      if(standaloneMatrixBatch) this.endMatrixBatch();
+    }
+
+    state.lastTime = state.elapsed;
+    state.elapsed += delta;
+    if(delta >= 0){
+      state.elapsed = Math.min(state.elapsed, anim.length);
+    }else if(state.elapsed < 0){
+      if(state.loop && anim.length > 0){
+        state.elapsed = ((state.elapsed % anim.length) + anim.length) % anim.length;
+        state.elapsedCount++;
+        state.events.length = 0;
+        state.lastEvent = -1;
+        state.frameCursors?.clear();
+        if(state.frameCursorArray) state.frameCursorArray.fill(0);
+      }else{
+        state.elapsed = 0;
+        state.frameCursors?.clear();
+        if(state.frameCursorArray) state.frameCursorArray.fill(0);
+      }
+    }
+
+    this.updateAnimationEvents(anim, state);
+
+    if(delta >= 0 && state.elapsed >= anim.length){
+      this.updateAnimationEvents(anim, state);
+      state.lastTime = anim.length;
+      state.elapsed = 0;
+      state.elapsedCount++;
+      state.events.length = 0;
+      state.lastEvent = -1;
+      state.frameCursors?.clear();
+      if(state.frameCursorArray) state.frameCursorArray.fill(0);
+      return false;
+    }
+    return true;
+  }
+
+  /** @deprecated Use stack update; kept for any direct overlay callers. */
+  updateOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
+    return this.updateAnimation(anim, state, delta);
+  }
+
+  updateAnimationEvents(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state === "undefined"){
+      state = this.createAnimationState();
+    }
+    if(!anim?.events?.length) return;
+    if(!state.events) state.events = [];
+
+    // Monotonic event cursor via lastEvent; reset on loop (events.length = 0)
+    let f = Math.max(0, (state.lastEvent | 0) + 1);
+    for(let el = anim.events.length; f < el; f++){
+      if(anim.events[f].length <= state.elapsed){
+        if(!state.events[f]){
+          this.model.playEvent(anim.events[f].name, f);
+          state.events[f] = true;
+        }
+        state.lastEvent = f;
+      }else{
+        break;
+      }
+    }
+  }
+
+  /**
+   * Stack pose path: sample one bound node using per-AnimRun frame cursors.
+   */
+  updateAnimationNode(
+    run: AnimRun,
+    boundNode: BoundAnimation["nodes"][number],
+    blendWeight: number = 1,
+    discontinuity?: boolean
+  ){
+    if(!run?.animation || !boundNode) return;
+    const state = run.state;
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const disc =
+      typeof discontinuity === "boolean"
+        ? discontinuity
+        : isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    this.updateAnimationNodeBound(
+      boundNode,
+      run.animation,
+      state,
+      blendWeight,
+      disc,
+      run.frameCursorArray,
+      run
+    );
+  }
+
+  /**
+   * Legacy entry — resolves node then samples via BoundAnimation-compatible path.
+   * Prefer updateAnimation (bound) for animLoops; kept for direct callers/tests.
+   */
+  updateAnimationNodeLegacy(
+    anim: OdysseyModelAnimation,
+    node: OdysseyModelAnimationNode,
+    state: OdysseyModelAnimationManagerState,
+    blendWeight: number = 1
+  ){
+    if(typeof state === "undefined"){
+      state = this.createAnimationState();
+    }
+    if(!node || !anim) return;
+    const bound = this.getBoundAnimation(anim);
+    ensureStateFrameCursorArray(state, bound);
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    // Match by name / nodeNumber against bound nodes
+    for(let i = 0; i < bound.nodes.length; i++){
+      const bn = bound.nodes[i];
+      const src = anim.nodes[i] as OdysseyModelAnimationNode;
+      if(src !== node && src?.name !== node.name && src?.nodeNumber !== node.nodeNumber){
+        continue;
+      }
+      this.updateAnimationNodeBound(
+        bn,
+        anim,
+        state,
+        blendWeight,
+        discontinuity,
+        state.frameCursorArray
+      );
+      return;
+    }
+  }
+
+  private updateAnimationNodeBound(
+    boundNode: BoundAnimation["nodes"][number],
+    anim: OdysseyModelAnimation,
+    state: OdysseyModelAnimationManagerState,
+    blendWeight: number,
+    discontinuity: boolean,
+    cursors?: Int32Array,
+    run?: AnimRun
+  ){
+    if(!anim || !boundNode) return;
+
+    this.modelNode = boundNode.target;
+    if(!this.modelNode) return;
+
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.animBoundNodesVisited++;
+    }
+
+    anim._position.x = anim._position.y = anim._position.z = 0;
+    anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
+    anim._quaternion.w = 1;
+
+    const w = Math.max(0, Math.min(1, blendWeight));
+    const canBlend = w < 1 - 1e-6;
+
+    this._prevPosition.copy(this.modelNode.position);
+    this._prevQuaternion.copy(this.modelNode.quaternion);
+    this._prevScale.copy(this.modelNode.scale);
+
+    this._deferControllerDirty = true;
+    try{
+      for(let i = 0, cl = boundNode.controllers.length; i < cl; i++){
+        const bc: BoundController = boundNode.controllers[i];
+        const controller = bc.controller;
+        if(!controller || !bc.valid) continue;
+
+        let lastFrame = 0;
+        if(controller.frameCount > 1){
+          if(cursors){
+            let cursor = cursors[bc.cursorIndex];
+            if(discontinuity || cursor < 0 || cursor >= controller.data.length){
+              cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+              if(RenderPerfStats.enabled) RenderPerfStats.animBinarySearchFallbacks++;
+            }else{
+              cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+            }
+            cursors[bc.cursorIndex] = cursor;
+            lastFrame = cursor;
+          }else if(run){
+            if(!run.frameCursors) run.frameCursors = new Map();
+            let cursor = run.frameCursors.get(controller) ?? 0;
+            if(discontinuity || cursor < 0 || cursor >= controller.data.length){
+              cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+              if(RenderPerfStats.enabled) RenderPerfStats.animBinarySearchFallbacks++;
+            }else{
+              cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+            }
+            run.frameCursors.set(controller, cursor);
+            lastFrame = cursor;
+          }else{
+            if(!state.frameCursors) state.frameCursors = new Map();
+            let cursor = state.frameCursors.get(controller) ?? 0;
+            if(discontinuity){
+              cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+              if(RenderPerfStats.enabled) RenderPerfStats.animBinarySearchFallbacks++;
+            }else{
+              cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+            }
+            state.frameCursors.set(controller, cursor);
+            lastFrame = cursor;
+          }
+        }
+
+        this.applyControllerSample(
+          anim,
+          state,
+          controller,
+          lastFrame,
+          w,
+          canBlend,
+          bc
+        );
+      }
+    }finally{
+      this._deferControllerDirty = false;
+    }
+
+    if(this.nodeTransformChanged()){
+      if(RenderPerfStats.enabled) RenderPerfStats.animTransformWrites++;
+      this.markNodeTransformDirty(this.modelNode);
+    }else if(RenderPerfStats.enabled){
+      RenderPerfStats.animUnchangedTransforms++;
+    }
+  }
+
+  private nodeTransformChanged(): boolean {
+    const n = this.modelNode;
+    if(!n) return false;
+    const p = n.position;
+    const s = n.scale;
+    if(
+      p.x !== this._prevPosition.x ||
+      p.y !== this._prevPosition.y ||
+      p.z !== this._prevPosition.z
+    ){
+      return true;
+    }
+    if(
+      s.x !== this._prevScale.x ||
+      s.y !== this._prevScale.y ||
+      s.z !== this._prevScale.z
+    ){
+      return true;
+    }
+    return !this.quaternionsEqual(n.quaternion, this._prevQuaternion);
+  }
+
+  /** Exact equality with q/-q equivalence. */
+  private quaternionsEqual(a: THREE.Quaternion, b: THREE.Quaternion): boolean {
+    return (
+      (a.x === b.x && a.y === b.y && a.z === b.z && a.w === b.w) ||
+      (a.x === -b.x && a.y === -b.y && a.z === -b.z && a.w === -b.w)
+    );
+  }
+
+  private isPlayOutOfPlaceRootNode(node: OdysseyObject3D | undefined): boolean {
+    if(!node || !this.model) return false;
+    return node === this.model || node === this.model.rootdummy;
+  }
+
+  private computeInterpolationFactor(
+    state: OdysseyModelAnimationManagerState,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric | undefined,
+    lastFrame: number,
+    controller: OdysseyController
+  ): { last: IOdysseyControllerFrameGeneric; next: IOdysseyControllerFrameGeneric; fl: number } {
+    let fl = 0;
+    let useLast = last;
+    let useNext = next;
+    if(useNext){
+      const dt = useNext.time - useLast.time;
+      if(dt === 0){
+        fl = 0;
+      }else{
+        fl = (state.elapsed - useLast.time) / dt;
+      }
+    }else{
+      fl = 1;
+      useNext = controller.data[lastFrame];
+      useLast = controller.data[lastFrame - 1] || controller.data[lastFrame];
+    }
+    if(state.elapsed < useLast.time) fl = 0;
+    if(fl === Infinity || fl === -Infinity) fl = 1;
+    if(isNaN(fl)) fl = 0;
+    if(fl > 1) fl = 1;
+    if(fl < 0) fl = 0;
+    return { last: useLast, next: useNext, fl };
+  }
+
+  /**
+   * Shared last/next/fl interpolation + blend.
+   * Returns true if a transform channel was written (for diagnostics).
+   * Dirty marking is owned by updateAnimationNodeBound change detection.
+   * Preserves wasOffscreen setFrame-then-animate for stateful controllers.
+   */
+  private applyControllerSample(
+    anim: OdysseyModelAnimation,
+    state: OdysseyModelAnimationManagerState,
+    controller: OdysseyController,
+    lastFrame: number,
+    w: number,
+    canBlend: boolean,
+    bc?: BoundController
+  ): boolean {
+    if(
+      this.model?.playOutOfPlaceActive &&
+      this.isPlayOutOfPlaceRootNode(this.modelNode) &&
+      (
+        controller.type == OdysseyModelControllerType.Position ||
+        controller.type == OdysseyModelControllerType.Orientation
+      )
+    ){
+      return false;
+    }
+
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.animControllerSamples++;
+      if(bc?.constant || controller.frameCount === 1){
+        RenderPerfStats.animConstantSamples++;
+      }
+    }
+
+    let last: IOdysseyControllerFrameGeneric = controller.data[lastFrame];
+    if(!last && controller.frameCount !== 1) return false;
+
+    const stateful =
+      bc?.statefulSample ||
+      controller.type === OdysseyModelControllerType.Scale ||
+      controller.type === OdysseyModelControllerType.Orientation;
+
+    // Keep wasOffscreen setFrame before animate for stateful controllers.
+    if(this.model.wasOffscreen && stateful){
+      const frame = last || controller.data[0];
+      if(frame) controller.setFrame(this, anim, frame);
+    }
+
+    const nextRaw: IOdysseyControllerFrameGeneric | undefined =
+      controller.frameCount > 1 ? controller.data[lastFrame + 1] : undefined;
+    const { last: useLast, next: useNext, fl } = this.computeInterpolationFactor(
+      state,
+      last || controller.data[0],
+      nextRaw,
+      lastFrame,
+      controller
+    );
+
+    // --- Full weight ---
+    if(!canBlend){
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
+      }else{
+        controller.animate(this, anim, useLast, useNext, fl);
+      }
+      return (
+        controller.type === OdysseyModelControllerType.Position ||
+        controller.type === OdysseyModelControllerType.Orientation ||
+        controller.type === OdysseyModelControllerType.Scale
+      );
+    }
+
+    // --- Partial weight: stateless sample for Position / mesh Orientation ---
+    if(controller.type == OdysseyModelControllerType.Position){
+      const posCtrl = controller as PositionController;
+      if(typeof posCtrl.samplePosition === "function"){
+        if(controller.frameCount == 1){
+          posCtrl.samplePositionFrame(this, anim, controller.data[0], this._animPosition2);
+        }else{
+          posCtrl.samplePosition(this, anim, useLast, useNext, fl, this._animPosition2);
+        }
+        this.modelNode.position.lerp(this._animPosition2, w);
+        return true;
+      }
+      this._animPosition.copy(this.modelNode.position);
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
+      }else{
+        controller.animate(this, anim, useLast, useNext, fl);
+      }
+      this._animPosition2.copy(this.modelNode.position);
+      this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, w);
+      return true;
+    }
+
+    if(controller.type == OdysseyModelControllerType.Orientation){
+      const oriCtrl = controller as OrientationController;
+      if(
+        typeof oriCtrl.sampleOrientation === "function" &&
+        !this.modelNode.emitter
+      ){
+        if(controller.frameCount == 1){
+          oriCtrl.sampleOrientationFrame(this, anim, controller.data[0], this._animQuaternion2);
+        }else if(
+          !oriCtrl.sampleOrientation(this, anim, useLast, useNext, fl, this._animQuaternion2)
+        ){
+          // Emitter / unsupported — fall through to live path
+          this._animQuaternion.copy(this.modelNode.quaternion);
+          controller.animate(this, anim, useLast, useNext, fl);
+          this._animQuaternion2.copy(this.modelNode.quaternion);
+          this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
+          return true;
+        }
+        this.modelNode.quaternion.slerp(this._animQuaternion2, w);
+        return true;
+      }
+      this._animQuaternion.copy(this.modelNode.quaternion);
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
+      }else{
+        controller.animate(this, anim, useLast, useNext, fl);
+      }
+      this._animQuaternion2.copy(this.modelNode.quaternion);
+      this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
+      return true;
+    }
+
+    // Scale + non-transform: apply when weight is significant (no channel blend)
+    if(w >= 0.5){
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
+      }else{
+        controller.animate(this, anim, useLast, useNext, fl);
+      }
+      return controller.type === OdysseyModelControllerType.Scale;
+    }
+    return false;
+  }
+}

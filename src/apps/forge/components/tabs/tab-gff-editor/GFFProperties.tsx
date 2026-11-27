@@ -7,10 +7,10 @@
  */
 
 import React, { ChangeEvent, useEffect, useState } from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
-import { ForgeInput, ForgeInputGroup } from "@/apps/forge/components/ui";
-import { TabGFFEditorState } from "@/apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor";
+import { ForgeInput, ForgeInputGroup } from "@apps/forge/components/ui";
+import { TabGFFEditorState } from "@apps/forge/states/tabs";
 import {
   clampGffLabel,
   clampGffResRef,
@@ -23,9 +23,9 @@ import {
   parseOptionalNumber,
   setDword64Value,
   setInt64Value,
-} from "@/apps/forge/helpers/gffFieldValue";
-import { gffBreadcrumb, findGffNode, isGffField, isGffStruct } from "@/apps/forge/helpers/gffTreePath";
-import { GFFVoidHexEditor } from "@/apps/forge/components/tabs/tab-gff-editor/GFFVoidHexEditor";
+} from "@apps/forge/helpers/gffFieldValue";
+import { gffBreadcrumb, findGffNode, isGffField, isGffStruct } from "@apps/forge/helpers/gffTreePath";
+import { GFFVoidHexEditor } from "@apps/forge/components/tabs/tab-gff-editor/GFFVoidHexEditor";
 
 export interface GFFPropertiesProps {
   tab: TabGFFEditorState;

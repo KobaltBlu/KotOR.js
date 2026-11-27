@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DefaultEditorKind } from "@/apps/forge/settings/forgeSettings";
+import { DefaultEditorKind } from "@apps/forge/settings/forgeSettings";
 
 export interface FileTypeEditorEntry {
   ext: string;

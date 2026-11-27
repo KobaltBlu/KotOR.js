@@ -1,14 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@/apps/debugger/app.scss";
-import { App } from "@/apps/debugger/App";
-import { AppProvider } from "@/apps/debugger/context/AppContext";
-import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
-import { DebugApp } from "@/apps/debugger/DebugApp";
+import { App } from "@apps/debugger/App";
+import { AppProvider } from "@apps/debugger/context/AppContext";
+import { DebuggerState } from "@apps/debugger/states/DebuggerState";
+import { DebugApp } from "@apps/debugger/DebugApp";
 
 const params = new URLSearchParams(window.location.search);
 const uuid = params.get('uuid');
 if(!uuid) throw new Error('UUID is required');
+const hostMode = params.get('host') === 'iframe' ? 'iframe' as const : 'window' as const;
 
 const appState = new DebuggerState(uuid);
 DebugApp.appState = appState;
@@ -20,7 +21,7 @@ const loadReactApplication = () => {
   ( async () => {
     root.render(
       // <React.StrictMode>
-        <AppProvider appState={DebugApp.appState}>
+        <AppProvider appState={DebugApp.appState} hostMode={hostMode}>
           <App />
         </AppProvider>
       // </React.StrictMode>

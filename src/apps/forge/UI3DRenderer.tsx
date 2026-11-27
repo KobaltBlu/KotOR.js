@@ -1,27 +1,33 @@
-import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphTreeViewManager } from "@apps/forge/managers/SceneGraphTreeViewManager";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { resolveVertexHandleRoot } from "@/apps/forge/module-editor/vertexHandleVisuals";
+import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass';
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
+import { ForceDistortionPass } from "@apps/forge/KotOR";
+import { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { resolveVertexHandleRoot } from "@apps/forge/module-editor/vertexHandleVisuals";
 import {
   defaultViewportPerfPolicy,
   shouldIdleRender,
-} from "@/apps/forge/module-editor/kernel/ViewportPerfPolicy";
+} from "@apps/forge/module-editor/kernel/ViewportPerfPolicy";
 import {
   computeFocusDistance,
   expandFocusBounds,
   FOCUS_FALLBACK_RADIUS,
   focusNearFar,
-} from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
-import { PickService } from "@/apps/forge/module-editor/kernel/PickService";
-import { isHighlightableGameObject } from "@/apps/forge/module-editor/kernel/SelectionHighlightService";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+} from "@apps/forge/module-editor/kernel/CameraFocusPolicy";
+import { PickService } from "@apps/forge/module-editor/kernel/PickService";
+import { isHighlightableGameObject } from "@apps/forge/module-editor/kernel/SelectionHighlightService";
+import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
+
+// Preserve r149-like color appearance until a dedicated color-management pass.
+THREE.ColorManagement.enabled = false;
 
 export enum CameraView {
   Top = 'top',
@@ -151,7 +157,7 @@ export class UI3DRenderer extends EventListenerModel {
   module: ForgeModule;
 
   guiMode: boolean = false;
-  clock: THREE.Clock;
+  clock: THREE.Timer;
   renderer?: THREE.WebGLRenderer;
   clearColor: THREE.Color = new THREE.Color(0x333333);
   scene: THREE.Scene = new THREE.Scene();
@@ -163,6 +169,19 @@ export class UI3DRenderer extends EventListenerModel {
   lights: THREE.Group = new THREE.Group();
   globalLight: THREE.Light;
   depthTarget: THREE.WebGLRenderTarget;
+  /** Set by DEPTH_TEXTURE emitters; triggers a depth prepass before render. */
+  softDepthNeeded: boolean = false;
+  private _depthPrepassHidden: THREE.Object3D[] = [];
+  /**
+   * Set by TILE / Gob.distortion emitters during tick. Triggers force-distortion
+   * post-pass (RenderForceDistortion) after the scene color is drawn.
+   */
+  forceDistortionNeeded: boolean = false;
+  forceDistortionTexture: THREE.Texture | null = null;
+  private forceDistortionPass: ForceDistortionPass | null = null;
+  /** Scene color + stencil for force-distortion (Forge has no EffectComposer). */
+  private sceneTarget: THREE.WebGLRenderTarget | null = null;
+  private copyToScreenQuad: FullScreenQuad | null = null;
   raycaster: THREE.Raycaster = new THREE.Raycaster();
   orbitControls: OrbitControls;
 
@@ -191,6 +210,12 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
+  odysseyShadowManager: KotOR.OdysseyShadowManager = new KotOR.OdysseyShadowManager();
+  /** Forge overlay — shadow light position markers. */
+  shadowDebugEnabled = true;
+  private shadowDebugGroup = new THREE.Group();
+  private shadowLightDebugMarkers: THREE.Mesh[] = [];
+  private shadowFrustumHelper: THREE.CameraHelper | undefined;
 
   referenceNode: THREE.Object3D = new THREE.Object3D();
 
@@ -287,7 +312,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.time = 0;
     this.deltaTime = 0;
 
-    this.clock = new THREE.Clock();
+    this.clock = new THREE.Timer();
     this.selectionBox.visible = false;
 
     this.group = {
@@ -328,6 +353,10 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
+    this.odysseyShadowManager.init(this.lightManager, this.scene);
+    this.odysseyShadowManager.syncQualityFromLightManager();
+    this.shadowDebugGroup.name = 'shadow_debug';
+    this.scene.add(this.shadowDebugGroup);
   }
 
   setModule(module: ForgeModule) {
@@ -339,8 +368,9 @@ export class UI3DRenderer extends EventListenerModel {
 
   buildTransformControls() {
     if(this.transformControls){
+      const prevHelper = this.transformControls.getHelper();
+      prevHelper.removeFromParent();
       this.transformControls.dispose();
-      this.transformControls.removeFromParent();
     }
     if(this.canvas){
       if(this.orbitControls){
@@ -355,12 +385,9 @@ export class UI3DRenderer extends EventListenerModel {
       this.applyOrbitMouseButtons();
       this.syncOrbitEnabled();
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
-      this.transformControls.visible = false;
-      this.unselectable.add(this.transformControls);
-      this.transformControls.userData.uuids = [];
-      this.transformControls.traverse( (obj) => {
-        this.transformControls.userData.uuids.push(obj.uuid);
-      });
+      const helper = this.transformControls.getHelper();
+      helper.visible = false;
+      this.unselectable.add(helper);
 
       this.transformControls.addEventListener('dragging-changed', (event: any) => {
         this.transformControlsDragging = event.value === true;
@@ -1270,7 +1297,7 @@ export class UI3DRenderer extends EventListenerModel {
       this.buildWebGLRenderer();
       this.buildDepthTarget();
 
-      // this.buildCamera();
+      // this.buildCamera;
       this.buildAmbientLight();
       this.buildScene();
     }
@@ -1285,7 +1312,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   private buildCamera(){
-    // if(this.camera) this.camera.dispose();
+    // if(this.camera) this.camera.dispose;
     this.camera = new THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1500 );
     this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.position.set( .1, 5, 1 ); // offset the camera a bit
@@ -1310,17 +1337,20 @@ export class UI3DRenderer extends EventListenerModel {
       this.globalLight.removeFromParent();
       this.globalLight.dispose();
     }
-    this.globalLight = new THREE.AmbientLight(0x7F7F7F); //0x60534A
+    // Odyssey materials use OdysseyLightingBinder (lights:false); keep a debug AmbientLight
+    // only for non-Odyssey helpers that still use Mesh*Material with lights.
+    this.globalLight = new THREE.AmbientLight(0x7F7F7F);
     this.globalLight.name = 'Ambient Light';
-    this.globalLight.position.x = 0;
-    this.globalLight.position.y = 0;
-    this.globalLight.position.z = 0;
-    this.globalLight.intensity  = 1;
+    this.globalLight.position.set(0, 0, 0);
+    this.globalLight.intensity = 1;
     this.lights.add(this.globalLight);
+    // Preview ambient/sun live on this renderer's LightManager.
+    this.lightManager.setAreaAmbient(0.5, 0.5, 0.5);
+    this.lightManager.setAreaSun(0.35, 0.35, 0.35);
   }
 
   private buildScene(){
-    // this.scene = new THREE.Scene();
+    // this.scene = new THREE.Scene;
     this.group.light_helpers.visible = false;
 
     this.scene.add(this.selectionBox);
@@ -1353,6 +1383,8 @@ export class UI3DRenderer extends EventListenerModel {
       // autoClear: false,
       depth: true,
       alpha: true,
+      // Stencil required for force-distortion emitter masks
+      stencil: true,
       logarithmicDepthBuffer: false,
       preserveDrawingBuffer: false,
     });
@@ -1360,7 +1392,73 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.renderer){
       this.renderer.setClearColor(this.clearColor)
       this.renderer.autoClear = false;
+      this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.autoUpdate = false;
+      this.renderer.shadowMap.type = THREE.PCFShadowMap;
       this.renderer.setSize( this.width, this.height );
+    }
+
+    if(!this.forceDistortionPass){
+      this.forceDistortionPass = new ForceDistortionPass();
+    }
+    if(!this.copyToScreenQuad){
+      const mat = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms),
+        vertexShader: CopyShader.vertexShader,
+        fragmentShader: CopyShader.fragmentShader,
+        depthTest: false,
+        depthWrite: false,
+        blending: THREE.NoBlending,
+      });
+      this.copyToScreenQuad = new FullScreenQuad(mat);
+    }
+    this.ensureSceneTarget();
+    void this.ensureForceDistortionTexture();
+  }
+
+  private ensureSceneTarget(){
+    const w = Math.max(1, this.width || 1);
+    const h = Math.max(1, this.height || 1);
+    if(
+      this.sceneTarget &&
+      this.sceneTarget.width === w &&
+      this.sceneTarget.height === h
+    ){
+      return;
+    }
+    if(this.sceneTarget){
+      this.sceneTarget.dispose();
+    }
+    this.sceneTarget = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: true,
+      stencilBuffer: true,
+    });
+  }
+
+  private async ensureForceDistortionTexture(){
+    if(this.forceDistortionTexture && !(this.forceDistortionTexture as any)._forceDistortionFallback){
+      return;
+    }
+    if(!this.forceDistortionTexture){
+      this.forceDistortionTexture = KotOR.OdysseyRenderPipeline.createFallbackDistortionTexture();
+      this.forceDistortionPass?.setDistortionTexture(this.forceDistortionTexture);
+    }
+    try {
+      const tex = await KotOR.TextureLoader.Load('distortiontex');
+      if(tex){
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        this.forceDistortionTexture = tex;
+        this.forceDistortionPass?.setDistortionTexture(tex);
+      }
+    }catch(e){
+      console.warn('UI3DRenderer: failed to load distortiontex', e);
     }
   }
 
@@ -1373,6 +1471,21 @@ export class UI3DRenderer extends EventListenerModel {
     this.depthTarget.depthBuffer = true;
     this.depthTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
     this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+    this.syncDepthTargetTextureSize();
+  }
+
+  /** Keep DepthTexture.image size in sync after WebGLRenderTarget.setSize. */
+  private syncDepthTargetTextureSize(): void {
+    const rt = this.depthTarget;
+    const dt = rt?.depthTexture;
+    if(!rt || !dt) return;
+    if(!dt.image){
+      dt.image = { width: rt.width, height: rt.height } as any;
+    }else{
+      dt.image.width = rt.width;
+      dt.image.height = rt.height;
+    }
+    dt.needsUpdate = true;
   }
 
   setSize( width = 100, height = 100){
@@ -1384,6 +1497,8 @@ export class UI3DRenderer extends EventListenerModel {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.depthTarget.setSize( this.width, this.height );
+    this.syncDepthTargetTextureSize();
+    this.ensureSceneTarget();
 
     this.guiCamera.left = this.width / -2;
     this.guiCamera.right = this.width / 2;
@@ -1460,12 +1575,26 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
+  /** Scene depth into depthTarget for soft particles. */
+  renderDepthPrepass(): void {
+    if(!this.softDepthNeeded || !this.depthTarget || !this.renderer || !this.currentCamera) return;
+    this.softDepthNeeded = false;
+
+    KotOR.runOdysseyDepthPrepass({
+      scene: this.scene,
+      renderer: this.renderer,
+      camera: this.guiMode ? this.guiCamera : this.currentCamera,
+      depthTarget: this.depthTarget,
+    });
+  }
+
   render(){
     if(!this.enabled) return;
     this.queuedAnimationFrame = requestAnimationFrame( () => {
       this.render();
     });
 
+    this.clock.update();
     const rawDelta = this.clock.getDelta();
     const idle = shouldIdleRender(this.lastInteractionAt);
     if (idle) {
@@ -1514,10 +1643,55 @@ export class UI3DRenderer extends EventListenerModel {
         this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
+        const focus = this.lightManager.focusPosition;
+        this.odysseyShadowManager.update(this.currentCamera, focus, delta);
+        if(KotOR.GameState.areShadowsEnabled?.() && this.odysseyShadowManager.activeLightCount){
+          this.odysseyShadowManager.markShadowMapForRender(this.renderer!);
+        }
+        this.updateShadowDebugOverlay();
+        this.selectable.traverse((obj: any) => {
+          if(obj?.materials && typeof obj.update === 'function'){
+            KotOR.OdysseyLightingBinder.bindSceneModel(this.lightManager, obj, this.currentCamera);
+          }
+        });
       }
 
-      // Render main scene
-      this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );
+      // Soft-particle depth (DEPTH_TEXTURE emitters) before color pass
+      this.renderDepthPrepass();
+
+      const cam = this.guiMode ? this.guiCamera : this.currentCamera;
+      const forceNeeded = this.forceDistortionNeeded;
+      this.forceDistortionNeeded = false;
+
+      // Force distortion (TILE / Gob.distortion): scene→stencil RT, warp, blit
+      if(forceNeeded && this.forceDistortionPass && this.sceneTarget && cam){
+        if(!this.forceDistortionTexture){
+          this.forceDistortionTexture = KotOR.OdysseyRenderPipeline.createFallbackDistortionTexture();
+          this.forceDistortionPass.setDistortionTexture(this.forceDistortionTexture);
+          void this.ensureForceDistortionTexture();
+        }
+        this.ensureSceneTarget();
+        const rt = this.sceneTarget!;
+        this.renderer.setRenderTarget(rt);
+        this.renderer.clear(true, true, true);
+        this.renderer.render(this.scene, cam);
+
+        this.forceDistortionPass.setDistortionTexture(this.forceDistortionTexture);
+        this.forceDistortionPass.render(this.renderer, rt, rt);
+
+        this.renderer.setRenderTarget(null);
+        const copyMat = this.copyToScreenQuad!.material as THREE.ShaderMaterial;
+        copyMat.uniforms.tDiffuse.value = rt.texture;
+        this.copyToScreenQuad!.render(this.renderer);
+      }else{
+        this.renderer.setRenderTarget(null);
+        this.renderer.render( this.scene, cam );
+      }
+
+      if(KotOR.GameState.areShadowsEnabled?.() && this.odysseyShadowManager.activeLightCount){
+        this.odysseyShadowManager.noteShadowMapRendered();
+        KotOR.OdysseyLightingBinder.refreshSceneShadowMapUniforms(this.scene);
+      }
 
       // Render camera preview if enabled
       if(this.previewEnabled && this.previewCamera && this.canvas){
@@ -1540,8 +1714,9 @@ export class UI3DRenderer extends EventListenerModel {
             hiddenHelpers.push(camera.cameraHelper);
           }
         }
-        const wasTransformControlsVisible = this.transformControls.visible;
-        this.transformControls.visible = false;
+        const transformHelper = this.transformControls?.getHelper();
+        const wasTransformControlsVisible = transformHelper?.visible ?? false;
+        if(transformHelper) transformHelper.visible = false;
         // Update preview camera aspect ratio (square preview)
         this.previewCamera.aspect = 1.0;
         this.previewCamera.updateProjectionMatrix();
@@ -1564,7 +1739,7 @@ export class UI3DRenderer extends EventListenerModel {
         for(const helper of hiddenHelpers){
           helper.visible = true;
         }
-        this.transformControls.visible = wasTransformControlsVisible;
+        if(transformHelper) transformHelper.visible = wasTransformControlsVisible;
         // Restore viewport and scissor
         this.renderer.setViewport(currentViewport);
         this.renderer.setScissor(currentScissor);
@@ -1577,6 +1752,52 @@ export class UI3DRenderer extends EventListenerModel {
 
       //Custom render logic can run here
       this.processEventListener('onAfterRender', [delta]);
+    }
+  }
+
+  /** Update Forge shadow debug overlays (primary light marker + shadow frustum). */
+  updateShadowDebugOverlay(){
+    this.shadowDebugGroup.visible = this.shadowDebugEnabled
+      && !!KotOR.GameState.areShadowsEnabled?.();
+    if(!this.shadowDebugGroup.visible){
+      return;
+    }
+
+    const manager = this.odysseyShadowManager;
+    const lightWorld = manager.lightWorld;
+    const hasLight = manager.activeLightCount > 0;
+
+    while(this.shadowLightDebugMarkers.length < 1){
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.15, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff6600, depthTest: false })
+      );
+      this.shadowLightDebugMarkers.push(marker);
+      this.shadowDebugGroup.add(marker);
+    }
+
+    const marker = this.shadowLightDebugMarkers[0];
+    if(hasLight){
+      marker.position.copy(lightWorld);
+      marker.visible = true;
+    }else{
+      marker.visible = false;
+    }
+
+    const shadowCam = manager.getShadowCamera() ?? undefined;
+    if(shadowCam){
+      if(!this.shadowFrustumHelper){
+        this.shadowFrustumHelper = new THREE.CameraHelper(shadowCam);
+        this.shadowDebugGroup.add(this.shadowFrustumHelper);
+      }else if(this.shadowFrustumHelper.camera !== shadowCam){
+        this.shadowFrustumHelper.dispose();
+        this.shadowFrustumHelper = new THREE.CameraHelper(shadowCam);
+        this.shadowDebugGroup.add(this.shadowFrustumHelper);
+      }
+      this.shadowFrustumHelper.visible = hasLight;
+      this.shadowFrustumHelper.update();
+    }else if(this.shadowFrustumHelper){
+      this.shadowFrustumHelper.visible = false;
     }
   }
 
@@ -1608,6 +1829,20 @@ export class UI3DRenderer extends EventListenerModel {
 
     if(this.orbitControls){
       this.orbitControls.dispose();
+    }
+
+    if(this.forceDistortionPass){
+      this.forceDistortionPass.dispose();
+      this.forceDistortionPass = null;
+    }
+    if(this.copyToScreenQuad){
+      (this.copyToScreenQuad.material as THREE.Material).dispose();
+      this.copyToScreenQuad.dispose();
+      this.copyToScreenQuad = null;
+    }
+    if(this.sceneTarget){
+      this.sceneTarget.dispose();
+      this.sceneTarget = null;
     }
 
     if(this.camera){

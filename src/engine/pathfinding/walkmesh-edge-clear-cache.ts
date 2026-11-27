@@ -1,0 +1,64 @@
+import type { Area } from "@engine/module/Area";
+import type { Vector3 } from "three";
+
+/**
+ * Per-area cache for static walkmesh-edge clear results
+ * ({@link isWalkmeshEdgeWalkClear} — creatures ignored, personalSpace 0).
+ *
+ * @file walkmesh-edge-clear-cache.ts
+ */
+
+/** Quantize endpoints for the static edge cache (~1cm). */
+const EDGE_CACHE_SCALE = 100;
+
+/** Cap entries per area to bound long-session heap growth. */
+const EDGE_CACHE_MAX = 12288;
+
+const _edgeWalkClearCache = new WeakMap<Area, Map<string, boolean>>();
+
+export function edgeCacheKey(from: Vector3, to: Vector3): string {
+  const ax = Math.round(from.x * EDGE_CACHE_SCALE);
+  const ay = Math.round(from.y * EDGE_CACHE_SCALE);
+  const bx = Math.round(to.x * EDGE_CACHE_SCALE);
+  const by = Math.round(to.y * EDGE_CACHE_SCALE);
+  // Undirected: canonicalize endpoint order.
+  if(ax < bx || (ax === bx && ay <= by)){
+    return `${ax},${ay}|${bx},${by}`;
+  }
+  return `${bx},${by}|${ax},${ay}`;
+}
+
+export function getWalkmeshEdgeClearCached(
+  area: Area,
+  key: string
+): boolean | undefined {
+  return _edgeWalkClearCache.get(area)?.get(key);
+}
+
+export function setWalkmeshEdgeClearCached(
+  area: Area,
+  key: string,
+  clear: boolean
+): void {
+  let cache = _edgeWalkClearCache.get(area);
+  if(!cache){
+    cache = new Map();
+    _edgeWalkClearCache.set(area, cache);
+  }
+  if(cache.size >= EDGE_CACHE_MAX && !cache.has(key)){
+    // Map iteration order is insertion order — drop oldest ~1/8.
+    const drop = (EDGE_CACHE_MAX / 8) | 0;
+    let n = 0;
+    for(const k of cache.keys()){
+      cache.delete(k);
+      if(++n >= drop) break;
+    }
+  }
+  cache.set(key, clear);
+}
+
+/** Drop cached walkmesh-edge clear results for an area (doors / blockers changed). */
+export function invalidateWalkmeshEdgeClearCache(area: Area | undefined): void {
+  if(!area) return;
+  _edgeWalkClearCache.delete(area);
+}

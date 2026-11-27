@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import * as THREE from "three";
-import { TabModelViewerState, TabModelViewerStateEventListenerTypes } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabModelViewerState, TabModelViewerStateEventListenerTypes } from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { NodePropertiesPanel } from "@/apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel";
+import { SceneGraphTreeView } from "@apps/forge/components/SceneGraphTreeView";
+import { SectionContainer } from "@apps/forge/components/SectionContainer";
+import { NodePropertiesPanel } from "@apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeSelect, ForgeInput } from "@/apps/forge/components/ui";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeSelect, ForgeInput } from "@apps/forge/components/ui";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
 
 export const ModelViewerSidebarComponent = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;

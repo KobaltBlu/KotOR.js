@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabSSFEditorState } from "@/apps/forge/states/tabs/TabSSFEditorState";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { ForgeButton, ForgeSpinner, ForgeInput } from "@/apps/forge/components/ui";
-import * as KotOR from "@/apps/forge/KotOR";
-import { SSFType } from "@/enums/resource/SSFType";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabSSFEditorState } from "@apps/forge/states/tabs/TabSSFEditorState";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
+import { ForgeButton, ForgeSpinner, ForgeInput } from "@apps/forge/components/ui";
+import * as KotOR from "@apps/forge/KotOR";
+import { SSFType } from "@core/enums/resource/SSFType";
 
-import { forgeSsfSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { forgeSsfSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import "@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor.scss";
 
 export const TabSSFEditor = function (props: BaseTabProps) {

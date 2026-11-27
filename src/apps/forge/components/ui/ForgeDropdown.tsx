@@ -10,7 +10,7 @@ import React, {
 import {
   applyDropdownPlacement,
   clearDropdownPlacement,
-} from "@/apps/forge/helpers/forgeMenuClip";
+} from "@apps/forge/helpers/forgeMenuClip";
 
 interface DropdownContextValue {
   open: boolean;

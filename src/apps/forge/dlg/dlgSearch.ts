@@ -1,6 +1,6 @@
-import { locStringPreview } from "@/apps/forge/dlg/dlgLocString";
-import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import type { ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { locStringPreview } from "@apps/forge/dlg/dlgLocString";
+import type { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import type { ForgeDLGNode } from "@apps/forge/dlg/ForgeDLGTypes";
 
 /**
  * Catalog search over conversation node text, tags, and resrefs.

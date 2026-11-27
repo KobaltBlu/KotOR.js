@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import type { BlueprintCatalogSource } from "@/apps/forge/helpers/blueprintCatalog";
-import { BlueprintBrowserThumbnail } from "@/apps/forge/components/modal/BlueprintBrowserThumbnail";
-import { isBlueprintThumbnailType } from "@/apps/forge/helpers/blueprintThumbnailFingerprint";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ModalBlueprintBrowserState } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import type { BlueprintCatalogSource } from "@apps/forge/helpers/blueprintCatalog";
+import { BlueprintBrowserThumbnail } from "@apps/forge/components/modal/BlueprintBrowserThumbnail";
+import { isBlueprintThumbnailType } from "@apps/forge/helpers/blueprintThumbnailFingerprint";
 import "@/apps/forge/components/modal/ModalBlueprintBrowser.scss";
 
 const BLUEPRINT_TYPE_LABELS: Record<string, string> = {

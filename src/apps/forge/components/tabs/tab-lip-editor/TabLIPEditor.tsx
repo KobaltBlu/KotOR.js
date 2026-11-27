@@ -1,16 +1,16 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "@apps/forge/states/tabs";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
 
-import { ForgeSelect } from "@/apps/forge/components/ui";
-import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
+import { ForgeSelect } from "@apps/forge/components/ui";
+import { LIPShapeLabels } from "@apps/forge/data/LIPShapeLabels";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { TabLIPEditorOptions } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditorOptions";
+import * as KotOR from "@apps/forge/KotOR";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { TabLIPEditorOptions } from "@apps/forge/components/tabs/tab-lip-editor/TabLIPEditorOptions";
 
 import "@/apps/forge/components/tabs/tab-lip-editor/tab-lip-editor.scss";
 import "@/apps/forge/components/KeyFrameTimelineComponent.scss";

@@ -7,16 +7,16 @@
  */
 
 import React from "react";
-import { ModalScriptBrowser } from "@/apps/forge/components/modal/ModalScriptBrowser";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ModalScriptBrowser } from "@apps/forge/components/modal/ModalScriptBrowser";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 import {
   ScriptCatalogEntry,
   mergeScriptCatalog,
   scriptResRefFromPath,
-} from "@/apps/forge/helpers/scriptResRefCatalog";
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
-import * as KotOR from "@/apps/forge/KotOR";
+} from "@apps/forge/helpers/scriptResRefCatalog";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
+import * as KotOR from "@apps/forge/KotOR";
 
 export class ModalScriptBrowserState extends ModalState {
   static keyCache: string[] | null = null;

@@ -1,8 +1,8 @@
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
 import {
   createEmptyDocument,
   createLink,
@@ -13,9 +13,9 @@ import {
   type ForgeDLGLink,
   type ForgeDLGNode,
   type ForgeDLGScriptParams,
-} from "@/apps/forge/dlg/ForgeDLGTypes";
-import { cloneLocString } from "@/apps/forge/dlg/dlgLocString";
-import { inferDlgSoundExists } from "@/apps/forge/dlg/dlgSoundExists";
+} from "@apps/forge/dlg/ForgeDLGTypes";
+import { cloneLocString } from "@apps/forge/dlg/dlgLocString";
+import { inferDlgSoundExists } from "@apps/forge/dlg/dlgSoundExists";
 
 /**
  * GFF parse/export for ForgeDLG. Does not load NWScript or flatten locstrings.

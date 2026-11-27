@@ -7,20 +7,20 @@
  */
 
 import React from "react";
-import { ModalBlueprintBrowser } from "@/apps/forge/components/modal/ModalBlueprintBrowser";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { invalidateBlueprintSuggestCache } from "@/apps/forge/helpers/blueprintResRefSuggest";
-import { invalidateBlueprintThumbnailCache } from "@/apps/forge/helpers/blueprintThumbnailCache";
-import { resolveBlueprintBuffer } from "@/apps/forge/helpers/blueprintThumbnailResolve";
+import { ModalBlueprintBrowser } from "@apps/forge/components/modal/ModalBlueprintBrowser";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { invalidateBlueprintSuggestCache } from "@apps/forge/helpers/blueprintResRefSuggest";
+import { invalidateBlueprintThumbnailCache } from "@apps/forge/helpers/blueprintThumbnailCache";
+import { resolveBlueprintBuffer } from "@apps/forge/helpers/blueprintThumbnailResolve";
 import {
   BlueprintCatalogEntry,
   BlueprintCatalogSource,
   blueprintResRefFromPath,
   mergeBlueprintCatalog,
-} from "@/apps/forge/helpers/blueprintCatalog";
-import * as KotOR from "@/apps/forge/KotOR";
+} from "@apps/forge/helpers/blueprintCatalog";
+import * as KotOR from "@apps/forge/KotOR";
 
 export type BlueprintType = "utc" | "utd" | "ute" | "uti" | "utp" | "utm" | "uts" | "utt" | "utw";
 

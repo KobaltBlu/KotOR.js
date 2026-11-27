@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ModalNewProjectFromModState } from "@/apps/forge/states/modal/ModalNewProjectFromModState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalNewProjectFromModState } from "@apps/forge/states/modal/ModalNewProjectFromModState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export function openNewProjectFromModWizard(): void {
   const modal = new ModalNewProjectFromModState();

@@ -1,7 +1,7 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import * as KotOR from "@/apps/forge/KotOR";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 
 /** TabState.tsx is not type-checkable under Jest (`JSX` types). */
 interface BlueprintEditorTab {
@@ -142,7 +142,7 @@ export class ForgeGameObject extends EventListenerModel {
   }
 
   /**
-   * Seed a retail-style blueprint GFF. Child classes replace this with the
+   * Seed a -style blueprint GFF. Child classes replace this with the
    * pipeline field list for their UT* FileType.
    */
   exportToBlueprint(): KotOR.GFFObject {

@@ -1,17 +1,17 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 (window as any).monaco = monaco;
-import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
+import { TXILanguageService } from "@apps/forge/states/TXILanguageService";
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/apps/forge/app.scss";
-import { AppProvider, useApp } from "@/apps/forge/context/AppContext";
-import * as KotOR from "@/apps/forge/KotOR";
-import { App } from "@/apps/forge/App";
-import { Launcher } from "@/apps/launcher/context/Launcher";
-import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
-import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
-import { applyForgeTheme } from "@/apps/forge/settings/forgeTheme";
-import { restoreGameDirectoryHandlesToProfiles } from "@/utility/gameDirectoryAccess";
+import { AppProvider, useApp } from "@apps/forge/context/AppContext";
+import * as KotOR from "@apps/forge/KotOR";
+import { App } from "@apps/forge/App";
+import { Launcher } from "@apps/launcher/context/Launcher";
+import { applyProfileSeo } from "@apps/common/seo/applyProfileSeo";
+import { buildProfileSeo } from "@apps/common/seo/profileSeo";
+import { applyForgeTheme } from "@apps/forge/settings/forgeTheme";
+import { restoreGameDirectoryHandlesToProfiles } from "@core/filesystem/gameDirectoryAccess";
 
 TXILanguageService.initTXILanguage();
 
@@ -41,7 +41,9 @@ const loadReactApplication = () => {
 }
 
 ( async () => {
-  await KotOR.ConfigClient.Init();
+  // Forge may export binary models; keep source bytes for MDL passthrough.
+  KotOR.MDLLoader.preserveSourceBinary = true;
+  await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
   await Launcher.InitProfiles();
   await restoreGameDirectoryHandlesToProfiles();
   const getProfile = () => {

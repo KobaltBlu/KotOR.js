@@ -1,8 +1,8 @@
-import { DiceType } from "@/enums/combat/DiceType";
-import { WeaponSize } from "@/enums/combat/WeaponSize";
-import { WeaponType } from "@/enums/combat/WeaponType";
-import { WeaponWield } from "@/enums/combat/WeaponWield";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { DiceType } from "@core/enums/combat/DiceType";
+import { WeaponSize } from "@core/enums/combat/WeaponSize";
+import { WeaponType } from "@core/enums/combat/WeaponType";
+import { WeaponWield } from "@core/enums/combat/WeaponWield";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 export class SWBaseItem {
   id: number = 0;
@@ -35,6 +35,8 @@ export class SWBaseItem {
   baseCost: number = 0;
   stacking: number = 1;
   itemMultiplier: number = 1;
+  /** — PARTYTABLE PT_COST_MULT_VALUE (defaults to 1.0; not itemmultiplier). */
+  costMultiplier: number = 1;
   description: number = 0;
   invSoundType: number = -1;
   maxProps: number = 0;

@@ -7,21 +7,21 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { buildProjectModuleErf } from "@/apps/forge/helpers/exportProjectModule";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { buildProjectModuleErf } from "@apps/forge/helpers/exportProjectModule";
 import {
   compileAllNssBeforeModulePack,
   formatBulkNssCompileFailure,
   type BulkProjectNssCompileOutcome,
-} from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
-import { CacheScope } from "@/enums/resource/CacheScope";
-import { EngineMode } from "@/enums/engine/EngineMode";
+} from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { ModalBulkNssCompileResultsState } from "@apps/forge/states/modal/ModalBulkNssCompileResultsState";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
+import { CacheScope } from "@core/enums/resource/CacheScope";
+const EngineMode = KotOR.EngineMode;
 
 export interface ModulePreviewSessionResult {
   ok: boolean;
@@ -47,7 +47,7 @@ export class ModulePreviewSession {
     tab.processEventListener("onPreviewProgress", [stage, detail || ""]);
   }
 
-  /** Temporarily apply camera spawn into module entry fields for pack. Waypoint spawn uses LoadModuleFromArchives tag (retail warp). */
+  /** Temporarily apply camera spawn into module entry fields for pack. Waypoint spawn uses LoadModuleFromArchives tag (warp). */
   private static withSpawnOverrides<T>(tab: TabModuleEditorState, fn: () => T): T {
     const mod = tab.module;
     if(!mod || tab.previewSpawnMode !== "camera"){
@@ -179,7 +179,7 @@ export class ModulePreviewSession {
 
       this.hostElement = host;
       this.emitProgress(tab, "init", "Initializing game renderer…");
-      await KotOR.GameState.InitForForgePreview(host);
+      await KotOR.ForgePreviewHost.InitForForgePreview(host);
 
       // Re-wrap via KotOR.ERFObject: Forge webpack externals @/KotOR, so the
       // bundled ERFObject from exportProjectModule fails ResourceLoader instanceof checks.
@@ -190,7 +190,7 @@ export class ModulePreviewSession {
       this.emitProgress(tab, "loading", "Loading module into GameState…");
       const modName = (tab.module.tag || packed.areaResRef || "preview").slice(0, 16);
       const waypoint = tab.previewSpawnMode === "waypoint" ? tab.getPreviewSpawnWaypointTag() : null;
-      await KotOR.GameState.LoadModuleFromArchives([playErf], waypoint, modName);
+      await KotOR.ForgePreviewHost.LoadModuleFromArchives([playErf], waypoint, modName);
 
       this.active = true;
       this.emitProgress(tab, "ready", "Preview ready");
@@ -267,7 +267,7 @@ export class ModulePreviewSession {
 
       const modName = (tab.module.tag || packed.areaResRef || "preview").slice(0, 16);
       const waypoint = tab.previewSpawnMode === "waypoint" ? tab.getPreviewSpawnWaypointTag() : null;
-      await KotOR.GameState.LoadModuleFromArchives([playErf], waypoint, modName);
+      await KotOR.ForgePreviewHost.LoadModuleFromArchives([playErf], waypoint, modName);
 
       this.emitProgress(tab, "ready", "Preview reloaded");
       return { ok: true, skippedNss: packed.skippedNss };
@@ -296,10 +296,10 @@ export class ModulePreviewSession {
         }
         KotOR.GameState.module = undefined as any;
       }
-      KotOR.GameState.UnloadModule();
+      KotOR.ModuleLoadCoordinator.UnloadModule();
       KotOR.ResourceLoader.ClearCache(CacheScope.MODULE);
-      KotOR.GameState.clearForgePreviewViewport();
-      KotOR.GameState.SetEngineMode(EngineMode.LOADING);
+      KotOR.ForgePreviewHost.clearForgePreviewViewport();
+      KotOR.EngineModeController.SetEngineMode(EngineMode.LOADING);
       KotOR.GameState.loadingModule = false;
       if(KotOR.GameState.canvas){
         KotOR.GameState.canvas.style.setProperty("width", "0");

@@ -1,6 +1,6 @@
 import React from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabModelViewerState } from "@/apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
+import { TabModelViewerState } from "@apps/forge/states/tabs";
 import { TransformSection } from "./TransformSection";
 import { MeshSection } from "./MeshSection";
 import { MaterialTextureSection } from "./MaterialTextureSection";

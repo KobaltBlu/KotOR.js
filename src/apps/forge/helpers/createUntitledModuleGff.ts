@@ -7,12 +7,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { AreaMap } from "@/module/AreaMap";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { AreaMap } from "@apps/forge/KotOR";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
 
 export function normalizeResRef(resref: string, fallback: string): string {
   const trimmed = String(resref || "").trim().toLowerCase().replace(/[^a-z0-9_]/g, "");

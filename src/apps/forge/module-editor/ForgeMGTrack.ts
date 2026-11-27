@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
+import { ILayoutTrack } from "@core/interface/resource/ILayoutTrack";
 
 export class ForgeMGTrack {
   // Basic properties
@@ -15,7 +15,7 @@ export class ForgeMGTrack {
 
   loadFromLayout(layout: ILayoutTrack){
     this.name = layout.name.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    this.position = layout.position.clone();
+    this.position.set(layout.position.x, layout.position.y, layout.position.z);
   }
 }
 

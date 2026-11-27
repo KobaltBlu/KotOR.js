@@ -1,6 +1,6 @@
 import { describe, expect, jest, test } from "@jest/globals";
 
-jest.mock("@/apps/forge/managers/EditorTabManager", () => ({
+jest.mock("@apps/forge/managers/EditorTabManager", () => ({
   EditorTabManager: class {
     static tabId = 0;
     static GetNewTabID(): number {
@@ -9,30 +9,30 @@ jest.mock("@/apps/forge/managers/EditorTabManager", () => ({
   },
 }));
 
-jest.mock("@/apps/forge/states/ForgeState", () => ({
+jest.mock("@apps/forge/states/ForgeState", () => ({
   ForgeState: {},
 }));
 
-jest.mock("@/apps/forge/EditorFile", () => ({
+jest.mock("@apps/forge/EditorFile", () => ({
   EditorFile: class EditorFile {},
 }));
 
-jest.mock("@/apps/forge/KotOR", () => ({
+jest.mock("@apps/forge/KotOR", () => ({
   ApplicationProfile: { ENV: 0 },
   ApplicationEnvironment: { ELECTRON: 1, BROWSER: 0 },
 }));
 
-jest.mock("@/apps/forge/ForgeFileSystem", () => ({
+jest.mock("@apps/forge/ForgeFileSystem", () => ({
   supportedFileDialogTypes: [],
   supportedFilePickerTypes: [],
 }));
 
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { beginUtxFileUpdate } from "@/apps/forge/helpers/UTxEditorHelpers";
-import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { beginUtxFileUpdate } from "@apps/forge/helpers/UTxEditorHelpers";
+import { gffFromSnapshot, snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
 
 class ValueUndoTab extends TabState {
   value = 0;

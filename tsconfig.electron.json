@@ -1,23 +1,31 @@
-{ 
+{
   "compilerOptions": {
-    "baseUrl": ".",
     "target": "ES6",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": false,
     "noImplicitAny": false,
-    // "suppressImplicitAnyIndexErrors": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "paths": {
+      "@core": ["./src/core/index.ts"],
+      "@core/*": ["./src/core/*"],
+      "@engine": ["./src/engine/index.ts"],
+      "@engine/*": ["./src/engine/*"],
+      "@apps/*": ["./src/apps/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@/*": ["./src/*"]
+    },
     "types": [
       "electron",
-      "node",
+      "node"
     ],
+    "rootDir": "src/apps/electron",
     "outDir": "dist/electron"
   },
-  "exclude": [ "node_modules" ],
-  "include": ["src/electron/index.ts", "src/electron/preload.ts"]
+  "exclude": ["node_modules"],
+  "include": ["src/apps/electron/**/*.ts"]
 }

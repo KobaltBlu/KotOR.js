@@ -6,8 +6,8 @@ import React, {
   type ReactNode,
 } from "react";
 
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import * as KotOR from "@apps/forge/KotOR";
 
 type FullscreenDocument = Document & {
   webkitFullscreenElement?: Element | null;

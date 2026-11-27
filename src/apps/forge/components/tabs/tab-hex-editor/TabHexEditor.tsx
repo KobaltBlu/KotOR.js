@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabHexEditorState } from "@/apps/forge/states/tabs/tab-hex-editor/TabHexEditorState";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabHexEditorState } from "@apps/forge/states/tabs/tab-hex-editor/TabHexEditorState";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@apps/forge/components/ui";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
 import {
   asciiChar,
   byteToHex2,
@@ -15,9 +15,9 @@ import {
   parseHexNibble,
   rowCount,
   rowIndexForOffset,
-} from "@/apps/forge/components/tabs/tab-hex-editor/hexEditorFormat";
+} from "@apps/forge/components/tabs/tab-hex-editor/hexEditorFormat";
 
-import { forgeHexSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { forgeHexSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 const ROW_HEIGHT = 22;
 const OVERSCAN_ROWS = 6;

@@ -39,7 +39,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
     clearTimeout(fadeInTimeout.current as any);
     setFadeIn(true);
     setFadeOut(false);
-    // fadeInTimeout.current = setTimeout(() => {
+    // fadeInTimeout.current = setTimeout(=> {
       setVisible(true);
     // }, 1000);
   };

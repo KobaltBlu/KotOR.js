@@ -1,16 +1,16 @@
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
+import type { GFFStruct } from "@core/resource/GFFStruct";
+import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
+import { isPthThinLineClear } from "@engine/pathfinding/pth-edge-clear";
 import * as THREE from 'three';
-import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
-import { Utility } from "@/utility/Utility";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { GFFStruct } from "@/resource/GFFStruct";
-import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import type { ModuleObject } from "@/module/ModuleObject";
+import { IPathPointOptions } from "@engine/interface/engine/pathfinding/IPathPointOptions";
 
 /**
  * PathPoint class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PathPoint.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,7 +23,7 @@ export class PathPoint {
   vector: THREE.Vector3;
   nearestWalkableVector: THREE.Vector3;
   isTemp: boolean = false;
-  area: ModuleArea
+  area: Area
 
   //search state
   h: number = 0;
@@ -54,7 +54,7 @@ export class PathPoint {
     this.setArea(options.area);
   }
 
-  setArea(area: ModuleArea){
+  setArea(area: Area){
     this.area = area;
     if(this.area){
       this.nearestWalkableVector = this.area.getNearestWalkablePoint(this.vector);
@@ -75,40 +75,13 @@ export class PathPoint {
     return false;
   }
 
-  hasLOS(point_b: PathPoint, owner?: ModuleObject): boolean {
-    if(!this.area)
-      return true;
-
-    const path_line = new THREE.Line3(this.vector, point_b.vector);
-    /**
-     * Check line intersects walkable edges
-     */
-    for(let j = 0, len = this.area.walkEdges.length; j < len; j++){
-      const edge = this.area.walkEdges[j];
-
-      //Ignore transition edges
-      if(edge.transition != -1)
-        continue;
-      
-      if(Utility.LineLineIntersection(path_line.start.x, path_line.start.y, path_line.end.x, path_line.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
-        return false;
-      }
-    }
-
-    /**
-     * Check line intersects creatures
-     */
-    for(let j = 0, len = this.area.creatures.length; j < len; j++){
-      const obj = this.area.creatures[j];
-
-      //Ignore the owner if found in this list
-      if(obj == owner)
-        continue;
-
-      if(obj.checkLineIntersectsObject(path_line))
-        return false;
-    }
-    return true;
+  /**
+   * Thin PTH / fan-out LOS (creatures + static door/placeable).
+   * Not locomotion hasWalkLineClear — see pth-edge-clear.ts.
+   */
+  hasLOS(point_b: PathPoint, owner?: GameObject): boolean {
+    if(!this.area) return true;
+    return isPthThinLineClear(this.area, this, point_b, owner);
   }
 
   addConnection(node: PathPoint) {

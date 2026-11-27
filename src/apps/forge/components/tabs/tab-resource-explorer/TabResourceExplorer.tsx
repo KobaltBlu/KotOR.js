@@ -1,20 +1,20 @@
 import React, {forwardRef, useImperativeHandle, useState, useMemo, useCallback, memo} from "react";
-import { TabResourceExplorerState } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeProgress, ForgeInput, ForgeInputGroup, ForgeButton } from "@/apps/forge/components/ui";
-import { executeCommand } from "@/apps/forge/commands/forgeCommands";
+import { TabResourceExplorerState } from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { ForgeProgress, ForgeInput, ForgeInputGroup, ForgeButton } from "@apps/forge/components/ui";
+import { executeCommand } from "@apps/forge/commands/forgeCommands";
 import  "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListNode";
-import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import { promptForDirectory, fileExists, writeFile, ArchiveReadCache, createThrottledProgress, createConcurrencyGate, WRITE_CONCURRENCY } from "@/apps/forge/helpers/AssetExtraction";
-import { createProgressModal, showExtractionResults } from "@/apps/forge/helpers/AssetExtraction";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabERFEditorState, TabGFFEditorState, TabSSFEditorState, TabTLKEditorState } from "@/apps/forge/states/tabs";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { ForgeTreeView } from "@apps/forge/components/treeview/ForgeTreeView";
+import { ResourceListNode } from "@apps/forge/components/treeview/ResourceListNode";
+import { useContextMenu, ContextMenuItem } from "@apps/forge/components/common/ContextMenu";
+import { promptForDirectory, fileExists, writeFile, ArchiveReadCache, createThrottledProgress, createConcurrencyGate, WRITE_CONCURRENCY } from "@apps/forge/helpers/AssetExtraction";
+import { createProgressModal, showExtractionResults } from "@apps/forge/helpers/AssetExtraction";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabERFEditorState, TabGFFEditorState, TabSSFEditorState, TabTLKEditorState } from "@apps/forge/states/tabs";
 
 
 export interface TabResourceExplorerProps extends BaseTabProps {

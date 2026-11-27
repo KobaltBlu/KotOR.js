@@ -1,6 +1,6 @@
-import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import * as KotOR from "@/apps/forge/KotOR";
-import type { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import type { ForgeArea } from "@apps/forge/module-editor/ForgeArea";
+import * as KotOR from "@apps/forge/KotOR";
+import type { UI3DRenderer } from "@apps/forge/UI3DRenderer";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -288,7 +288,7 @@ export class ForgeModule {
 
     // Mod_Name
     const modNameField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Name'))!;
-    // const modNameLocString = new KotOR.CExoLocString();
+    // const modNameLocString = new KotOR.CExoLocString;
     // modNameLocString.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
     // modNameField.setCExoLocString(modNameLocString);
     modNameField.setCExoLocString(this.name);

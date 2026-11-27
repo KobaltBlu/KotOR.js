@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { CAMERA_VIEW_PRESETS, UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { CAMERA_VIEW_PRESETS, UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
 
 // Re-export MenuItem for backward compatibility
 export type { MenuItem };
@@ -24,7 +24,7 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
     }
     return () => {
       if(props.context){
-        // props.context.destroy();
+        // props.context.destroy;
       }
     }
   });

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
-import { forgeModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
-import { EditorTool } from "@/apps/forge/module-editor/kernel/EditorMode";
-import { CAMERA_VIEW_PRESETS, ObjectType } from "@/apps/forge/UI3DRenderer";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { TabModuleEditorControlMode } from "@apps/forge/states/tabs/TabModuleEditorTypes";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
+import { forgeModuleSettings } from "@apps/forge/settings/forgeEditorsSettings";
+import { EditorTool } from "@apps/forge/module-editor/kernel/EditorMode";
+import { CAMERA_VIEW_PRESETS, ObjectType } from "@apps/forge/UI3DRenderer";
 
 export interface ModuleViewportToolbarProps {
   tab: TabModuleEditorState;

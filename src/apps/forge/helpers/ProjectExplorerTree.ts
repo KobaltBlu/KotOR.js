@@ -1,6 +1,6 @@
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 
 /**
  * Project explorer paths relative to workspace root using `/`.

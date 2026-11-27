@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
+import { ForgeButton, ForgeInput } from "@apps/forge/components/ui";
 import "@/apps/forge/components/tabs/tab-utc-editor/UtcGffStructList.scss";
 
 export interface UtcGffNumberColumn<K extends string = string> {

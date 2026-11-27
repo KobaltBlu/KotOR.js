@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { forgeAudioSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 export type AudioPlayerTransport = {
   isPlaying: boolean;

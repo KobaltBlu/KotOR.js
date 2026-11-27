@@ -1,5 +1,5 @@
 import { WorkerPool } from "lip-sync-engine";
-import { TimedPhoneme, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
+import { TimedPhoneme, TimedPhonemeResult } from "@apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 
 export interface RhubarbPhonemeConfig {
   dialogText?: string;

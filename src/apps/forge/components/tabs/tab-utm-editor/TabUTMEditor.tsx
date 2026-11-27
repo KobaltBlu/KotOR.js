@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTMEditorState } from "@/apps/forge/states/tabs/TabUTMEditorState";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
-import { openItemBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps"
+import { TabUTMEditorState } from "@apps/forge/states/tabs/TabUTMEditorState";
+import * as KotOR from "@apps/forge/KotOR";
+import { FormField } from "@apps/forge/components/form-field/FormField";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "@apps/forge/components/SubTabHost";
+import { ForgeStore, StoreItemEntry } from "@apps/forge/module-editor/ForgeStore";
+import { openItemBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
 
 export const TabUTMEditor = function(props: BaseTabProps){
 
@@ -139,24 +139,23 @@ export const TabUTMEditor = function(props: BaseTabProps){
               </FormField>
               <FormField 
                 label="Buy/Sell Flag" 
-                info="Controls what the store can do in the game files: 1 = Only sells, 2 = Only buys, 3 = Buys and sells. 0 appears to be unknown or legacy."
+                info="BuySellFlag: 1 = Buy only, 2 = Sell only, 3 = Buy and Sell (Examine toggles mode)."
               >
                 <select value={buySellFlag} onChange={(e) => { setBuySellFlag(Number(e.target.value)); tab.store.buySellFlag = Number(e.target.value); tab.updateFile(); }}>
-                  <option value={0}>Unknown / Legacy</option>
-                  <option value={1}>Only Sells</option>
-                  <option value={2}>Only Buys</option>
-                  <option value={3}>Buys and Sells</option>
+                  <option value={1}>Buy Only</option>
+                  <option value={2}>Sell Only</option>
+                  <option value={3}>Buy and Sell</option>
                 </select>
               </FormField>
               <FormField 
                 label="Mark Down" 
-                info="Percentage discount when selling items to the store (0-100)."
+                info="Percentage of base cost paid when buying from the PC (100 = full GetCost)."
               >
                 <input type="number" min="0" max="100" value={markDown} onChange={onUpdateNumberField(setMarkDown, 'markDown')} />
               </FormField>
               <FormField 
                 label="Mark Up" 
-                info="Percentage markup when buying items from the store (0-100)."
+                info="Percentage of base cost charged when selling to the PC (100 = full GetCost)."
               >
                 <input type="number" min="0" max="100" value={markUp} onChange={onUpdateNumberField(setMarkUp, 'markUp')} />
               </FormField>

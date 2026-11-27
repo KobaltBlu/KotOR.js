@@ -1,0 +1,36 @@
+/**
+ * Aurora gob PlayAnimation flag bits used by overlay start/stop.
+ * From SetOverlayAnimation.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file AuroraAnimationFlag.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export enum AuroraAnimationFlag {
+  FIRE_FORGET = 0x001,
+  LOOPING = 0x004,
+  /** Overlay slot — stack without clearing locomotion base. */
+  OVERLAY_SLOT = 0x008,
+  /**
+   * Queue — deferred start (0x20).
+   * Inserted under/behind the active base; time and pose stay frozen
+   * until promoted (e.g. galaxy-map `rotate` after `zoomin`).
+   */
+  QUEUE = 0x020,
+  /**
+   * When set, skip same-name replace (0x40).
+   * When clear, same-name base is removed and reinserted (default).
+   */
+  REUSE = 0x040,
+  /** Overlay stop / remove semantics. */
+  OVERLAY_STOP = 0x080,
+  /** Additive gesture — weight fade; common for combat/dialog gestures. */
+  ADDITIVE_GESTURE = 0x400,
+  /**
+   * Play out of place — skip root position/orientation controllers so the
+   * clip poses in place (server ID bands 0x4B0–0x52F / 0x640–0x6BF).
+   */
+  PLAY_OUT_OF_PLACE = 0x800,
+}

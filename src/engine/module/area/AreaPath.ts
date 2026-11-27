@@ -1,0 +1,855 @@
+import * as THREE from "three";
+import { ResourceLoader } from "@engine/loaders";
+import { GFFObject } from "@core/resource/GFFObject";
+import { ResourceTypes } from "@core/resource/ResourceTypes";
+import { GameState } from "@engine/runtime/GameState";
+import { PathPoint } from "@engine/pathfinding/PathPoint";
+import { ComputedPath } from "@engine/pathfinding/ComputedPath";
+import type { PathPointDfsResume } from "@engine/pathfinding/ComputedPath";
+import { SMOOTH_SELECTION_BUDGET_MS } from "@engine/pathfinding/smooth-select-nodes";
+import type { SmoothSelectionResume } from "@engine/pathfinding/smooth-select-nodes";
+import type { SmoothCornerResume } from "@engine/pathfinding/smooth-corner-optimize";
+import { IClosestPathPointData } from "@engine/interface/engine/pathfinding/IClosestPathPointData";
+import type { Area } from "@engine/module/Area";
+import { Utility } from "@core/utility/Utility";
+import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
+import type { GameObject } from "@engine/module/GameObject";
+import { EngineDebugType } from "@engine/enums/engine";
+import { EngineDebugController } from "@engine/runtime/EngineDebugController";
+import { hasClearWalkLine, farthestClearPoint } from "@engine/pathfinding/walk-line-clear";
+import { buildGridPath } from "@engine/pathfinding/build-grid-path";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import type { Creature } from "@engine/module/Creature";
+import {
+  isPathPlanBudgetExhausted,
+  pathPlanBudgetRemainingMs,
+  PATH_PLAN_SEARCH_SLICE_MS,
+  takePathPlanSearchBudgetMs,
+} from "@engine/pathfinding/path-plan-budget";
+import { ensurePthStaticEdgeTable } from "@engine/pathfinding/pth-edge-clear";
+import { isWalkmeshEdgeWalkClear } from "@engine/pathfinding/path-hops-clear";
+
+/**
+ * Max PTH nodes walk-line tested per endpoint in getClosestReachablePathPoint
+ * (nearest-first; retail ClosestPathPoint stops at the first in-window hit).
+ */
+const CLOSEST_REACHABLE_MAX_TESTS = 32;
+
+/** Same tolerance ComputedPath.search uses to accept a resume. */
+const DFS_RESUME_ENDPOINT_EPS = 0.01;
+
+function dfsResumeMatches(
+  resume: PathPointDfsResume,
+  origin: THREE.Vector3,
+  dest: THREE.Vector3
+): boolean {
+  return (
+    Math.hypot(origin.x - resume.startX, origin.y - resume.startY) < DFS_RESUME_ENDPOINT_EPS &&
+    Math.hypot(dest.x - resume.endX, dest.y - resume.endY) < DFS_RESUME_ENDPOINT_EPS
+  );
+}
+
+type SmoothSessionStage = "selection" | "corner";
+
+type SmoothSession = {
+  origin: THREE.Vector3;
+  dest: THREE.Vector3;
+  points: THREE.Vector3[];
+  stage: SmoothSessionStage;
+  cornerResume?: SmoothCornerResume;
+};
+
+/**
+* AreaPath class.
+*
+* Class representing all of the points and connections fro pathfinding in a module area.
+*
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+*
+* @file AreaPath.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
+export class AreaPath {
+  area: Area;
+  _tmpVector: THREE.Vector3;
+  points: PathPoint[];
+  template: GFFObject;
+  name: string;
+  initialized: boolean;
+
+  walkEdges: WalkmeshEdge[] = [];
+
+  pointCount: number = 0;
+  connectionCount: number = 0;
+
+  /**
+   * Per-owner DFS TransTable resume (path-point DFS).
+   * Survives ComputedPath teardown when MoveTo clears realtime paths.
+   */
+  private dfsResumeByOwner = new Map<number, PathPointDfsResume>();
+
+  /**
+   * Per-owner SmoothSelectionRestartable resume (+ densify cursor).
+   * Survives MoveTo realtime clear so smooth continues without re-DFS.
+   */
+  private smoothResumeByOwner = new Map<number, SmoothSelectionResume>();
+  private smoothCornerResumeByOwner = new Map<number, SmoothCornerResume>();
+  private smoothSessionByOwner = new Map<number, SmoothSession>();
+
+  helperColors: THREE.Float32BufferAttribute;
+  helperPositions: THREE.Float32BufferAttribute;
+  helperGeometry = new THREE.BufferGeometry();
+  helperMaterial = new THREE.LineBasicMaterial({
+    color: 0xFFFFFF,
+    vertexColors: true
+  });
+  helperMesh: THREE.LineSegments;
+
+  constructor(area: Area){
+    this._tmpVector = new THREE.Vector3(0, 0, 0);
+    this.points = [];
+    this.template = new GFFObject();
+    this.area = area;
+    this.name = area.name;
+  }
+
+  async load(){
+    const buffer = ResourceLoader.loadCachedResource(ResourceTypes['pth'], this.name);
+    if(buffer){
+      this.template = new GFFObject(buffer);
+    }else{
+      console.error('Failed to load AreaPath template');
+    }
+
+    if(this.template instanceof GFFObject){
+      this.initProperties();
+    }
+    return this;
+  }
+
+  initProperties(){
+    this.initialized = true;
+    if(!(this.template instanceof GFFObject)){
+      return;
+    }
+    
+    /**
+     * Parse the Path Points
+     */
+    if(this.template.RootNode.hasField('Path_Points')){
+      const pathPoints = this.template.getFieldByLabel('Path_Points').getChildStructs();
+      this.pointCount = pathPoints.length;
+      for(let i = 0, len = pathPoints.length; i < len; i++){
+        this.points[i] = PathPoint.FromGFFStruct(pathPoints[i]);
+        this.points[i].id = i;
+        this.points[i].setArea(this.area);
+      }
+    }
+
+    /**
+     * Parse the Path Connections
+     */
+    if(this.template.RootNode.hasField('Path_Conections')){
+      const pathConnections = this.template.getFieldByLabel('Path_Conections').getChildStructs();
+      this.connectionCount = pathConnections.length;
+      for(let i = 0, len = this.points.length; i < len; i++){
+        const point = this.points[i];
+        if(!point.num_connections) continue;
+        
+        let connIdx = point.first_connection;
+        for(let j = 0; j < point.num_connections; j++){
+          const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
+          point.addConnection(this.points[pointIdx]);
+        }
+      }
+    }
+
+    this.connectionCount = this.points.reduce((sum, p) => {
+      return sum + p.connections.length;
+    }, 0);
+
+    // Prefetch thin static bits for PTH links (doors may still be loading —
+    // invalidateStaticBlockerGrid rebuilds when open-state changes).
+    if(this.area){
+      ensurePthStaticEdgeTable(this.area, this.points);
+    }
+
+    try{
+      this.generatePathHelper();
+    }catch(e){
+      console.error(e);
+    }
+
+    this.setPathHelpersVisibility(EngineDebugController.GetDebugState(EngineDebugType.PATH_FINDING));
+  }
+
+  /**
+   * Build line segments for the visual helper geometry
+   */
+  generatePathHelper(){
+    const numPoints = this.points.length;
+    const pointDataSize = 6;
+    const connDataSize = 6;
+    const bufferSize = (this.pointCount * pointDataSize) + (this.connectionCount * connDataSize);
+
+    const pointDataStart = 0;
+    let connectionIndexStart = (numPoints * 2);
+
+    if(!this.helperColors){
+      this.helperColors = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
+    }
+
+    if(!this.helperPositions){
+      this.helperPositions = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
+    }
+
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+
+      const idx = i * 2;
+      const idx2 = idx + 1;
+
+      this.helperPositions.setX(idx, point.vector.x);
+      this.helperPositions.setY(idx, point.vector.y);
+      this.helperPositions.setZ(idx, point.nearestWalkableVector.z);
+      
+      this.helperPositions.setX(idx2, point.vector.x);
+      this.helperPositions.setY(idx2, point.vector.y);
+      this.helperPositions.setZ(idx2, point.nearestWalkableVector.z + 0.5);
+      this.helperPositions.needsUpdate = true;
+
+      this.helperColors.setX(idx, 1);
+      this.helperColors.setY(idx, 0);
+      this.helperColors.setZ(idx, 1);
+
+      this.helperColors.setX(idx2, 0);
+      this.helperColors.setY(idx2, 0);
+      this.helperColors.setZ(idx2, 1);
+      this.helperColors.needsUpdate = true;
+
+      for(let j = 0; j < point.connections.length; j++){
+        const cPoint = point.connections[j];
+        const idx3 = connectionIndexStart;
+        const idx4 = idx3 + 1;
+
+        this.helperPositions.setX(idx3, point.vector.x);
+        this.helperPositions.setY(idx3, point.vector.y);
+        this.helperPositions.setZ(idx3, point.nearestWalkableVector.z + 0.5);
+        
+        this.helperPositions.setX(idx4, cPoint.vector.x);
+        this.helperPositions.setY(idx4, cPoint.vector.y);
+        this.helperPositions.setZ(idx4, cPoint.nearestWalkableVector.z + 0.5);
+        this.helperPositions.needsUpdate = true;
+  
+        this.helperColors.setX(idx3, 0);
+        this.helperColors.setY(idx3, 0);
+        this.helperColors.setZ(idx3, 1);
+  
+        this.helperColors.setX(idx4, 0);
+        this.helperColors.setY(idx4, 0);
+        this.helperColors.setZ(idx4, 1);
+        this.helperColors.needsUpdate = true;
+        connectionIndexStart += 2;
+      }
+    }
+
+    if(!this.helperMesh){
+      this.helperGeometry.setAttribute( 'position', this.helperPositions );
+      this.helperGeometry.setAttribute( 'color', this.helperColors );
+      
+      this.helperMesh = new THREE.LineSegments( this.helperGeometry, this.helperMaterial );
+      GameState.scene.add( this.helperMesh );
+    }
+  }
+
+  updateTimer: number = 0;
+  update(delta: number){
+    this.updateTimer -= delta;
+    if(this.updateTimer > 0){
+      return;
+    }
+    this.updateTimer = 1;
+
+    if(!this.area || !this.helperMesh?.visible)
+      return;
+
+    const player = this.area.context.PartyManager.getCurrentPlayer();
+    const numPoints = this.points.length;
+    let connectionIndexStart = (numPoints * 2);
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+
+      const idx = i * 2;
+      const idx2 = idx + 1;
+
+      this.helperPositions.setX(idx, point.vector.x);
+      this.helperPositions.setY(idx, point.vector.y);
+      this.helperPositions.setZ(idx, point.nearestWalkableVector.z);
+      
+      this.helperPositions.setX(idx2, point.vector.x);
+      this.helperPositions.setY(idx2, point.vector.y);
+      this.helperPositions.setZ(idx2, point.nearestWalkableVector.z + 0.5);
+      this.helperPositions.needsUpdate = true;
+
+      if(this.checkLOSP2P(player.position, point.vector)){
+        this.helperColors.setX(idx, 0);
+        this.helperColors.setY(idx, 1);
+        this.helperColors.setZ(idx, 0);
+      }else{
+        this.helperColors.setX(idx, 1);
+        this.helperColors.setY(idx, 0);
+        this.helperColors.setZ(idx, 1);
+      }
+
+      this.helperColors.setX(idx2, 0);
+      this.helperColors.setY(idx2, 0);
+      this.helperColors.setZ(idx2, 1);
+      this.helperColors.needsUpdate = true;
+
+      for(let j = 0; j < point.connections.length; j++){
+        const cPoint = point.connections[j];
+        const idx3 = connectionIndexStart;
+        const idx4 = idx3 + 1;
+
+        this.helperPositions.setX(idx3, point.vector.x);
+        this.helperPositions.setY(idx3, point.vector.y);
+        this.helperPositions.setZ(idx3, point.nearestWalkableVector.z + 0.5);
+        
+        this.helperPositions.setX(idx4, cPoint.vector.x);
+        this.helperPositions.setY(idx4, cPoint.vector.y);
+        this.helperPositions.setZ(idx4, cPoint.nearestWalkableVector.z + 0.5);
+        this.helperPositions.needsUpdate = true;
+  
+        this.helperColors.setX(idx3, 0);
+        this.helperColors.setY(idx3, 0);
+        this.helperColors.setZ(idx3, 1);
+  
+        this.helperColors.setX(idx4, 0);
+        this.helperColors.setY(idx4, 0);
+        this.helperColors.setZ(idx4, 1);
+        this.helperColors.needsUpdate = true;
+        connectionIndexStart += 2;
+      }
+    }
+
+  }
+
+  #tmpLine = new THREE.Line3();
+  checkLOSP2P(origin: THREE.Vector3, target: THREE.Vector3): boolean {
+    let has_los = true;
+
+    if(!this.area)
+      return has_los;
+
+    this.#tmpLine.start.copy(origin);
+    this.#tmpLine.end.copy(target);
+    for(let j = 0, len = this.area.walkEdges.length; j < len; j++){
+      const edge = this.area.walkEdges[j];
+
+      //Ignore transition edges
+      if(edge.transition != -1)
+        continue;
+      
+      if(Utility.LineLineIntersection(this.#tmpLine.start.x, this.#tmpLine.start.y, this.#tmpLine.end.x, this.#tmpLine.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
+        has_los = false;
+        break;
+      }
+    }
+    return has_los;
+  }
+
+  dispose(){
+    this.helperGeometry.dispose();
+    this.helperMaterial.dispose();
+    this.helperMesh.removeFromParent();
+
+    this.helperPositions = undefined;
+    this.helperColors = undefined;
+    this.helperMesh = undefined;
+    this.helperGeometry = undefined;
+    this.helperMaterial = undefined;
+  }
+
+  setPathHelpersVisibility(state = false){
+    if(!this.helperMesh) return;
+    this.helperMesh.visible = state;
+  }
+
+  cleanupConnections(){
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+      const toPrune: PathPoint[] = [];
+      for(let j = 0; j < point.connections.length; j++){
+        const con = point.connections[j];
+        if(!point.hasLOS(con)){
+          toPrune.push(con);
+        }
+      }
+      while(toPrune.length){
+        const con = toPrune.pop();
+        console.log('los', 'pruning connection', point, con);
+        point.removeConnection(con);
+        con.removeConnection(point);
+      }
+    }
+  }
+
+  getClosestPathPointData(target = new THREE.Vector3): IClosestPathPointData {
+    const targetPoint = new THREE.Vector3().copy(target);
+    targetPoint.z = 0;
+    const line3 = new THREE.Line3();
+    const closest_position_on_line = new THREE.Vector3(0, 0, 0);
+    let point_a: PathPoint;
+    let point_b: PathPoint;
+    let distance = Infinity;
+    let pDistance = 0;
+
+    const _tempPoint = new THREE.Vector3(0, 0, 0);
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+      for(let j = 0; j < point.num_connections; j++){
+        const connection = point.connections[j];
+        line3.set(point.vector, connection.vector);
+        line3.closestPointToPoint(targetPoint, true, _tempPoint);
+        pDistance = targetPoint.distanceTo(_tempPoint);
+        if(pDistance < distance){
+          distance = pDistance;
+          point_a = point;
+          point_b = connection;
+          closest_position_on_line.copy(_tempPoint);
+        }
+      }
+    }
+    
+    return { 
+      point_a: point_a, 
+      point_b: point_b, 
+      closest_position_on_line: closest_position_on_line 
+    };
+  }
+
+  /**
+   * Retail CSWSArea::ClosestPathPoint (0x004bd770): the nearest PTH point whose
+   * straight line from `point` passes the walkmesh direct-line test
+   * (TestDirectLine ok / creature-only). Nearest-by-distance alone can sit
+   * across a NonWalk void (console, pillar) and poison the first path hop.
+   * Returns undefined when no tested point is reachable (retail → plot fails).
+   */
+  getClosestReachablePathPoint(
+    point: THREE.Vector3,
+    owner?: GameObject
+  ): PathPoint | undefined {
+    if(!this.points.length) return undefined;
+    const px = point.x;
+    const py = point.y;
+    const byDist = this.points.slice(0).sort((a, b) => {
+      const da = (a.vector.x - px) * (a.vector.x - px) + (a.vector.y - py) * (a.vector.y - py);
+      const db = (b.vector.x - px) * (b.vector.x - px) + (b.vector.y - py) * (b.vector.y - py);
+      return da - db;
+    });
+    const n = Math.min(byDist.length, CLOSEST_REACHABLE_MAX_TESTS);
+    for(let i = 0; i < n; i++){
+      const p = byDist[i];
+      if(isWalkmeshEdgeWalkClear(this.area, point, p.vector, owner)){
+        return p;
+      }
+    }
+    return undefined;
+  }
+
+  getClosestPathPoint(origin: THREE.Vector3): PathPoint{
+    let point: PathPoint;
+    let distance = Infinity;
+    for(let i = 0; i < this.points.length; i++){
+      const p = this.points[i];
+      const d = origin.distanceTo(p.vector);
+      if(d < distance){
+        point = p;
+        distance = d;
+      }
+    }
+    return point;
+  }
+
+  /**
+   * buildWalkPath (in-area):
+   * 1. walk-line clear / hasWalkLineClear → 2-point path when clear
+   * 2. Else PathPointDFS (path-point DFS)
+   * 3. Else buildGridPath / GridDFS when no PTH / DFS fail
+   * 4. Else farthestClearPoint partial (no blind through-wall fallback)
+   * Empty path = unreachable (caller should ERROR).
+   */
+  traverseToPoint(owner: GameObject, origin: THREE.Vector3, dest: THREE.Vector3, smooth: boolean = true): ComputedPath {
+    this.reset();
+
+    const originPoint = PathPoint.FromVector3(origin);
+    originPoint.setArea(this.area);
+
+    const destPoint = PathPoint.FromVector3(dest);
+    destPoint.setArea(this.area);
+
+    const ownerId = owner?.id;
+    let pendingDfs = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
+    // A resume only continues a search with the same endpoints; anything else
+    // is a fresh plot and must get the direct-line test.
+    if(pendingDfs && !dfsResumeMatches(pendingDfs, origin, dest)){
+      this.dfsResumeByOwner.delete(ownerId!);
+      pendingDfs = undefined;
+    }
+
+    // Smooth-only resume — same endpoints, skip DFS (buildWalkPath return-1 mid-smooth)
+    const smoothOnly = this.tryResumeSmoothOnly(owner, origin, dest, smooth);
+    if(smoothOnly){
+      return smoothOnly;
+    }
+
+    // Shared tick budget already spent (another owner's slice): return Incomplete
+    // without plot-grade hasWalkLineClear — that was the live tar_m02ac spin cost.
+    if(isPathPlanBudgetExhausted()){
+      const stub = new ComputedPath(owner);
+      stub.incomplete = true;
+      stub.points = [];
+      if(pendingDfs){
+        stub.dfsResume = pendingDfs;
+      }
+      return stub;
+    }
+
+    // Incomplete DFS resume: direct-line already failed when search started —
+    // do not re-pay hasClearWalkLine every resume frame.
+    if(!pendingDfs && hasClearWalkLine(this.area, origin, dest, owner)){
+      // Stage 1: walk-line clear / hasWalkLineClear first (fresh plots only)
+      this.clearSmoothSession(ownerId);
+      return ComputedPath.FromPointsList([originPoint, destPoint]);
+    }
+
+    // Stage 2: PTH PathPointDFS when path points exist
+    if(this.points.length){
+      // Retail PlotPathPointPath: each endpoint joins the PTH graph at its
+      // ClosestPathPoint (nearest walk-line reachable node) — one link, no fan-out.
+      const closest_origin_point = this.getClosestReachablePathPoint(origin, owner);
+      const closest_destination_point = this.getClosestReachablePathPoint(dest, owner);
+      if(!closest_origin_point || !closest_destination_point){
+        this.clearSmoothSession(ownerId);
+        const gridNoPth = this.gridPathToComputed(owner, origin, dest, originPoint);
+        if(gridNoPth){
+          return this.finishWithSmoothSelection(gridNoPth, owner, origin, dest, smooth);
+        }
+        return this.partialClearPath(owner, origin, dest, originPoint);
+      }
+
+      const resume = pendingDfs;
+      // Shared tick budget; 0 means unlimited in pathPointDfsSearch — never pass 0.
+      const searchBudget = takePathPlanSearchBudgetMs();
+      if(searchBudget <= 0){
+        this.clearSmoothSession(ownerId);
+        // Empty Incomplete — callers must resume next tick, not drive a stay-put hop.
+        const stub = new ComputedPath(owner);
+        stub.incomplete = true;
+        stub.points = [];
+        if(resume){
+          stub.dfsResume = resume;
+          this.dfsResumeByOwner.set(ownerId!, resume);
+        }
+        return stub;
+      }
+
+      // PTH static edge table backs PathPoint.hasLOS during the DFS.
+      ensurePthStaticEdgeTable(this.area, this.points);
+
+      const remaining = Math.min(
+        PATH_PLAN_SEARCH_SLICE_MS,
+        pathPlanBudgetRemainingMs()
+      );
+      if(remaining <= 0){
+        this.clearSmoothSession(ownerId);
+        const stub = new ComputedPath(owner);
+        stub.incomplete = true;
+        stub.points = [];
+        if(resume){
+          stub.dfsResume = resume;
+          this.dfsResumeByOwner.set(ownerId!, resume);
+        }
+        return stub;
+      }
+      // Temporary endpoint links go onto the shared PTH nodes only for the
+      // duration of the search, and always come off again.
+      originPoint.connections = [closest_origin_point];
+      closest_origin_point.addConnection(originPoint);
+      closest_destination_point.addConnection(destPoint);
+      destPoint.addConnection(closest_destination_point);
+
+      const path = new ComputedPath(owner, originPoint, destPoint);
+      path.setOwner(owner);
+      try{
+        path.search({
+          resume,
+          timeBudgetMs: remaining,
+        });
+      }finally{
+        closest_origin_point.removeConnection(originPoint);
+        closest_destination_point.removeConnection(destPoint);
+      }
+
+      if(ownerId != null){
+        if(path.dfsResume){
+          this.dfsResumeByOwner.set(ownerId, path.dfsResume);
+        }else{
+          this.dfsResumeByOwner.delete(ownerId);
+        }
+      }
+
+      if(path.points.length){
+        // Incomplete DFS — defer SmoothSelection until search finishes
+        if(path.incomplete){
+          path.realtime = true;
+          path.timer = Math.min(path.timer || 20, 8);
+          this.clearSmoothSession(ownerId);
+          return path;
+        }
+        return this.finishWithSmoothSelection(path, owner, origin, dest, smooth);
+      }
+
+      this.clearSmoothSession(ownerId);
+      const gridAfterPth = this.gridPathToComputed(owner, origin, dest, originPoint);
+      if(gridAfterPth){
+        return this.finishWithSmoothSelection(gridAfterPth, owner, origin, dest, smooth);
+      }
+      return this.partialClearPath(owner, origin, dest, originPoint);
+    }
+
+    // Stage 3: no PTH — buildGridPath
+    this.clearSmoothSession(ownerId);
+    const gridPath = this.gridPathToComputed(owner, origin, dest, originPoint);
+    if(gridPath){
+      return this.finishWithSmoothSelection(gridPath, owner, origin, dest, smooth);
+    }
+    return this.partialClearPath(owner, origin, dest, originPoint);
+  }
+
+  private endpointsMatch(
+    a: THREE.Vector3,
+    b: THREE.Vector3,
+    epsSq: number = 0.01
+  ): boolean {
+    return a.distanceToSquared(b) <= epsSq;
+  }
+
+  private clearSmoothSession(ownerId: number | undefined){
+    if(ownerId == null) return;
+    this.smoothResumeByOwner.delete(ownerId);
+    this.smoothCornerResumeByOwner.delete(ownerId);
+    this.smoothSessionByOwner.delete(ownerId);
+  }
+
+  /**
+   * Drop every in-progress plot (DFS resume and smoothing session) held for
+   * an owner. Called when its move action ends so a later plot starts fresh.
+   */
+  clearOwnerPlanState(ownerId: number | undefined){
+    if(ownerId == null) return;
+    this.dfsResumeByOwner.delete(ownerId);
+    this.clearSmoothSession(ownerId);
+  }
+
+  /** True when SmoothSelection or SmoothCorner session is held for owner. */
+  hasPendingSmoothSession(ownerId: number | undefined): boolean {
+    if(ownerId == null) return false;
+    return this.smoothSessionByOwner.has(ownerId);
+  }
+
+  /**
+   * Continue SmoothSelection / SmoothCorner without re-running PathPointDFS when
+   * the prior frame returned mid-pipeline.
+   */
+  private tryResumeSmoothOnly(
+    owner: GameObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    smooth: boolean
+  ): ComputedPath | undefined {
+    const ownerId = owner?.id;
+    if(ownerId == null) return undefined;
+    const session = this.smoothSessionByOwner.get(ownerId);
+    if(!session) return undefined;
+    if(
+      !this.endpointsMatch(session.origin, origin) ||
+      !this.endpointsMatch(session.dest, dest)
+    ){
+      this.clearSmoothSession(ownerId);
+      return undefined;
+    }
+
+    const pathPoints = session.points.map((v) => {
+      const p = PathPoint.FromVector3(v);
+      p.setArea(this.area);
+      return p;
+    });
+    if(pathPoints.length){
+      pathPoints[pathPoints.length - 1].end = true;
+    }
+    const path = ComputedPath.FromPointsList(pathPoints);
+    path.setOwner(owner);
+
+    if(session.stage === "corner"){
+      return this.finishWithCornerPass(
+        path, owner, origin, dest, smooth,
+        session.cornerResume ?? this.smoothCornerResumeByOwner.get(ownerId)
+      );
+    }
+
+    const resume = this.smoothResumeByOwner.get(ownerId);
+    return this.finishWithSmoothSelection(path, owner, origin, dest, smooth, resume);
+  }
+
+  /**
+   * Run SmoothSelectionRestartable (~10ms). On timeout, persist resume for next
+   * frame; on complete, run budgeted SmoothCornerOptimize.
+   */
+  private finishWithSmoothSelection(
+    path: ComputedPath,
+    owner: GameObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    smooth: boolean,
+    resume?: SmoothSelectionResume
+  ): ComputedPath {
+    const ownerId = owner?.id;
+    path.prunePathPoints({
+      timeBudgetMs: SMOOTH_SELECTION_BUDGET_MS,
+      resume: resume ?? (ownerId != null ? this.smoothResumeByOwner.get(ownerId) : undefined),
+    });
+
+    if(path.smoothResume && ownerId != null){
+      this.smoothResumeByOwner.set(ownerId, path.smoothResume);
+      this.smoothCornerResumeByOwner.delete(ownerId);
+      this.smoothSessionByOwner.set(ownerId, {
+        origin: origin.clone(),
+        dest: dest.clone(),
+        points: path.points.map((p) => p.vector.clone()),
+        stage: "selection",
+      });
+      path.realtime = true;
+      path.timer = Math.min(path.timer || 20, 8);
+      return path;
+    }
+
+    if(ownerId != null){
+      this.smoothResumeByOwner.delete(ownerId);
+    }
+
+    if(!smooth){
+      this.clearSmoothSession(ownerId);
+      return path;
+    }
+
+    return this.finishWithCornerPass(path, owner, origin, dest, smooth);
+  }
+
+  /**
+   * Budgeted SmoothCornerOptimize after selection completes.
+   */
+  private finishWithCornerPass(
+    path: ComputedPath,
+    owner: GameObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    _smooth: boolean,
+    resume?: SmoothCornerResume
+  ): ComputedPath {
+    const ownerId = owner?.id;
+    path.smoothCorners({
+      timeBudgetMs: SMOOTH_SELECTION_BUDGET_MS,
+      resume: resume ?? (ownerId != null ? this.smoothCornerResumeByOwner.get(ownerId) : undefined),
+    });
+
+    if(path.smoothCornerResume && ownerId != null){
+      this.smoothCornerResumeByOwner.set(ownerId, path.smoothCornerResume);
+      this.smoothResumeByOwner.delete(ownerId);
+      this.smoothSessionByOwner.set(ownerId, {
+        origin: origin.clone(),
+        dest: dest.clone(),
+        points: path.points.map((p) => p.vector.clone()),
+        stage: "corner",
+        cornerResume: path.smoothCornerResume,
+      });
+      path.realtime = true;
+      path.timer = Math.min(path.timer || 20, 8);
+      return path;
+    }
+
+    this.clearSmoothSession(ownerId);
+    return path;
+  }
+
+  /**
+   * Convert buildGridPath world points into a ComputedPath, or undefined.
+   */
+  private gridPathToComputed(
+    owner: GameObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    originPoint: PathPoint
+  ): ComputedPath | undefined {
+    const perspace = getPathPersonalSpace(owner as Creature);
+    const world = buildGridPath(this.area, origin, dest, {
+      owner,
+      personalSpace: perspace,
+      checkCreatures: true,
+    });
+    if(!world?.length || world.length < 2){
+      return undefined;
+    }
+    // Must reach near dest (not a stuck partial mid-corridor)
+    const last = world[world.length - 1];
+    if(last.distanceToSquared(dest) > 1.0){
+      return undefined;
+    }
+    const points = world.map((v, idx) => {
+      const p = PathPoint.FromVector3(v);
+      p.setArea(this.area);
+      if(idx === world.length - 1) p.end = true;
+      return p;
+    });
+    // Ensure origin matches
+    points[0] = originPoint;
+    return ComputedPath.FromPointsList(points);
+  }
+
+  /**
+   * When full path fails: return 2-point path to farthest clear sample, or empty.
+   * Mirrors buildWalkPath (in-area) return-2 partial when binary expand finds a clear point.
+   */
+  private partialClearPath(
+    owner: GameObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    originPoint: PathPoint
+  ): ComputedPath {
+    const clear = farthestClearPoint(this.area, origin, dest, {
+      owner,
+      personalSpace: getPathPersonalSpace(owner as Creature),
+      checkCreatures: true,
+    });
+    if(clear.distanceToSquared(origin) < 0.01){
+      // Stay-put path — never return empty (buildHelperLine / movers expect points)
+      const stay = PathPoint.FromVector3(origin);
+      stay.setArea(this.area);
+      stay.end = true;
+      return ComputedPath.FromPointsList([originPoint, stay]);
+    }
+    const clearPoint = PathPoint.FromVector3(clear);
+    clearPoint.setArea(this.area);
+    clearPoint.end = true;
+    return ComputedPath.FromPointsList([originPoint, clearPoint]);
+  }
+
+  reset(){
+    this.points.map( (p) => {
+      p.reset();
+    })
+  }
+
+}

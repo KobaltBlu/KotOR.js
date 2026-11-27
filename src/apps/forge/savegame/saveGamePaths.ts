@@ -25,7 +25,7 @@ export function normalizeGameRelPath(filepath: string): string {
   return String(filepath ?? '').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 }
 
-/** Canonical sidecar names as written by retail KotOR/TSL. */
+/** Canonical sidecar names as written by KotOR/TSL. */
 export const SAVE_SIDECAR_CANONICAL: Record<string, string> = {
   'savenfo.res': 'savenfo.res',
   'partytable.res': 'PARTYTABLE.res',

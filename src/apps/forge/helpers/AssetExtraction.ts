@@ -1,11 +1,11 @@
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 import * as fs from "fs";
 import * as path from "path";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { TXI } from "@/resource/TXI";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalExtractionResultsState, ExtractionResults } from "@/apps/forge/states/modal/ModalExtractionResultsState";
-import { ModalExtractionProgressState } from "@/apps/forge/states/modal/ModalExtractionProgressState";
+import { BinaryReader } from "@core/binary/BinaryReader";
+import { TXI } from "@core/resource/TXI";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ModalExtractionResultsState, ExtractionResults } from "@apps/forge/states/modal/ModalExtractionResultsState";
+import { ModalExtractionProgressState } from "@apps/forge/states/modal/ModalExtractionProgressState";
 
 declare const dialog: any;
 

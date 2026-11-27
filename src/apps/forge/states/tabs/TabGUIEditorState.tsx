@@ -7,15 +7,22 @@
  */
 
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabGUIEditor } from "@/apps/forge/components/tabs/tab-gui-editor/TabGUIEditor";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { snapshotGff, gffFromSnapshot } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@apps/forge/states/tabs";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabGUIEditor } from "@apps/forge/components/tabs/tab-gui-editor/TabGUIEditor";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import {
+  commitGuiTransform,
+  ensureGuiTypeNests,
+  flushGuiMatrices,
+  GameState,
+  isTslGuiGame,
+} from "@apps/forge/KotOR";
+import { GUIControlType } from "@core/enums/gui/GUIControlType";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { snapshotGff, gffFromSnapshot } from "@apps/forge/helpers/gffUndoSnapshot";
 import {
   GUI_ROOT_PATH,
   buildGuiOutline,
@@ -38,9 +45,7 @@ import {
   setScalarField,
   setVectorFieldRgb,
   type GuiOutlineNode,
-} from "@/apps/forge/gui/guiOutline";
-import { ensureGuiTypeNests, isTslGuiGame } from "@/gui/guiControlSchema";
-import { GameState } from "@/GameState";
+} from "@apps/forge/gui/guiOutline";
 import * as THREE from "three";
 
 export type TabGUIEditorStateEventListenerTypes =
@@ -89,6 +94,8 @@ export class TabGUIEditorState extends TabState {
       if (this.ui3DRenderer.orbitControls) {
         this.ui3DRenderer.orbitControls.enabled = false;
       }
+      // openFile/rebuildMenu often runs before the canvas/WebGLRenderer exists.
+      this.menu?.ensureVoidFogVolume?.(this.ui3DRenderer.renderer);
     });
 
     this.openFile();
@@ -118,6 +125,7 @@ export class TabGUIEditorState extends TabState {
 
   destroy(): void {
     this.disposeSelectionRect();
+    this.menu?.menuGroup?.removeFromParent();
     if (this.menu?.tGuiPanel?.widget) {
       this.menu.tGuiPanel.widget.removeFromParent();
     }
@@ -128,6 +136,7 @@ export class TabGUIEditorState extends TabState {
   animate(delta: number = 0) {
     this.menu?.update(delta);
     this.updateSelectionRect();
+    flushGuiMatrices();
     this.processEventListener("onAnimate", [delta]);
   }
 
@@ -176,7 +185,7 @@ export class TabGUIEditorState extends TabState {
 
   /**
    * Convert canvas-buffer mouse coords to GUI UI space and pick the deepest control.
-   * Uses the same axis-aligned boxes as retail `GUIControl.getActiveControls`.
+   * Uses the same axis-aligned boxes as `GUIControl.getActiveControls`.
    */
   pickControlAtCanvas(mouseX: number, mouseY: number): KotOR.GUIControl | undefined {
     const canvas = this.ui3DRenderer?.canvas;
@@ -352,6 +361,7 @@ export class TabGUIEditorState extends TabState {
     const rect = this.ensureSelectionRect();
     rect.position.set((box.min.x + box.max.x) * 0.5, (box.min.y + box.max.y) * 0.5, 50);
     rect.scale.set(width, height, 1);
+    commitGuiTransform(rect);
     rect.visible = true;
   }
 
@@ -660,6 +670,7 @@ export class TabGUIEditorState extends TabState {
 
     const preservedSub = this.inspectorSubPath;
 
+    this.menu?.menuGroup?.removeFromParent();
     if (this.menu?.tGuiPanel?.widget) {
       this.menu.tGuiPanel.widget.removeFromParent();
     }
@@ -668,9 +679,11 @@ export class TabGUIEditorState extends TabState {
     this.menu.voidFill = true;
     this.menu.bVisible = true;
     this.menu.context = this.ui3DRenderer;
-    await this.menu.loadBackground();
+    await this.menu.loadBackground(this.ui3DRenderer.renderer);
+    this.menu.ensureVoidFogVolume(this.ui3DRenderer.renderer);
     await this.menu.buildMenu(this.gff);
-    this.ui3DRenderer.scene.add(this.menu.tGuiPanel.widget);
+    // menuGroup includes void/background sprites + the root panel widget
+    this.ui3DRenderer.scene.add(this.menu.menuGroup);
     if (this.canvasScale !== 1) {
       this.setCanvasScale(this.canvasScale);
     }

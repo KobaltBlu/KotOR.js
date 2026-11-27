@@ -6,12 +6,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 import {
   editorFileProjectRelativePath,
   remapProjectRelativeAfterRename,
-} from "@/apps/forge/helpers/editorFileProjectPath";
+} from "@apps/forge/helpers/editorFileProjectPath";
 
 function applyProjectPathRename(file: EditorFile, fromRel: string, toRel: string): boolean {
   const current = editorFileProjectRelativePath(file);

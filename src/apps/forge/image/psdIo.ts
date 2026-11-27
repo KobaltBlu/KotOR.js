@@ -10,15 +10,15 @@
  */
 
 import { initializeCanvas, readPsd, writePsdUint8Array, type BlendMode, type Layer, type PixelArray, type Psd } from "ag-psd";
-import { flattenDocument } from "@/apps/forge/image/imageBlend";
+import { flattenDocument } from "@apps/forge/image/imageBlend";
 import {
   allocLayerId,
   createDocumentFromRgba,
   createLayer,
   isRasterLayer,
   transparentPixels,
-} from "@/apps/forge/image/imageDocument";
-import { copyRect } from "@/apps/forge/image/imageOps";
+} from "@apps/forge/image/imageDocument";
+import { copyRect } from "@apps/forge/image/imageOps";
 import {
   DEFAULT_ENCODE_POLICY,
   DEFAULT_RGBA_BLACK,
@@ -27,7 +27,7 @@ import {
   type ImageDocument,
   type ImageLayer,
   type ImagePsdPassthrough,
-} from "@/apps/forge/image/imageTypes";
+} from "@apps/forge/image/imageTypes";
 
 const PSD_READ_OPTIONS = { useImageData: true, useRawThumbnail: true } as const;
 const PSD_WRITE_OPTIONS = { trimImageData: false } as const;

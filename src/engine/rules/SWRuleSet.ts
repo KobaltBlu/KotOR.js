@@ -1,46 +1,59 @@
-import { GameState } from "@/GameState";
-import type { INIConfig } from "@/engine/INIConfig";
-import { CreatureClass } from "@/combat/CreatureClass";
-import { TalentFeat } from "@/talents/TalentFeat";
-import { TalentSpell } from "@/talents/TalentSpell";
-import { TalentSkill } from "@/talents/TalentSkill";
-import { SWRace } from "@/engine/rules/SWRace";
-import { SWEffectIcon } from "@/engine/rules/SWEffectIcon";
-import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
-import { PazaakDeck } from "@/engine/minigames/PazaakDeck";
-import { SWXPTableEntry } from "@/engine/rules/SWXPTableEntry";
-import { SWPortrait } from "@/engine/rules/SWPortrait";
-import { SWFeatGain } from "@/engine/rules/SWFeatGain";
-import { SWSpellGain } from "@/engine/rules/SWSpellGain";
-import { SWEXPTable } from "@/engine/rules/SWEXPTable";
-import { SWDifficulty } from "@/engine/rules/SWDifficulty";
-import { SWBodyBag } from "@/engine/rules/SWBodyBag";
-import { SWHead } from "@/engine/rules/SWHead";
-import { SWPriorityGroup } from "@/engine/rules/SWPriorityGroup";
-import { SWEncounterDifficulty } from "@/engine/rules/SWEncounterDifficulty";
-import { SWGender } from "@/engine/rules/SWGender";
-import { SWPhenotype } from "@/engine/rules/SWPhenotype";
-import { SWSubRace } from "@/engine/rules/SWSubRace";
-import { SWSoundSet } from "@/engine/rules/SWSoundSet";
-import { SWCreatureSize } from "@/engine/rules/SWCreatureSize";
-import { SWCreatureSpeed } from "@/engine/rules/SWCreatureSpeed";
-import { SWRange } from "@/engine/rules/SWRange";
-import { SWFaction } from "@/engine/rules/SWFaction";
-import { SWBaseItem } from "@/engine/rules/SWBaseItem";
-import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
-import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
-import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
-import { SWCostTable } from "@/engine/rules/SWCostTable";
-import { SWFootStep } from "@/engine/rules/SWFootStep";
-import { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
-import { SWAnimation } from "@/engine/rules/SWAnimation";
-import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { GameState } from "@engine/runtime/GameState";
+import type { INIConfig } from "@engine/runtime/INIConfig";
+import { CreatureClass } from "@engine/combat/CreatureClass";
+import { TalentFeat } from "@engine/talents/TalentFeat";
+import { TalentSpell } from "@engine/talents/TalentSpell";
+import { TalentSkill } from "@engine/talents/TalentSkill";
+import { SWRace } from "@engine/rules/SWRace";
+import { SWEffectIcon } from "@engine/rules/SWEffectIcon";
+import { SWItemPropsDef } from "@engine/rules/SWItemPropsDef";
+import { PazaakDeck } from "@engine/minigames/PazaakDeck";
+import { SWXPTableEntry } from "@engine/rules/SWXPTableEntry";
+import { SWPortrait } from "@engine/rules/SWPortrait";
+import { SWFeatGain } from "@engine/rules/SWFeatGain";
+import { SWSpellGain } from "@engine/rules/SWSpellGain";
+import { SWEXPTable } from "@engine/rules/SWEXPTable";
+import { SWDifficulty } from "@engine/rules/SWDifficulty";
+import { SWBodyBag } from "@engine/rules/SWBodyBag";
+import { SWHead } from "@engine/rules/SWHead";
+import { SWPriorityGroup } from "@engine/rules/SWPriorityGroup";
+import { SWInfluence } from "@engine/rules/SWInfluence";
+import { SWEncounterDifficulty } from "@engine/rules/SWEncounterDifficulty";
+import { SWGender } from "@engine/rules/SWGender";
+import { SWPhenotype } from "@engine/rules/SWPhenotype";
+import { SWSubRace } from "@engine/rules/SWSubRace";
+import { SWSoundSet } from "@engine/rules/SWSoundSet";
+import { SWCreatureSize } from "@engine/rules/SWCreatureSize";
+import { SWCreatureSpeed } from "@engine/rules/SWCreatureSpeed";
+import { SWRange } from "@engine/rules/SWRange";
+import { SWFaction } from "@engine/rules/SWFaction";
+import { SWBaseItem } from "@engine/rules/SWBaseItem";
+import { SWCreatureAppearance } from "@engine/rules/SWCreatureAppearance";
+import { SWDoorAppearance } from "@engine/rules/SWDoorAppearance";
+import { SWPlaceableAppearance } from "@engine/rules/SWPlaceableAppearance";
+import { SWCostTable } from "@engine/rules/SWCostTable";
+import { SWFootStep } from "@engine/rules/SWFootStep";
+import { SWWeaponSound } from "@engine/rules/SWWeaponSound";
+import { SWGrenadeSound } from "@engine/rules/SWGrenadeSound";
+import { SWAnimation } from "@engine/rules/SWAnimation";
+import { AudioPriorityGroup } from "@core/enums/audio/AudioPriorityGroup";
+import { SWCombatAnimation } from "./SWCombatAnimation";
+import { SWTrap } from "@engine/rules/SWTrap";
+import { SWForceAdjust } from "@engine/rules/SWForceAdjust";
+import { SWForceShield } from "@engine/rules/SWForceShield";
+import { SWPoison } from "@engine/rules/SWPoison";
+import { SWRegeneration } from "@engine/rules/SWRegeneration";
+import { SWACBonus } from "@engine/rules/SWACBonus";
+import { SWFormation } from "@engine/rules/SWFormation";
+import { SWPlot } from "@engine/rules/SWPlot";
+import { SWAttackBonus } from "@engine/rules/SWAttackBonus";
+import { SWSavingThrow } from "@engine/rules/SWSavingThrow";
 
 /**
  * SWRuleSet class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWRuleSet.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -83,12 +96,33 @@ export class SWRuleSet {
   static difficulty: SWDifficulty[] = [];
   static currentDifficulty: number = 0;
   static bodyBags: SWBodyBag[] = [];
+  static influences: SWInfluence[] = [];
+  static influenceCount: number = 0;
   static priorityGroups: SWPriorityGroup[] = [];
   static factions: SWFaction[] = [];
   static factionCount: number = 0;
 
   static encounterDifficulties: SWEncounterDifficulty[] = [];
   static encounterDifficultyCount: number = 0;
+
+  static traps: SWTrap[] = [];
+  static trapCount: number = 0;
+  static forceAdjustments: SWForceAdjust[] = [];
+  static forceAdjustmentCount: number = 0;
+  static forceShields: SWForceShield[] = [];
+  static forceShieldCount: number = 0;
+  static poisons: SWPoison[] = [];
+  static poisonCount: number = 0;
+  static regenerations: SWRegeneration[] = [];
+  static regenerationCount: number = 0;
+  static acBonuses: SWACBonus[] = [];
+  static acBonusCount: number = 0;
+  static formations: SWFormation[] = [];
+  static formationCount: number = 0;
+  static plots: SWPlot[] = [];
+  static plotCount: number = 0;
+  static attackBonusTables: Map<string, SWAttackBonus[]> = new Map();
+  static savingThrowTables: Map<string, SWSavingThrow[]> = new Map();
 
   static genders: SWGender[] = [];
   static genderCount: number = 0;
@@ -129,8 +163,18 @@ export class SWRuleSet {
   static weaponSounds: SWWeaponSound[] = [];
   static weaponSoundCount: number = 0;
 
+  static grenadeSounds: SWGrenadeSound[] = [];
+  static grenadeSoundCount: number = 0;
+
   static animations: SWAnimation[] = [];
+  static animationNameMap: Map<string, SWAnimation> = new Map();
+  static animationIdMap: Map<number, SWAnimation> = new Map();
+
   static animationCount: number = 0;
+
+  static combatAnimations: SWCombatAnimation[] = [];
+  static combatAnimationCount: number = 0;
+  static combatAnimationIdMap: Map<number, SWCombatAnimation> = new Map();
 
   static getPriorityGroupById(id: number = AudioPriorityGroup.DEFAULT): SWPriorityGroup {
     if(Number.isFinite(id) && SWRuleSet.priorityGroups[id]){
@@ -172,7 +216,7 @@ export class SWRuleSet {
 
     /**
      * Initialize EXP Table
-     *  - Used to calculate the level of a creature based on the amount of experience they have
+     * - Used to calculate the level of a creature based on the amount of experience they have
      */
     const expTable = GameState.TwoDAManager.datatables.get('exptable');
     if(expTable){
@@ -181,7 +225,7 @@ export class SWRuleSet {
 
     /**
      * Initialize XP Table
-     *  - Used to calculate the amount of experience to grant to a creature when they defeat an enemy
+     * - Used to calculate the amount of experience to grant to a creature when they defeat an enemy
      */
     const xpTable = GameState.TwoDAManager.datatables.get('xptable'); 
     if(xpTable){
@@ -193,7 +237,7 @@ export class SWRuleSet {
 
     /**
      * Initialize Feat Gains
-     * - required by CreatureClass.apply2DA()
+     * - required by CreatureClass.apply2DA
      */
     const featGains = GameState.TwoDAManager.datatables.get('featgain');
     if(featGains){
@@ -242,6 +286,86 @@ export class SWRuleSet {
       for(let i = 0; i < classes.RowCount; i++){
         SWRuleSet.classes[i] = CreatureClass.From2DA(classes.rows[i]);
       }
+    }
+
+    /**
+     * Initialize rules tables used by gameplay and class-derived values.
+     */
+    const traps = GameState.TwoDAManager.datatables.get('traps');
+    SWRuleSet.trapCount = traps?.RowCount || 0;
+    SWRuleSet.traps = traps
+      ? Object.values(traps.rows).map((row: any) => SWTrap.From2DA(row))
+      : [];
+
+    const forceAdjust = GameState.TwoDAManager.datatables.get('forceadjust');
+    SWRuleSet.forceAdjustmentCount = forceAdjust?.RowCount || 0;
+    SWRuleSet.forceAdjustments = forceAdjust
+      ? Object.values(forceAdjust.rows).map((row: any) => SWForceAdjust.From2DA(row))
+      : [];
+
+    const forceShields = GameState.TwoDAManager.datatables.get('forceshields');
+    SWRuleSet.forceShieldCount = forceShields?.RowCount || 0;
+    SWRuleSet.forceShields = forceShields
+      ? Object.values(forceShields.rows).map((row: any) => SWForceShield.From2DA(row))
+      : [];
+
+    const poisons = GameState.TwoDAManager.datatables.get('poison');
+    SWRuleSet.poisonCount = poisons?.RowCount || 0;
+    SWRuleSet.poisons = poisons
+      ? Object.values(poisons.rows).map((row: any) => SWPoison.From2DA(row))
+      : [];
+
+    const regenerations = GameState.TwoDAManager.datatables.get('regeneration');
+    SWRuleSet.regenerationCount = regenerations?.RowCount || 0;
+    SWRuleSet.regenerations = regenerations
+      ? Object.values(regenerations.rows).map((row: any) => SWRegeneration.From2DA(row))
+      : [];
+
+    const acBonuses = GameState.TwoDAManager.datatables.get('acbonus');
+    SWRuleSet.acBonusCount = acBonuses?.RowCount || 0;
+    SWRuleSet.acBonuses = acBonuses
+      ? Object.values(acBonuses.rows).map((row: any) => SWACBonus.From2DA(row))
+      : [];
+
+    const formations = GameState.TwoDAManager.datatables.get('formations');
+    SWRuleSet.formationCount = formations?.RowCount || 0;
+    SWRuleSet.formations = formations
+      ? Object.values(formations.rows).map((row: any) => SWFormation.From2DA(row))
+      : [];
+
+    const plots = GameState.TwoDAManager.datatables.get('plot');
+    SWRuleSet.plotCount = plots?.RowCount || 0;
+    SWRuleSet.plots = plots
+      ? Object.values(plots.rows).map((row: any) => SWPlot.From2DA(row))
+      : [];
+
+    SWRuleSet.attackBonusTables.clear();
+    SWRuleSet.savingThrowTables.clear();
+    for(let i = 0; i < SWRuleSet.classes.length; i++){
+      const cls = SWRuleSet.classes[i];
+      const attackTableName = cls.attackbonustable?.toLowerCase();
+      if(attackTableName && !SWRuleSet.attackBonusTables.has(attackTableName)){
+        const table = GameState.TwoDAManager.datatables.get(attackTableName);
+        if(table){
+          SWRuleSet.attackBonusTables.set(
+            attackTableName,
+            Object.values(table.rows).map((row: any) => SWAttackBonus.From2DA(row))
+          );
+        }
+      }
+      const saveTableName = cls.savingthrowtable?.toLowerCase();
+      if(saveTableName && !SWRuleSet.savingThrowTables.has(saveTableName)){
+        const table = GameState.TwoDAManager.datatables.get(saveTableName);
+        if(table){
+          SWRuleSet.savingThrowTables.set(
+            saveTableName,
+            Object.values(table.rows).map((row: any) => SWSavingThrow.From2DA(row))
+          );
+        }
+      }
+      cls.attackBonuses = SWRuleSet.attackBonusTables.get(attackTableName)?.slice() || cls.attackBonuses;
+      cls.savingThrows = SWRuleSet.savingThrowTables.get(saveTableName)?.slice() || cls.savingThrows;
+      cls.acbonuses = SWRuleSet.acBonuses.map((row) => row.getBonus(cls.armorclasscolumn));
     }
 
     /**
@@ -362,6 +486,22 @@ export class SWRuleSet {
     }
 
     /**
+     * Initialize Influence (TSL influence.2da — Tag / BaseInfluence)
+     */
+    const influences = GameState.TwoDAManager.datatables.get('influence');
+    if(influences){
+      SWRuleSet.influenceCount = influences.RowCount;
+      SWRuleSet.influences = new Array(SWRuleSet.influenceCount);
+      for(let i = 0; i < influences.RowCount; i++){
+        SWRuleSet.influences[i] = SWInfluence.From2DA(influences.rows[i]);
+        SWRuleSet.influences[i].id = i;
+      }
+    }else{
+      SWRuleSet.influences = [];
+      SWRuleSet.influenceCount = 0;
+    }
+
+    /**
      * Initialize Priority Groups
      */
     const priorityGroups = GameState.TwoDAManager.datatables.get('prioritygroups');
@@ -383,6 +523,15 @@ export class SWRuleSet {
         SWRuleSet.factions[i] = SWFaction.From2DA(factions.rows[i]);
       }
     }
+
+    /**
+     * Initialize Encounter Difficulties
+     */
+    const encounterDifficulties = GameState.TwoDAManager.datatables.get('encdifficulty');
+    SWRuleSet.encounterDifficultyCount = encounterDifficulties?.RowCount || 0;
+    SWRuleSet.encounterDifficulties = encounterDifficulties
+      ? Object.values(encounterDifficulties.rows).map((row: any) => SWEncounterDifficulty.From2DA(row))
+      : [];
 
     /**
      * Initialize Genders
@@ -505,6 +654,18 @@ export class SWRuleSet {
     }
 
     /**
+     * Initialize Grenade Sounds (surface → bounce/impact; GrenadeSND.2da)
+     */
+    const grenadeSounds = GameState.TwoDAManager.datatables.get('grenadesnd');
+    if(grenadeSounds){
+      SWRuleSet.grenadeSoundCount = grenadeSounds.RowCount;
+      SWRuleSet.grenadeSounds = new Array(SWRuleSet.grenadeSoundCount);
+      for(let i = 0; i < grenadeSounds.RowCount; i++){
+        SWRuleSet.grenadeSounds[i] = SWGrenadeSound.From2DA(grenadeSounds.rows[i]);
+      }
+    }
+
+    /**
      * Initialize Creature Appearances
      */
     const creatureAppearances = GameState.TwoDAManager.datatables.get('appearance');
@@ -548,7 +709,27 @@ export class SWRuleSet {
       SWRuleSet.animationCount = animations.RowCount;
       SWRuleSet.animations = new Array(SWRuleSet.animationCount);
       for(let i = 0; i < animations.RowCount; i++){
-        SWRuleSet.animations[i] = SWAnimation.From2DA(animations.rows[i]);
+        const animation = SWAnimation.From2DA(animations.rows[i]);
+        SWRuleSet.animations[i] = animation;
+        SWRuleSet.animationIdMap.set(animation.animationId, animation);
+        SWRuleSet.animationNameMap.set(animation.name.toLowerCase(), animation);
+      }
+    }
+
+    /**
+     * Initialize Combat Animations
+     */
+    const combatAnimations = GameState.TwoDAManager.datatables.get('combatanimations');
+    if(combatAnimations){
+      SWRuleSet.combatAnimationCount = combatAnimations.RowCount;
+      SWRuleSet.combatAnimations = new Array(SWRuleSet.combatAnimationCount);
+      for(let i = 0; i < combatAnimations.RowCount; i++){
+        const combatAnimation = SWCombatAnimation.From2DA(combatAnimations.rows[i]);
+        SWRuleSet.combatAnimations[i] = combatAnimation;
+        const animation = SWRuleSet.animationIdMap.get(combatAnimation.animationId);
+        if(animation){
+          animation.combatAnimation = combatAnimation;
+        }
       }
     }
   }
@@ -564,6 +745,27 @@ export class SWRuleSet {
         SWRuleSet.currentDifficulty = difficulty;
       }
     }
+  }
+
+  /** Case-insensitive lookup in influence.2da rows (TSL). */
+  static GetInfluenceByTag(tag: string): SWInfluence | undefined {
+    const want = (tag || '').toLowerCase();
+    if(!want) return undefined;
+    for(let i = 0; i < SWRuleSet.influences.length; i++){
+      const row = SWRuleSet.influences[i];
+      if(row && (row.tag || '').toLowerCase() === want){
+        return row;
+      }
+    }
+    return undefined;
+  }
+
+  static GetPlotByLabel(label: string = ''): SWPlot | undefined {
+    return SWPlot.GetByLabel(SWRuleSet.plots, label);
+  }
+
+  static GetPlotByIndex(index: number): SWPlot | undefined {
+    return SWPlot.GetByIndex(SWRuleSet.plots, index);
   }
 
 }

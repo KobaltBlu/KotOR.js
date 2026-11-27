@@ -1,4 +1,4 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
 
 export interface SceneGraphNodeOptions {
   uuid?: string;
@@ -121,9 +121,9 @@ export class SceneGraphNode extends EventListenerModel {
       if(typeof cb === 'function') cb(this.parent);
       this.parent.traverseAncestors(cb);
       // for(let i = 0; i < this.nodes.length; i++){
-      //   if(this.parent.nodes[i] != this){
-      //     this.parent.nodes[i].traverseChildren(cb);
-      //   }
+      // if(this.parent.nodes[i] != this){
+      // this.parent.nodes[i].traverseChildren(cb);
+      // }
       // }
     }
   }

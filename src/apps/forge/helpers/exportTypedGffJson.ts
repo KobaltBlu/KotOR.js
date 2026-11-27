@@ -1,5 +1,5 @@
 /**
- * Convert retail-style typed GFF JSON dumps ({ type, value } wrappers) into GFFStruct/GFFObject.
+ * Convert -style typed GFF JSON dumps ({ type, value } wrappers) into GFFStruct/GFFObject.
  * Research/test helper only — not part of module authoring import/export (binary IFO/ARE/GIT).
  * Do not use this for Forge Project save/load/new module; those paths stay binary GFF.
  * Distinct from gffJsonCodec (editor clipboard document shape).
@@ -7,12 +7,12 @@
  * @file exportTypedGffJson.ts
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { CExoLocSubString } from "@/resource/CExoLocSubString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { CExoLocSubString } from "@core/resource/CExoLocSubString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
 
 type TypedNode = { type: string; value: unknown };
 
@@ -103,7 +103,7 @@ function addFieldFromTyped(struct: GFFStruct, label: string, node: TypedNode): v
   struct.addField(new GFFField(gffType, label, node.value as never));
 }
 
-/** Build a GFFStruct from one object in a retail typed JSON dump. */
+/** Build a GFFStruct from one object in a typed JSON dump. */
 export function structFromExportObject(obj: Record<string, unknown>): GFFStruct {
   const typeId = typeof obj.__struct_id === "number" ? obj.__struct_id : 0;
   const struct = new GFFStruct(typeId);

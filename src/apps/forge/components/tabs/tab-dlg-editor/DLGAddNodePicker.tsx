@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
-import { formatDlgNodeLine } from "@/apps/forge/dlg/dlgLocString";
-import type { ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@apps/forge/components/ui";
+import { formatDlgNodeLine } from "@apps/forge/dlg/dlgLocString";
+import type { ForgeDLGNode } from "@apps/forge/dlg/ForgeDLGTypes";
 
 /**
  * Choose a new node or an existing entry/reply to link.

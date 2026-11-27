@@ -6,12 +6,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { CExoLocSubString } from "@/resource/CExoLocSubString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { CExoLocSubString } from "@core/resource/CExoLocSubString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
 import {
   bytesToHex,
   clampGffLabel,
@@ -20,7 +20,7 @@ import {
   hexToBytes,
   setDword64Value,
   setInt64Value,
-} from "@/apps/forge/helpers/gffFieldValue";
+} from "@apps/forge/helpers/gffFieldValue";
 
 export interface GffSerializedLocString {
   resref: number;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { compiledNcsOverrideRelativePath, compiledNcsPathForProjectNss } from "@/apps/forge/helpers/forgeNcsCompilePaths";
+import { compiledNcsOverrideRelativePath, compiledNcsPathForProjectNss } from "@apps/forge/helpers/forgeNcsCompilePaths";
 
 describe("compiled NCS output paths", () => {
   test("puts archive/game compiles in Override/{resref}.ncs", () => {

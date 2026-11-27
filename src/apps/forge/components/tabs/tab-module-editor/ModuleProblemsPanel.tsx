@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import type { ValidationIssue, ValidationReport } from "@/apps/forge/module-editor/validation/ModuleValidationTypes";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import type { ValidationIssue, ValidationReport } from "@apps/forge/module-editor/validation/ModuleValidationTypes";
 
 export interface ModuleProblemsPanelProps {
   tab: TabModuleEditorState;

@@ -6,9 +6,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
-import type { BlueprintType, BlueprintItem } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import type { UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
+import type { BlueprintType, BlueprintItem } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import type { UTIItem } from "@apps/forge/states/modal/ModalItemBrowserState";
 
 export const NO_GAME_RESREF_HINT =
   "Game data is not loaded. Enter a ResRef (max 16 characters).";

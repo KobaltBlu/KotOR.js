@@ -7,8 +7,8 @@ import {
   mergeLipKeyframes,
   snapLipTime,
   visemeSpansFromKeys,
-} from "@/apps/forge/lip/lipVisemes";
-import { LIPObject } from "@/resource/LIPObject";
+} from "@apps/forge/lip/lipVisemes";
+import { LIPObject } from "@core/resource/LIPObject";
 
 describe("lip viseme catalog", () => {
   test("has 16 visemes covering Odyssey mouth shapes", () => {

@@ -2,8 +2,8 @@ import React from "react";
 import {
   KOTOR_STORE_PRODUCTS,
   KotORStoreProduct,
-} from "@/apps/common/data/kotorStoreProducts";
-import { GamePurchaseCard } from "@/apps/common/components/needKotor/GamePurchaseCard";
+} from "@apps/common/data/kotorStoreProducts";
+import { GamePurchaseCard } from "@apps/common/components/needKotor/GamePurchaseCard";
 import "@/apps/common/components/needKotor/needKotorPanel.scss";
 
 export interface NeedKotorPanelProps {
@@ -38,7 +38,7 @@ export const NeedKotorPanel: React.FC<NeedKotorPanelProps> = ({
 
       {showFootnote && (
         <p className="need-kotor-panel__footnote">
-          KotOR.js requires a <strong>PC</strong> installation (Steam, GOG, or retail). Mobile store versions are not
+          KotOR.js requires a <strong>PC</strong> installation (Steam, GOG, or disk). Mobile store versions are not
           compatible.
         </p>
       )}

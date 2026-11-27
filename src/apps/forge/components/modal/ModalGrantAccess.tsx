@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { useApp } from "@/apps/forge/context/AppContext";
-import GrantAccessModalContent from "@/apps/common/components/grantAccess/GrantAccessModalContent";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { useApp } from "@apps/forge/context/AppContext";
+import GrantAccessModalContent from "@apps/common/components/grantAccess/GrantAccessModalContent";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 export interface ModalGrantAccessProps {
   onUserGrant: Function,

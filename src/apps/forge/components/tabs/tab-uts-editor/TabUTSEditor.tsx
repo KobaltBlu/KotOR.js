@@ -1,15 +1,15 @@
 import React, { useRef, useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTSEditorState } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps"
+import { TabUTSEditorState } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
 import "@/apps/forge/components/tabs/tab-uts-editor/tab-uts-editor.scss";
-import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
-import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { FormField } from "@apps/forge/components/form-field/FormField";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { openResRefBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
+import { clampByte } from "@apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTSEditor = function(props: BaseTabProps){
 

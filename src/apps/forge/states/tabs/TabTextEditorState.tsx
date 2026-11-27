@@ -1,34 +1,33 @@
 import React from "react";
-import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-// import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
-import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
-import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from "@/apps/forge/states/tabs";
+import { TabTextEditor } from "@apps/forge/components/tabs/tab-text-editor/TabTextEditor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { EditorTabManager } from "@apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { NWScriptParser } from "@core/nwscript/compiler/NWScriptParser";
+import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from "@apps/forge/states/tabs";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeFileSystem } from "@apps/forge/ForgeFileSystem";
 import * as path from "path";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
-import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
-import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
-import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
-import { compileNssSource, resolveIncludesForNss } from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { compiledNcsOverrideRelativePath, GAME_OVERRIDE_DIR } from "@/apps/forge/helpers/forgeNcsCompilePaths";
-import { NWScriptDecompiler } from "@/nwscript/decompiler/NWScriptDecompiler";
+import { EditorFileProtocol } from "@apps/forge/enum/EditorFileProtocol";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { NWScriptLanguageService } from "@apps/forge/states/NWScriptLanguageService";
+import { LYTLanguageService } from "@apps/forge/states/LYTLanguageService";
+import { TXILanguageService } from "@apps/forge/states/TXILanguageService";
+import { SemanticFunctionNode } from "@core/nwscript/compiler/ASTSemanticTypes";
+import { compileNssSource, resolveIncludesForNss } from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { compiledNcsOverrideRelativePath, GAME_OVERRIDE_DIR } from "@apps/forge/helpers/forgeNcsCompilePaths";
+import { decompileScriptWithLineMap } from "@core/nwscript/inspect/decompileScriptWithLineMap";
 import {
   codeOffsetForNssLine,
   createEmptyNssCodeLineMap,
   type NssCodeLineMap,
-} from "@/nwscript/inspect/nssCodeLineMap";
-import { getMonacoThemeForLanguage } from "@/apps/forge/settings/forgeTheme";
-import { getEditorSettings, setEditorSettings, toMonacoEditorOptions, toMonacoModelOptions } from "@/apps/forge/settings/forgeEditorSettings";
+} from "@core/nwscript/inspect/nssCodeLineMap";
+import { getMonacoThemeForLanguage } from "@apps/forge/settings/forgeTheme";
+import { getEditorSettings, setEditorSettings, toMonacoEditorOptions, toMonacoModelOptions } from "@apps/forge/settings/forgeEditorSettings";
 
 export class TabTextEditorState extends TabState {
 
@@ -167,8 +166,7 @@ export class TabTextEditorState extends TabState {
   }
 
   applyDecompile(script: KotOR.NWScript): void {
-    const decompiler = new NWScriptDecompiler(script);
-    const result = decompiler.decompileWithLineMap();
+    const result = decompileScriptWithLineMap(script);
     this.code = result.nss;
     this.nssLineMap = result.lineMap;
     this.recoveredFunctions = result.functions;
@@ -606,8 +604,8 @@ export class TabTextEditorState extends TabState {
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     const destExt = (ext || '').replace(/^\./, '').toLowerCase();
-    // Save/Save As from an .ncs tab always writes decompiled NSS. Compiled bytecode
-    // is only emitted by Compile (sibling .ncs), never by overwriting the opened file.
+    // Save/Save As from an.ncs tab always writes decompiled NSS. Compiled bytecode
+    // is only emitted by Compile (sibling.ncs), never by overwriting the opened file.
     if (destExt === 'ncs' && !this.isNcsFile()) {
       return this.ncs?.length ? this.ncs : new Uint8Array(0);
     }

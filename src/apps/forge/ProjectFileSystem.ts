@@ -1,14 +1,14 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabProjectExplorerState } from "@apps/forge/states/tabs";
 import {
   hasProjectRoot,
   isMemoryDirectoryHandle,
   isProjectDirectoryHandle,
-} from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/virtual/VirtualProjectFolder";
 import * as path from "path";
 import * as fs from "fs";
-import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+import { IGameFileSystemReadDirOptions } from "@core/interface/filesystem/IGameFileSystemReadDirOptions";
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {

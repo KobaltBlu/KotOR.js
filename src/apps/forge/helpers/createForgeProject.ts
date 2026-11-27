@@ -6,26 +6,26 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { Project } from "@apps/forge/Project";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 import {
   canCreateForgeProject,
   newProjectSettings,
   resolveProjectGame,
   type CreateForgeProjectOptions,
-} from "@/apps/forge/helpers/projectCreateOptions";
-import { createOrOpenVirtualProjectFolder } from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/helpers/projectCreateOptions";
+import { createOrOpenVirtualProjectFolder } from "@apps/forge/virtual/VirtualProjectFolder";
 
 export {
   canCreateForgeProject,
   newProjectSettings,
   resolveProjectGame,
-} from "@/apps/forge/helpers/projectCreateOptions";
+} from "@apps/forge/helpers/projectCreateOptions";
 export type {
   CreateForgeProjectDirectory,
   CreateForgeProjectOptions,
   ProjectStorageMode,
-} from "@/apps/forge/helpers/projectCreateOptions";
+} from "@apps/forge/helpers/projectCreateOptions";
 
 /**
  * Attach the project filesystem and write `.forge/settings.json`.

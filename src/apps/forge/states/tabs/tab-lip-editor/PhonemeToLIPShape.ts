@@ -1,10 +1,10 @@
-import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import { ILIPKeyFrame } from "@core/interface/resource/ILIPKeyFrame";
 import {
   ShapedCue,
   expandDialogOntoIslands,
   rhubarbCuesToShaped,
   splitConsonantBCues,
-} from "@/apps/forge/states/tabs/tab-lip-editor/OdysseyVisemeExpand";
+} from "@apps/forge/states/tabs/tab-lip-editor/OdysseyVisemeExpand";
 
 export const PHN_INVALID = -1;
 export const PHN_EE = 0;

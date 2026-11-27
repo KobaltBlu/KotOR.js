@@ -1,0 +1,137 @@
+/**
+ * @jest-environment node
+ *
+ * Placeable OnDamaged / OnAttacked contract after polymorphism move out of
+ * GameObject. Does not import Placeable (window-dependent import graph);
+ * mirrors the override bodies and asserts peer broadcast + script slot selection.
+ */
+import { describe, expect, it, jest } from "@jest/globals";
+import { CombatActionType } from "@core/enums/combat/CombatActionType";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
+import { isCreature } from "@engine/module/guards/isCreature";
+import type { Creature } from "@engine/module/Creature";
+
+/** Mirrors Placeable.onDamaged after the GameObject branch move. */
+function placeableOnDamaged(self: {
+  isDead: () => boolean;
+  combatData: { lastDamager?: unknown; lastAttacker?: unknown };
+  scripts: Record<string, { run: (o: unknown) => void } | undefined>;
+}){
+  if(self.isDead())
+    return true;
+
+  const damager = self.combatData.lastDamager ?? self.combatData.lastAttacker;
+  if(isCreature(damager as any)){
+    (damager as Creature).broadcastCombatStateToParty();
+  }
+
+  const onDamaged = self.scripts[ScriptHook.PlaceableOnDamaged];
+  if(onDamaged){
+    onDamaged.run(self);
+  }
+}
+
+/** Mirrors Placeable.onAttacked after the GameObject branch move. */
+function placeableOnAttacked(
+  self: {
+    combatData: { lastAttacker?: unknown };
+    scripts: Record<string, { run: (o: unknown) => void } | undefined>;
+  },
+  attackType: CombatActionType,
+){
+  const attacker = self.combatData.lastAttacker;
+  if(isCreature(attacker as any)){
+    const atk = attacker as Creature;
+    atk.broadcastCombatStateToParty();
+    atk.removeCombatInvisibilityEffects();
+  }
+  const isSpell = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
+  const onAttacked = self.scripts[
+    isSpell ? ScriptHook.PlaceableOnSpellCastAt : ScriptHook.PlaceableOnMeleeAttacked
+  ];
+  if(onAttacked){
+    onAttacked.run(self);
+  }
+}
+
+function makeCreaturePeer(){
+  return {
+    objectType: GameObjectType.GameObject | GameObjectType.Creature,
+    broadcastCombatStateToParty: jest.fn(),
+    removeCombatInvisibilityEffects: jest.fn(),
+  };
+}
+
+describe("placeable script events (polymorphic contract)", () => {
+  it("onDamaged broadcasts via creature damager and runs PlaceableOnDamaged", () => {
+    const damager = makeCreaturePeer();
+    const run = jest.fn();
+    const placeable = {
+      isDead: () => false,
+      combatData: { lastDamager: damager },
+      scripts: {
+        [ScriptHook.PlaceableOnDamaged]: { run },
+      },
+    };
+
+    placeableOnDamaged(placeable);
+
+    expect(damager.broadcastCombatStateToParty).toHaveBeenCalledTimes(1);
+    expect(run).toHaveBeenCalledWith(placeable);
+  });
+
+  it("onDamaged early-outs when dead without broadcasting or running script", () => {
+    const damager = makeCreaturePeer();
+    const run = jest.fn();
+    const placeable = {
+      isDead: () => true,
+      combatData: { lastDamager: damager },
+      scripts: {
+        [ScriptHook.PlaceableOnDamaged]: { run },
+      },
+    };
+
+    expect(placeableOnDamaged(placeable)).toBe(true);
+    expect(damager.broadcastCombatStateToParty).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("onAttacked melee uses PlaceableOnMeleeAttacked and strips invis", () => {
+    const attacker = makeCreaturePeer();
+    const meleeRun = jest.fn();
+    const spellRun = jest.fn();
+    const placeable = {
+      combatData: { lastAttacker: attacker },
+      scripts: {
+        [ScriptHook.PlaceableOnMeleeAttacked]: { run: meleeRun },
+        [ScriptHook.PlaceableOnSpellCastAt]: { run: spellRun },
+      },
+    };
+
+    placeableOnAttacked(placeable, CombatActionType.ATTACK);
+
+    expect(attacker.broadcastCombatStateToParty).toHaveBeenCalledTimes(1);
+    expect(attacker.removeCombatInvisibilityEffects).toHaveBeenCalledTimes(1);
+    expect(meleeRun).toHaveBeenCalledWith(placeable);
+    expect(spellRun).not.toHaveBeenCalled();
+  });
+
+  it("onAttacked spell uses PlaceableOnSpellCastAt", () => {
+    const attacker = makeCreaturePeer();
+    const meleeRun = jest.fn();
+    const spellRun = jest.fn();
+    const placeable = {
+      combatData: { lastAttacker: attacker },
+      scripts: {
+        [ScriptHook.PlaceableOnMeleeAttacked]: { run: meleeRun },
+        [ScriptHook.PlaceableOnSpellCastAt]: { run: spellRun },
+      },
+    };
+
+    placeableOnAttacked(placeable, CombatActionType.CAST_SPELL);
+
+    expect(spellRun).toHaveBeenCalledWith(placeable);
+    expect(meleeRun).not.toHaveBeenCalled();
+  });
+});

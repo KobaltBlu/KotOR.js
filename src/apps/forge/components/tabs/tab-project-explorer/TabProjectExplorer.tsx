@@ -1,28 +1,28 @@
 import React, { useCallback, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabGFFEditorState, TabProjectExplorerState } from "@/apps/forge/states/tabs";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { Project } from "@/apps/forge/Project";
-import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
-import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
-import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
-import { ForgeButton } from "@/apps/forge/components/ui";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { RecentProject } from "@/apps/forge/RecentProject";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabGFFEditorState, TabProjectExplorerState } from "@apps/forge/states/tabs";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { ForgeTreeView } from "@apps/forge/components/treeview/ForgeTreeView";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { Project } from "@apps/forge/Project";
+import { ModalNewProjectState } from "@apps/forge/states/modal/ModalNewProjectState";
+import { compileAllNssInProject } from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { openImportModuleWizard } from "@apps/forge/helpers/openImportModuleWizard";
+import { ModalBulkNssCompileResultsState } from "@apps/forge/states/modal/ModalBulkNssCompileResultsState";
+import { ListItemNode } from "@apps/forge/components/treeview/ListItemNode";
+import { ContextMenuItem, useContextMenu } from "@apps/forge/components/common/ContextMenu";
+import { ForgeButton } from "@apps/forge/components/ui";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { RecentProject } from "@apps/forge/RecentProject";
 import {
   ListedVirtualProjectFolder,
   deleteStoredVirtualProjectFolder,
   isOriginPrivateFileSystemAvailable,
   loadVirtualProjectFoldersForRestore,
-} from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/virtual/VirtualProjectFolder";
 import {
   copyTextToClipboard,
   explorerCopyPath,
@@ -33,8 +33,8 @@ import {
   isProtectedExplorerPath,
   joinProjectRel,
   sanitizeProjectEntryName,
-} from "@/apps/forge/helpers/projectExplorerActions";
-import { retargetOpenProjectEditors } from "@/apps/forge/helpers/retargetProjectTabs";
+} from "@apps/forge/helpers/projectExplorerActions";
+import { retargetOpenProjectEditors } from "@apps/forge/helpers/retargetProjectTabs";
 import "@/apps/forge/components/tabs/tab-project-explorer/TabProjectExplorer.scss";
 
 const GFF_LIKE_EXTENSIONS = new Set([

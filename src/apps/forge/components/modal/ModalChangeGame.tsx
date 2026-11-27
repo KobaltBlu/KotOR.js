@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { Launcher } from "@/apps/launcher/context/Launcher";
+import { ForgeButton, ForgeDialog } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { Launcher } from "@apps/launcher/context/Launcher";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 function listForgeProfiles(): any[] {
   const fromLauncher = Object.values(Launcher.AppProfiles || {}).filter((profile: any) => {

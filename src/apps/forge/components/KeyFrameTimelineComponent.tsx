@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 import {
   ModelViewerEditableTrack,
   ModelViewerTrackFilterScope,
   TabModelViewerState,
-} from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+} from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 
-import { ForgeSelect } from "@/apps/forge/components/ui";
+import { ForgeSelect } from "@apps/forge/components/ui";
 import "@/apps/forge/components/KeyFrameTimelineComponent.scss";
 
 function formatTimelineClock(totalSeconds: number): string {

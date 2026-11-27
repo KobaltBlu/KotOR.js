@@ -1,28 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { TabModuleEditorState } from "@/apps/forge/states/tabs";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { TabModuleEditorState } from "@apps/forge/states/tabs";
+import { SceneGraphTreeView } from "@apps/forge/components/SceneGraphTreeView";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
 import * as THREE from 'three';
-import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { openBlueprintBrowser, openScriptBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeColorField, ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
-import { MiniGameNestedEditors } from "@/apps/forge/components/ModuleEditorMiniGameEditors";
-import { dwordToRgb01, rgb01ToDword } from "@/apps/forge/helpers/forgeColor";
-import { facingFromYaw } from "@/apps/forge/helpers/gitFacing";
-import * as KotOR from "@/apps/forge/KotOR";
-import { GroupType } from "@/apps/forge/UI3DRenderer";
+import { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { openBlueprintBrowser, openScriptBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeColorField, ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeCamera } from "@apps/forge/module-editor/ForgeCamera";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgeItem } from "@apps/forge/module-editor/ForgeItem";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
+import { ForgeMiniGame } from "@apps/forge/module-editor/ForgeMiniGame";
+import { MiniGameNestedEditors } from "@apps/forge/components/ModuleEditorMiniGameEditors";
+import { dwordToRgb01, rgb01ToDword } from "@apps/forge/helpers/forgeColor";
+import { facingFromYaw } from "@apps/forge/helpers/gitFacing";
+import * as KotOR from "@apps/forge/KotOR";
+import { GroupType } from "@apps/forge/UI3DRenderer";
 import "@/apps/forge/components/ModuleEditorSidebarComponent.scss";
 
 const SCENE_TYPE_CHIPS: Array<{ key: GroupType; label: string; icon: string }> = [
@@ -326,7 +326,7 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
       break;
 
     case 'ForgeEncounter':
-      // Retail encounter GIT has no orientation — position only from common props
+      // encounter GIT has no orientation — position only from common props
       props = [
         { propertyName: 'templateResRef', label: 'Template ResRef', type: 'string', gitFieldLabel: 'TemplateResRef', section: 'Identity' },
         { propertyName: 'position', label: 'Position', type: 'position', section: 'Transform' },
@@ -518,7 +518,7 @@ const StringPropertyEditor = function(props: {
       return;
     }
     let cancelled = false;
-    void import("@/apps/forge/helpers/blueprintResRefSuggest").then(({ suggestBlueprintResRefs }) => {
+    void import("@apps/forge/helpers/blueprintResRefSuggest").then(({ suggestBlueprintResRefs }) => {
       suggestBlueprintResRefs(blueprintType, draft, 50).then((items) => {
         if(!cancelled){
           setSuggestions(items);
@@ -670,7 +670,7 @@ const PropertyEditor = function(props: {
     case 'number':
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis" title={propertyDef.gitFieldLabel === 'ZOrientation' ? 'Third component of retail orientation vector; geometry yaw uses full X/Y/Z vector' : undefined}>
+          <label className="property-editor-label property-editor-label--ellipsis" title={propertyDef.gitFieldLabel === 'ZOrientation' ? 'Third component of orientation vector; geometry yaw uses full X/Y/Z vector' : undefined}>
             {propertyDef.label}:
           </label>
           <input
@@ -1601,7 +1601,7 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
             </select>
           </ScalarRow>
           <div className="git-instance-properties-editor__hint">
-            Retail MovementPerSec defaults differ by type (swoop ≈ 6, turret ≈ 90); existing values are not overwritten.
+            MovementPerSec defaults differ by type (swoop ≈ 6, turret ≈ 90); existing values are not overwritten.
           </div>
           <ScalarRow label="Bump Plane">
             <NumberField value={miniGame.bumpPlane} onChange={(value) => { miniGame.bumpPlane = value; mark("mg-bumpPlane"); }} />
@@ -1628,7 +1628,7 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
             <NumberField value={miniGame.movementPerSec} step="0.01" onChange={(value) => { miniGame.movementPerSec = value; mark("mg-movementPerSec"); }} />
           </ScalarRow>
           <ScalarRow label="Music">
-            <NumberField value={miniGame.music} onChange={(value) => { miniGame.music = value; mark("mg-music"); }} />
+            <TextField value={miniGame.music || ''} maxLength={16} onChange={(value) => { miniGame.music = value; mark("mg-music"); }} />
           </ScalarRow>
           <ScalarRow label="Use Inertia">
             <BoolField value={!!miniGame.useInertia} onChange={(value) => { miniGame.useInertia = value ? 1 : 0; mark(); }} />
@@ -1636,7 +1636,7 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
           {miniGame.type === KotOR.MiniGameType.TURRET && miniGame.player ? (
             <>
               <div className="git-instance-properties-editor__hint">
-                Turret (Type 2): retail requires Player Camera when loading the player.
+                Turret (Type 2): engine requires Player Camera when loading the player.
               </div>
               <ScalarRow label="Player Camera">
                 <TextField

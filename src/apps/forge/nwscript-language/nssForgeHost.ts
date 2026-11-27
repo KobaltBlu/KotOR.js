@@ -8,12 +8,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { loadNssSourceBuffer, resolveIncludesForNss } from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { normalizeNssIncludeResref } from "@/apps/forge/helpers/nssIncludeResref";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ResourceTypes } from "@/resource/ResourceTypes";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { loadNssSourceBuffer, resolveIncludesForNss } from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { normalizeNssIncludeResref } from "@apps/forge/helpers/nssIncludeResref";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ResourceTypes } from "@core/resource/ResourceTypes";
 import type * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import type { NssEditorTabLike, NssLanguageHost, ProjectNssFile } from "./nssLanguageHost";
 

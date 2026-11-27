@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/apps/launcher/app.scss";
-import { AppProvider, useApp } from "@/apps/launcher/context/AppContext";
+import { AppProvider, useApp } from "@apps/launcher/context/AppContext";
 
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { ConfigClient } from "@/utility/ConfigClient";
-import { CategoryMenuItem } from "@/apps/launcher/components/CategoryMenuItem";
-import { ProfileTabContent } from "@/apps/launcher/components/ProfileTabContent";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { Launcher } from "@/apps/launcher/context/Launcher";
-import { CommunityTabContent } from "@/apps/launcher/components/CommunityTabContent";
-import DiscordWidget from "@/apps/launcher/components/DiscordWidget";
-import { NeedKotorPanel } from "@/apps/common/components/needKotor/NeedKotorPanel";
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import { ConfigClient } from "@core/filesystem/ConfigClient";
+import { CategoryMenuItem } from "@apps/launcher/components/CategoryMenuItem";
+import { ProfileTabContent } from "@apps/launcher/components/ProfileTabContent";
+import { ApplicationProfile } from "@core/utility/ApplicationProfile";
+import { Launcher } from "@apps/launcher/context/Launcher";
+import { CommunityTabContent } from "@apps/launcher/components/CommunityTabContent";
+import DiscordWidget from "@apps/launcher/components/DiscordWidget";
+import { NeedKotorPanel } from "@apps/common/components/needKotor/NeedKotorPanel";
 
 (window as any).Launcher = Launcher;
 
@@ -31,18 +31,6 @@ const App = function() {
   const [showMenuTopRight, setShowMenuTopRight] = useState(ApplicationProfile.ENV != ApplicationEnvironment.BROWSER);
 
   const [selectedTab, setSelectedTab] = useState('apps');
-
-  const currentTheme = useMemo(() => {
-    switch (selectedProfileValue?.key) {
-      case 'tsl':
-        return 'theme-tsl';
-      case 'forge':
-        return 'theme-forge';
-      case 'kotor':
-      default:
-        return 'theme-kotor';
-    }
-  }, [selectedProfileValue]);
 
   let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
     return acc + cat.profiles.length;
@@ -70,7 +58,7 @@ const App = function() {
         )
       );
       document.body.style.display = '';
-      // getProfileByKey();
+      // getProfileByKey;
     })
   };
 
@@ -135,7 +123,7 @@ const App = function() {
   }, [appContext.profileCategories])
 
   const onBtnMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
-    // e.preventDefault();
+    // e.preventDefault;
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       window.electron.minimize();
     }
@@ -180,7 +168,7 @@ const App = function() {
 
   return (
     <>
-      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''} ${profilesDrawerOpen ? 'profiles_drawer_open' : ''} ${currentTheme} tab-${selectedTab}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
+      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''} ${profilesDrawerOpen ? 'profiles_drawer_open' : ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
         <div className="launcher-menu">
           <h1 className="sr-only">KotOR.js Web Launcher</h1>
           <div className="launcher-menu-background"></div>
@@ -199,9 +187,9 @@ const App = function() {
               </li>
             )}
             <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" alt="KotOR.js" /></li>
-            <li className={`tab-btn ${selectedTab == 'apps' ? 'selected' : ''}`}><a href="#apps" onClick={onTabClicked}>Apps</a></li>
-            <li className={`tab-btn ${selectedTab == 'community' ? 'selected' : ''}`}><a href="#community" onClick={onTabClicked}>Community</a></li>
-            <li className={`tab-btn ${selectedTab == 'buy' ? 'selected' : ''}`}><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
+            <li className="tab-btn"><a href="#apps" onClick={onTabClicked}>Apps</a></li>
+            <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
+            <li className="tab-btn"><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
             <li
               className="tab-btn discord-toggle"
               role="button"
@@ -221,7 +209,7 @@ const App = function() {
           )}
         </div>
         <div className="tab-host">
-          {(selectedTab == 'apps' && <div className="tab selected tab-apps">
+          {(selectedTab == 'apps' && <div className="tab selected">
             <h2 className="sr-only">Apps</h2>
             <div
               className="profiles-drawer-backdrop"
@@ -247,13 +235,13 @@ const App = function() {
               })}
             </div>
           </div>)}
-          {(selectedTab == 'community' && <div className="tab selected tab-community">
+          {(selectedTab == 'community' && <div className="tab selected">
             <h2 className="sr-only">Community</h2>
             <div className="launcher-contents full-width">
               <CommunityTabContent />
             </div>
           </div>)}
-          {(selectedTab == 'buy' && <div className="tab selected tab-buy">
+          {(selectedTab == 'buy' && <div className="tab selected">
             <h2 className="sr-only">Need KotOR?</h2>
             <div className="launcher-contents full-width">
               <div className="panel scroll-y need-kotor-buy-panel">

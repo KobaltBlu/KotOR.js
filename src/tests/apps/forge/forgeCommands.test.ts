@@ -7,15 +7,15 @@ import {
   isCommandEnabled,
   registerCommand,
   resetForgeCommands,
-} from "@/apps/forge/commands/forgeCommands";
-import { parseKeybinding, formatKeybinding, eventMatchesKeybinding } from "@/apps/forge/commands/forgeKeybindings";
-import { tabCanCompile, tabCanOpenAsGff, tabCanSave } from "@/apps/forge/commands/editorCommandGuards";
+} from "@apps/forge/commands/forgeCommands";
+import { parseKeybinding, formatKeybinding, eventMatchesKeybinding } from "@apps/forge/commands/forgeKeybindings";
+import { tabCanCompile, tabCanOpenAsGff, tabCanSave } from "@apps/forge/commands/editorCommandGuards";
 import {
   buildOpenRecentMenuItems,
   mapRecentFilesToMenuItems,
   mapRecentProjectsToMenuItems,
   truncatePath,
-} from "@/apps/forge/commands/recentMenuItems";
+} from "@apps/forge/commands/recentMenuItems";
 
 describe("forgeCommands registry", () => {
   beforeEach(() => {

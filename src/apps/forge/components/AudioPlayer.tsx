@@ -1,7 +1,7 @@
 import React from "react";
-import { useAudioPlayerTransport } from "@/apps/forge/helpers/useAudioPlayerTransport";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
+import { useAudioPlayerTransport } from "@apps/forge/helpers/useAudioPlayerTransport";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { ForgeAudioOstControls } from "@apps/forge/components/ForgeAudioOstControls";
 
 import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
 

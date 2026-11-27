@@ -1,23 +1,46 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
-const { ROOT, isProd, isDevServe, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeDevServer, makeHmrPlugins, makeDevOutput } = require('./common');
+const {
+  ROOT,
+  isProd,
+  isDevServe,
+  commonStats,
+  commonResolve,
+  makeCache,
+  makeProdOptimization,
+  makeDevtool,
+  makeDefinePlugin,
+  makeWebpackBar,
+  makeDevServer,
+  makeHmrPlugins,
+  makeDevOutput,
+  ensureThreeGlobalBundle,
+} = require('./common');
 
-module.exports = (name, color) => ({
+const threeGlobalPath = ensureThreeGlobalBundle();
+
+module.exports = (barName, color) => ({
+  name: 'kotor',
   mode: isProd ? 'production' : 'development',
+  cache: makeCache('kotor', __filename),
+  ...makeProdOptimization(),
   entry: {
     KotOR: [
       './src/KotOR.ts'
     ],
     server: [
-      './src/worker/server.ts'
+      './src/engine/workers/server.ts'
     ],
     'bink-worker': [
-      './src/worker/bink-worker.ts'
-    ]
+      './src/engine/workers/bink-worker.ts'
+    ],
+    'worker-tex': [
+      './src/engine/workers/worker-tex.ts'
+    ],
   },
   stats: commonStats,
-  devtool: !isProd ? 'eval-source-map' : 'source-map',
+  devtool: makeDevtool('library'),
   module: {
     rules: [
       {
@@ -37,7 +60,7 @@ module.exports = (name, color) => ({
     ],
   },
   plugins: [
-    makeWebpackBar(name, color),
+    makeWebpackBar(barName, color),
     makeDefinePlugin(),
     ...makeHmrPlugins(false),
     new HtmlWebpackPlugin({
@@ -62,8 +85,7 @@ module.exports = (name, color) => ({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
-        { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
-        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
+        { from: threeGlobalPath, to: 'three.min.js' },
         { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
       ]
     }),

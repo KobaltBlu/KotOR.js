@@ -9,15 +9,15 @@
 import React, { useEffect, useState } from "react";
 import MonacoEditor from "react-monaco-editor";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { IMAGE_TPC_FORMATS, type ImageEastPane, type ImageTpcFormat } from "@/apps/forge/image";
-import { ImageLayerPanel } from "@/apps/forge/components/tabs/tab-image-viewer/ImageLayerPanel";
-import { validateTxi } from "@/apps/forge/txi/txiSchema";
+import { IMAGE_TPC_FORMATS, type ImageEastPane, type ImageTpcFormat } from "@apps/forge/image";
+import { ImageLayerPanel } from "@apps/forge/components/tabs/tab-image-viewer/ImageLayerPanel";
+import { validateTxi } from "@apps/forge/txi/txiSchema";
 import {
   addForgeThemeChangeListener,
   getMonacoThemeForLanguage,
   removeForgeThemeChangeListener,
-} from "@/apps/forge/settings/forgeTheme";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+} from "@apps/forge/settings/forgeTheme";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
 
 const PANES: { id: ImageEastPane; label: string }[] = [
   { id: "layers", label: "Layers" },

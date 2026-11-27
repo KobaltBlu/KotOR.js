@@ -7,10 +7,10 @@
  */
 
 import { zipSync, unzipSync } from "fflate";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
-import { resolveProjectGame } from "@/apps/forge/helpers/projectCreateOptions";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ProjectType } from "@apps/forge/enum/ProjectType";
+import { ProjectSettings } from "@apps/forge/interfaces/ProjectSettings";
+import { resolveProjectGame } from "@apps/forge/helpers/projectCreateOptions";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 const SETTINGS_REL = ".forge/settings.json";
 const EXCLUDED_PREFIXES = [".git/"];

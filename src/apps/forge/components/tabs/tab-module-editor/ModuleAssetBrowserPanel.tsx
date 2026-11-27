@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { AssetIndexEntry } from "@/apps/forge/module-editor/assets/AssetIndexTypes";
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
+import type { AssetIndexEntry } from "@apps/forge/module-editor/assets/AssetIndexTypes";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { GameObjectType } from "@apps/forge/states/tabs/TabModuleEditorTypes";
 
 export interface ModuleAssetBrowserPanelProps {
   tab: TabModuleEditorState;

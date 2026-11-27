@@ -1,14 +1,14 @@
 import * as path from "path";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { NWScriptCompiler } from "@core/nwscript/compiler/NWScriptCompiler";
 import {
   COMPILED_DIR,
   compiledNcsPathForProjectNss,
   normalizeProjectRelativePath,
-} from "@/apps/forge/helpers/forgeNcsCompilePaths";
-import { collectNssIncludeResrefs, normalizeNssIncludeResref } from "@/apps/forge/helpers/nssIncludeResref";
+} from "@apps/forge/helpers/forgeNcsCompilePaths";
+import { collectNssIncludeResrefs, normalizeNssIncludeResref } from "@apps/forge/helpers/nssIncludeResref";
 
 export {
   COMPILED_DIR,
@@ -16,9 +16,9 @@ export {
   compiledNcsOverrideRelativePath,
   compiledNcsPathForProjectNss,
   normalizeProjectRelativePath,
-} from "@/apps/forge/helpers/forgeNcsCompilePaths";
+} from "@apps/forge/helpers/forgeNcsCompilePaths";
 
-export { collectNssIncludeResrefs, normalizeNssIncludeResref } from "@/apps/forge/helpers/nssIncludeResref";
+export { collectNssIncludeResrefs, normalizeNssIncludeResref } from "@apps/forge/helpers/nssIncludeResref";
 
 const NSS_DECODER = new TextDecoder();
 

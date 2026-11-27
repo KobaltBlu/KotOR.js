@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabAREEditorState, AREEditorModel } from "@/apps/forge/states/tabs/TabAREEditorState";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabAREEditorState, AREEditorModel } from "@apps/forge/states/tabs/TabAREEditorState";
+import { ForgeButton, ForgeInput } from "@apps/forge/components/ui";
 import "@/apps/forge/components/tabs/tab-ifo-editor/TabIFOEditor.scss";
 
 export const TabAREEditor = function (props: BaseTabProps) {

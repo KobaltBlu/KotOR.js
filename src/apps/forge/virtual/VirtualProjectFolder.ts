@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { MemoryDirectoryHandle } from "@/apps/forge/virtual/MemoryDirectoryHandle";
+import { MemoryDirectoryHandle } from "@apps/forge/virtual/MemoryDirectoryHandle";
 
 export const OPFS_VIRTUAL_PROJECTS_DIR = "forge-virtual-projects";
 export const DEFAULT_VIRTUAL_PROJECT_NAME = "untitled-project";

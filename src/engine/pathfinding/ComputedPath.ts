@@ -1,16 +1,46 @@
 import * as THREE from "three";
-import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { GameState } from "@/GameState";
-import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
+import { PathPoint } from "@engine/pathfinding/PathPoint";
+import type { GameObject } from "@engine/module/GameObject";
+import { GameState } from "@engine/runtime/GameState";
+import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@engine/pathfinding/smooth-corner-optimize";
+import {
+  smoothSelectionRestartable,
+  SMOOTH_SELECTION_BUDGET_MS,
+  type SmoothSelectionResume,
+} from "@engine/pathfinding/smooth-select-nodes";
+import { computeCreatureEdgeDetour } from "@engine/pathfinding/path-point-creature-detour";
+import { pathPointDfsSearch } from "@engine/pathfinding/path-point-dfs";
+import type { PathPointDfsTransTable } from "@engine/pathfinding/path-point-dfs-trans-table";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
+import { isPthStaticEdgeBlocked } from "@engine/pathfinding/pth-edge-clear";
+
+/** Resume state for path-point DFS state / state across timed-out searches. */
+export type PathPointDfsResume = {
+  transTable: PathPointDfsTransTable;
+  costBudget: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+};
+
+export type { SmoothSelectionResume };
 
 export class ComputedPath {
-  owner: ModuleObject;
+  owner: GameObject;
   points: PathPoint[] = [];
   origin: PathPoint = undefined;
   destination: PathPoint = undefined;
   realtime: boolean = false;
   timer: number = 0;
+  /** SmoothSelectionRestartable mid-pipeline resume (state + working). */
+  smoothResume: SmoothSelectionResume | undefined;
+  /** SmoothCornerOptimize mid-pass resume (JS hitch hardening after selection). */
+  smoothCornerResume: SmoothCornerResume | undefined;
+  /** True when DFS hit wall-clock budget without a full path (return 1). */
+  incomplete: boolean = false;
+  /** Populated on timeout for cross-frame TransTable reuse. */
+  dfsResume: PathPointDfsResume | undefined;
 
   color = new THREE.Color().setRGB(1, 0.6470588235294118, 0);
   helperColors: THREE.Float32BufferAttribute;
@@ -23,19 +53,23 @@ export class ComputedPath {
   helperMesh: THREE.LineSegments = new THREE.LineSegments();
   enableHelper: boolean = false;
 
-  constructor(owner: ModuleObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
+  /** Detour waypoint when parent→child went around a creature (cost geometry). */
+  private edgeDetours = new WeakMap<PathPoint, THREE.Vector3>();
+
+  constructor(owner: GameObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
     this.owner = owner;
     this.origin = origin;
     this.destination = destination;
     this.points = [];
   }
 
-  setOwner(owner: ModuleObject){
+  setOwner(owner: GameObject){
     this.owner = owner;
   }
 
   getCost( point: PathPoint ){
-    return point.vector.distanceToSquared( this.destination.vector );
+    // PathPointDFS heuristic: distance to goal
+    return point.vector.distanceTo( this.destination.vector );
   }
 
   clone(){
@@ -46,119 +80,170 @@ export class ComputedPath {
     return clone;
   }
 
-  //https://github.com/bgrins/javascript-astar
-  search(): ComputedPath {
-    const openHeap = new BinaryHeap<PathPoint>(
-      //scorer
-      function(node: PathPoint) { 
-      return node.f; 
+  /**
+   * PTH graph search — PathPointDFS  with TransTable + iterative
+   * cost budget (path-point DFS). Creature detours from GenerateSuccessors.
+   * Optional wall-clock slice (~ high-res timer continuation).
+   * Pass `resume` to reuse TransTable when start/end unchanged (state).
+   */
+  search(options: {
+    timeBudgetMs?: number;
+    resume?: PathPointDfsResume;
+  } = {}): ComputedPath {
+    this.edgeDetours = new WeakMap();
+    this.incomplete = false;
+    this.dfsResume = undefined;
+    this.smoothResume = undefined;
+    this.smoothCornerResume = undefined;
+    if(!this.origin || !this.destination){
+      return this;
+    }
+
+    // Realtime / chase repaths get a tighter slice; normal plots get default DFS budget
+    const timeBudgetMs = options.timeBudgetMs ?? (this.realtime ? 6 : undefined);
+
+    const ox = this.origin.vector.x;
+    const oy = this.origin.vector.y;
+    const dx = this.destination.vector.x;
+    const dy = this.destination.vector.y;
+    const resume = options.resume;
+    const sameEndpoints = !!(
+      resume &&
+      Math.hypot(ox - resume.startX, oy - resume.startY) < 0.01 &&
+      Math.hypot(dx - resume.endX, dy - resume.endY) < 0.01
+    );
+
+    const result = pathPointDfsSearch({
+      origin: this.origin,
+      destination: this.destination,
+      owner: this.owner,
+      evaluateEdge: (from, to) => this.evaluateEdge(from, to),
+      timeBudgetMs,
+      transTable: sameEndpoints ? resume.transTable : undefined,
+      costBudget: sameEndpoints ? resume.costBudget : undefined,
     });
-    openHeap.push(this.origin);
-    while(openHeap.size() > 0){
-      const currentNode = openHeap.pop();
 
-      if(currentNode == this.destination){
-        let curr = currentNode;
-        curr.end = true;
-        this.points = [];
-        while(curr.parent) {
-          this.points.push(curr);
-          curr = curr.parent;
-        }
-        
-        this.points.reverse();
-        this.prunePathPoints();
-        return this;
-      }
-
-      currentNode.closed = true;
-
-      const neighbors = currentNode.connections;
-      for(let i = 0, il = neighbors.length; i < il; i++) {
-        let neighbor = neighbors[i];
-        if(neighbor.closed || !neighbor.hasLOS(currentNode, this.owner)) {
-          continue;
-        }
-        let gScore = currentNode.g + neighbor.cost;
-        let beenVisited = neighbor.visited;
-        if(!beenVisited || gScore < neighbor.g) {
-          neighbor.visited = true;
-          neighbor.parent = currentNode;
-          neighbor.h = neighbor.h || this.getCost(neighbor);
-          neighbor.g = gScore;
-          neighbor.f = neighbor.g + neighbor.h;
-          if (!beenVisited) {
-            openHeap.push(neighbor);
-          }
-          else {
-            openHeap.rescoreElement(neighbor);
-          }
-        }
-      }
-
+    this.edgeDetours = result.detours;
+    this.incomplete = !!result.timedOut;
+    if(result.end && (result.ok || result.timedOut)){
+      this.reconstructPath(result.end);
+      // SmoothSelection runs in AreaPath.traverseToPoint / callers via prunePathPoints
+      // (avoids double-prune and allows SmoothSelectionRestartable resume).
+    }
+    if(result.timedOut && result.transTable && result.costBudget != null){
+      this.dfsResume = {
+        transTable: result.transTable,
+        costBudget: result.costBudget,
+        startX: ox,
+        startY: oy,
+        endX: dx,
+        endY: dy,
+      };
     }
     return this;
   }
 
+  private reconstructPath(end: PathPoint){
+    let curr: PathPoint | undefined = end;
+    if(curr) curr.end = true;
+    this.points = [];
+    while(curr){
+      this.points.push(curr);
+      const parent = curr.parent;
+      const detour = this.edgeDetours.get(curr);
+      if(detour && parent){
+        const mid = PathPoint.FromVector3(detour);
+        mid.setArea(curr.area ?? parent.area);
+        this.points.push(mid);
+      }
+      curr = parent;
+    }
+    this.points.reverse();
+  }
+
   /**
-   * Prunes any unneeded points based of LOS checks between points
-   * @returns void
+   * Edge cost for PTH expansion (GenerateSuccessors).
+   * Thin clearance only — creatures + precomputed/live static door/placeable bits.
+   * Do not call hasWalkLineClear here (clip/samples/room BFS are for direct-line,
+   * smooth, and drive/hop validation — see walk-line-clear.ts).
+   * cost < 0 = blocked (static door / placeable). Non-static doors keep the edge.
+   * Creature on line → detour length + splice waypoint.
    */
-  prunePathPoints(){
-    // return;
-    if(!this.points.length)
+  private evaluateEdge(from: PathPoint, to: PathPoint): { cost: number; detour?: THREE.Vector3 } {
+    const dist = from.vector.distanceTo(to.vector);
+    const area = from.area ?? this.owner?.area;
+    if(!area) return { cost: dist };
+
+    const creatures = isCreatureCapsuleClear(area, from.vector, to.vector, {
+      owner: this.owner,
+      allowPartyCreatures: true,
+    });
+    if(!creatures.clear && creatures.blockingCreatureId != null){
+      const blocker =
+        area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
+        GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
+      if(blocker){
+        const d = computeCreatureEdgeDetour(area, from.vector, to.vector, blocker, this.owner);
+        if(d) return { cost: d.cost, detour: d.detour };
+      }
+      return { cost: dist + Math.max(1.0, dist * 0.5) };
+    }
+
+    if(isPthStaticEdgeBlocked(area, from, to, this.owner)){
+      return { cost: -1 };
+    }
+
+    return { cost: dist };
+  }
+
+  /**
+   * Prune — SmoothSelection three-pass (densify + string-pull).
+   * Optional time budget + resume (~SmoothSelectionRestartable).
+   * On timeout sets `smoothResume` for AreaPath cross-frame session.
+   */
+  prunePathPoints(options: {
+    timeBudgetMs?: number;
+    resume?: SmoothSelectionResume;
+  } = {}){
+    if(this.points.length <= 2){
+      this.smoothResume = undefined;
       return;
-
-    const pruneList: number[] = [];
-    let pruneRest = false;
-
-    let lastLOSOrigin;
-    for(let i = 0, len = this.points.length; i < len; i++){
-      const cPoint = this.points[i];
-      const nPoint = this.points[i+1];
-      const lPoint = this.points[i-1];
-
-      if(this.destination == cPoint || !nPoint) continue;
-
-      /**
-       * Prune until the end because we already found LOS to the destination
-       */
-      if(pruneRest && nPoint){
-        pruneList.push(i);
-        continue;
-      }
-
-      if(cPoint.hasLOS(this.destination, this.owner)){
-        pruneRest = true;
-        continue;
-      }
-      
-      if(cPoint == this.origin)
-        continue;
-
-      if(!lPoint)
-        continue;
-
-      if(lastLOSOrigin && lastLOSOrigin.hasLOS(nPoint, this.owner)){
-        pruneList.push(i);
-        continue;
-      }
-
-      lastLOSOrigin = undefined;
-
-      if(!!nPoint && lPoint.hasLOS(nPoint, this.owner)){
-        lastLOSOrigin = lPoint;
-        pruneList.push(i);
-        continue;
-      }
     }
 
-    if(pruneList.length){
-      while(pruneList.length){
-        this.points.splice(pruneList.pop(), 1);
+    const area = this.owner?.area ?? this.points[0]?.area;
+    const vectors = this.points.map((p) => p.vector);
+    const timeBudgetMs = options.timeBudgetMs ?? (
+      this.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined
+    );
+    const result = smoothSelectionRestartable(area, vectors, this.owner, {
+      timeBudgetMs,
+      resume: options.resume,
+    });
+    const selected = result.points;
+    this.smoothResume = result.timedOut ? result.resume : undefined;
+    if(selected.length === this.points.length){
+      let same = true;
+      for(let i = 0; i < selected.length; i++){
+        if(selected[i] !== this.points[i].vector && selected[i].distanceToSquared(this.points[i].vector) > 1e-8){
+          same = false;
+          break;
+        }
       }
+      if(same) return;
     }
 
+    const next: PathPoint[] = [];
+    for(let i = 0; i < selected.length; i++){
+      const v = selected[i];
+      const existing = this.points.find((p) => p.vector === v || p.vector.distanceToSquared(v) < 1e-8);
+      next.push(existing ?? PathPoint.FromVector3(v));
+    }
+    if(next.length){
+      next[next.length - 1].end = true;
+    }
+    this.points = next;
+    this.origin = this.points[0];
+    this.destination = this.points[this.points.length - 1];
     this.reIndex();
   }
 
@@ -166,16 +251,18 @@ export class ComputedPath {
     let parent: PathPoint;
     for(let i = 0; i < this.points.length; i++){
       const p = this.points[i];
-      p.parent = parent;
+      p.parent = p;
       parent = p;
     }
   }
 
   buildHelperLine(){
     const pointCount = this.points.length;
-    if(pointCount <= 0){
-      this.helperMesh.visible = false;
-      this.helperMesh.removeFromParent();
+    if(pointCount < 1){
+      if(this.helperMesh){
+        this.helperMesh.visible = false;
+        this.helperMesh.removeFromParent();
+      }
       return;
     }
 
@@ -186,7 +273,7 @@ export class ComputedPath {
 
     let connectionIndexStart = (pointCount * 2);
 
-    if(!bufferSize){
+    if(bufferSize <= 0){
       this.helperMesh.visible = false;
       this.helperMesh.removeFromParent();
       return;
@@ -333,29 +420,27 @@ export class ComputedPath {
   }
 
   merge(path2: ComputedPath){
-    if(!(path2 instanceof ComputedPath) || !Array.isArray(path2.points) || !path2.points.length){
-      return;
-    }
-
-    if(!Array.isArray(this.points) || !this.points.length){
-      this.points = path2.points.slice(0);
-      this.destination = this.points[this.points.length-1];
-      return;
-    }
-
     const endP1 = this.points[this.points.length - 1];
     const startP2 = path2.points[0];
-    const skipDuplicate = endP1 && startP2 && endP1.vector.equals(startP2.vector) ? 1 : 0;
-    this.points = [...this.points, ...path2.points.slice(skipDuplicate)];
+    if(endP1.vector.equals(startP2.vector)){
+      path2.points.shift();
+    }
+    this.points = [...this.points, ...path2.points];
     this.destination = this.points[this.points.length-1];
   }
 
   fixWalkEdges(safeDistance = 1.5){
     if(!this.owner) return;
+    const area = this.owner.area;
+    if(!area) return;
     for(let i = 0; i < this.points.length; i++){
-      this.points[i].vector.copy(
-        this.owner.area.getNearestWalkablePoint(this.points[i].vector, safeDistance)
-      );
+      const v = this.points[i].vector;
+      // PreferWalkable: keep points already on a walk face. Re-snapping with
+      // owner perspace shoved doorway / dialog approach points across the room.
+      if(typeof area.isPointWalkable === 'function' && area.isPointWalkable(v)){
+        continue;
+      }
+      v.copy(area.getNearestWalkablePoint(v, safeDistance));
     }
   }
 
@@ -363,42 +448,39 @@ export class ComputedPath {
     if(this.points.length < 2)
       return;
 
-    if(!this.owner?.area){
+    if(divisions == -1)
+      divisions = this.points.length * 5;
+
+    const preSmooth = this.points.map( (p) => p.vector );
+    const curve = new THREE.CatmullRomCurve3(preSmooth);
+
+    const safeDistance = this.owner?.getHitDistance();
+
+    this.points = curve.getPoints( divisions ).map( (v) => {
+      return PathPoint.FromVector3(this.owner ? this.owner.area.getNearestWalkablePoint(v, safeDistance) : v);
+    });
+  }
+
+  /**
+   * SmoothPointsOnPath second stage — corner chords via walk-line clear / hasWalkLineClear.
+   * Optional budget/resume for JS hitch hardening after SmoothSelection.
+   */
+  smoothCorners(options: {
+    timeBudgetMs?: number;
+    resume?: SmoothCornerResume;
+  } = {}){
+    if(this.points.length < 3){
+      this.smoothCornerResume = undefined;
       return;
     }
-
-    const safeDistance = this.owner.getHitDistance();
-    const simplified: PathPoint[] = [];
-    const anchorPoint = PathPoint.FromVector3(new THREE.Vector3());
-    anchorPoint.setArea(this.owner.area);
-
-    let anchorVector = this.origin?.vector?.clone() || this.owner.position.clone();
-    let index = 0;
-
-    while(index < this.points.length){
-      anchorPoint.vector.copy(anchorVector);
-      anchorPoint.setArea(this.owner.area);
-
-      let furthestVisibleIndex = index;
-      for(let i = index; i < this.points.length; i++){
-        if(!anchorPoint.hasLOS(this.points[i], this.owner)){
-          break;
-        }
-        furthestVisibleIndex = i;
-      }
-
-      const chosenPoint = this.points[furthestVisibleIndex];
-      const simplifiedPoint = PathPoint.FromVector3(
-        this.owner.area.getNearestWalkablePoint(chosenPoint.vector, safeDistance)
-      );
-      simplifiedPoint.setArea(this.owner.area);
-      simplified.push(simplifiedPoint);
-
-      anchorVector = chosenPoint.vector.clone();
-      index = furthestVisibleIndex + 1;
-    }
-
-    this.points = simplified;
+    const area = this.owner?.area ?? this.points[0]?.area;
+    const result = smoothCornerOptimizeRestartable(area, this.points, this.owner, {
+      timeBudgetMs: options.timeBudgetMs,
+      resume: options.resume,
+    });
+    this.points = result.points;
+    this.smoothCornerResume = result.timedOut ? result.resume : undefined;
+    this.origin = this.points[0];
     this.destination = this.points[this.points.length - 1];
     this.reIndex();
   }
@@ -411,7 +493,7 @@ export class ComputedPath {
 
   static FromVector3List(points: THREE.Vector3[] = []): ComputedPath {
     return this.FromPointsList(
-      points.map((p) => PathPoint.FromVector3(p.clone()))
+      points.map((p) => PathPoint.FromVector3(p))
     );
   }
 

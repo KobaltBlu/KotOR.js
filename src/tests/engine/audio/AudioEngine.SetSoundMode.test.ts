@@ -1,0 +1,210 @@
+/**
+ * @jest-environment node
+ *
+ * Run: npx jest --config jest.audio-priority.config.js --coverage=false
+ */
+import { describe, expect, test, beforeEach, jest } from '@jest/globals';
+import { SoundMode } from '@core/enums/audio/SoundMode';
+
+const channel = () => {
+  let busScale = 1;
+  const gainNode = { id: Math.random() };
+  return {
+    setBusScale: (s: number) => { busScale = s; },
+    getBusScale: () => busScale,
+    getGainNode: () => gainNode,
+  };
+};
+
+const sfx = channel();
+const music = channel();
+const vo = channel();
+
+const ambientDestinations: { day?: unknown; night?: unknown } = {};
+
+jest.mock('@engine/runtime/GameState', () => ({
+  GameState: {
+    module: undefined,
+    SWRuleSet: { getPriorityGroupById: () => undefined },
+  },
+}));
+
+jest.mock('@engine/pathfinding/path-blockage-weight', () => ({
+  OBSTRUCTION_REUSE_AGE_MS: 250,
+  OBSTRUCTION_REUSE_DIST: 0.5,
+  getPathBlockageWeight: () => 0,
+  obstructionVolumeScale: (f: number) => 1 - f,
+}));
+
+jest.mock('@engine/audio/ReverbEngine', () => ({
+  ReverbEngine: class {
+    connectSource() {}
+  },
+}));
+
+jest.mock('@engine/audio/AmbientAudioEmitter', () => ({
+  AmbientAudioEmitter: class {
+    dispose() {}
+    setDestination(dest: unknown) {
+      return this;
+    }
+  },
+}));
+
+jest.mock('@engine/audio/AudioPriorityManager', () => ({
+  AudioPriorityManager: class {
+    clear() {}
+  },
+}));
+
+jest.mock('@engine/audio/EAXPresets', () => ({
+  EAXPresets: {},
+}));
+
+jest.mock('three', () => ({
+  Vector3: class {
+    x = 0; y = 0; z = 0;
+    set() { return this; }
+    copy() { return this; }
+  },
+  Quaternion: class {},
+  MathUtils: { clamp: (v: number, a: number, b: number) => Math.min(b, Math.max(a, v)) },
+}));
+
+import { AudioEngine } from '@engine/audio/AudioEngine';
+import { AudioPriorityGroup } from '@core/enums/audio/AudioPriorityGroup';
+
+describe('AudioEngine.SetSoundMode', () => {
+  let group4Bypass: boolean | undefined;
+  let group4Emitter: { priority: number; isDestroyed: boolean; setOutputBypassMutedSfx: (b: boolean) => void };
+
+  beforeEach(() => {
+    (AudioEngine as any).sfxChannel = sfx;
+    (AudioEngine as any).musicChannel = music;
+    (AudioEngine as any).voChannel = vo;
+    sfx.setBusScale(1);
+    music.setBusScale(1);
+    vo.setBusScale(1);
+    ambientDestinations.day = undefined;
+    ambientDestinations.night = undefined;
+    group4Bypass = undefined;
+    group4Emitter = {
+      priority: AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS,
+      isDestroyed: false,
+      setOutputBypassMutedSfx: (b: boolean) => { group4Bypass = b; },
+    };
+    (AudioEngine as any).engines = [{
+      ambientAudioDayEmitter: {
+        setDestination: (d: unknown) => { ambientDestinations.day = d; },
+        setVolume: () => {},
+      },
+      ambientAudioNightEmitter: {
+        setDestination: (d: unknown) => { ambientDestinations.night = d; },
+        setVolume: () => {},
+      },
+      emitters: [group4Emitter],
+      audioCtx: { destination: { kind: 'ctx' } },
+    }];
+    AudioEngine.resetSoundModeState();
+  });
+
+  test('mode 4 pauses SFX only; music stays (GetPauseable)', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.PAUSE_GUI);
+    expect(sfx.getBusScale()).toBe(0);
+    expect(music.getBusScale()).toBe(1);
+    expect(vo.getBusScale()).toBe(1);
+  });
+
+  test('mode 2 combat pause keeps music', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    expect(sfx.getBusScale()).toBe(0);
+    expect(music.getBusScale()).toBe(1);
+  });
+
+  test('mode 2 routes areawide ambients onto music bus (group 4 keep-alive)', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    expect(ambientDestinations.day).toBe(music.getGainNode());
+    expect(ambientDestinations.night).toBe(music.getGainNode());
+  });
+
+  test('mode 2 bypasses Priority=4 AudioEmitters past muted SFX', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    expect(group4Bypass).toBe(true);
+  });
+
+  test('mode 4 does not bypass Priority=4 AudioEmitters', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(group4Bypass).toBe(false);
+  });
+
+  test('mode 4 keeps areawide ambients on muted SFX bus', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(ambientDestinations.day).toBe(sfx.getGainNode());
+    expect(ambientDestinations.night).toBe(sfx.getGainNode());
+  });
+
+  test('pop from mode 2 restores ambients to SFX bus', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    expect(ambientDestinations.day).toBe(sfx.getGainNode());
+    expect(ambientDestinations.night).toBe(sfx.getGainNode());
+    expect(group4Bypass).toBe(false);
+    expect(sfx.getBusScale()).toBe(1);
+  });
+
+  test('mode 3 movie/load pauses SFX and music', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 0);
+    expect(sfx.getBusScale()).toBe(0);
+    expect(music.getBusScale()).toBe(0);
+    expect(vo.getBusScale()).toBe(1);
+  });
+
+  test('keepStreamingMusic mutes Music bus but keeps flagged streams (PauseAllButStreamingMusicForMovie)', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 1);
+    expect(sfx.getBusScale()).toBe(0);
+    expect(music.getBusScale()).toBe(0);
+  });
+
+  test('duplicate mode 4 is a no-op (does not nest pause)', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.PAUSE_GUI);
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.POP);
+    expect(sfx.getBusScale()).toBe(1);
+  });
+
+  test('GUI pause then movie then pop restores GUI pause (SFX only)', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.PAUSE_LOAD);
+    expect(music.getBusScale()).toBe(0);
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.PAUSE_GUI);
+    expect(sfx.getBusScale()).toBe(0);
+    expect(music.getBusScale()).toBe(1);
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.POP);
+    expect(sfx.getBusScale()).toBe(1);
+  });
+
+  test('mode 1 MuteSound sets muted flag', () => {
+    AudioEngine.SetSoundMode(SoundMode.MUTE, 0);
+    expect(AudioEngine.soundMuted).toBe(true);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.MUTE);
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    expect(AudioEngine.soundMuted).toBe(false);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.POP);
+  });
+
+  test('clearSoundModeStack pops mute under load pause', () => {
+    AudioEngine.SetSoundMode(SoundMode.MUTE, 0);
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.PAUSE_GUI);
+    AudioEngine.clearSoundModeStack();
+    expect(AudioEngine.GetSoundMode()).toBe(SoundMode.POP);
+    expect(AudioEngine.soundMuted).toBe(false);
+    expect(sfx.getBusScale()).toBe(1);
+  });
+});

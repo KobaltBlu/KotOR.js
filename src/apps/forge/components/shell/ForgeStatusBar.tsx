@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 import {
   ForgeStatusBarItem,
   ForgeStatusBarState,
-} from "@/apps/forge/states/ForgeStatusBarState";
-import * as KotOR from "@/apps/forge/KotOR";
+} from "@apps/forge/states/ForgeStatusBarState";
+import * as KotOR from "@apps/forge/KotOR";
 
 function StatusBarItemView(props: { item: ForgeStatusBarItem }) {
   const { item } = props;

@@ -6,18 +6,18 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ENCODING } from "@/enums/graphics/tpc/Encoding";
-import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
-import { TXITexType } from "@/enums/graphics/txi/TXITexType";
-import { TPCObject } from "@/resource/TPCObject";
-import { TXI } from "@/resource/TXI";
-import { PixelManager } from "@/utility/PixelManager";
-import { displayRgbaToTpc, hasMeaningfulAlpha } from "@/apps/forge/image/imageIo";
+import { ENCODING } from "@core/enums/graphics/tpc/Encoding";
+import { TXIPROCEDURETYPE } from "@core/enums/graphics/txi/TXIPROCEDURETYPE";
+import { TXITexType } from "@core/enums/graphics/txi/TXITexType";
+import { TPCObject } from "@core/resource/TPCObject";
+import { TXI } from "@core/resource/TXI";
+import { PixelManager } from "@core/utility/PixelManager";
+import { displayRgbaToTpc, hasMeaningfulAlpha } from "@apps/forge/image/imageIo";
 import {
   DEFAULT_ENCODE_POLICY,
   type ImageEncodePolicy,
   type ImageTpcFormat,
-} from "@/apps/forge/image/imageTypes";
+} from "@apps/forge/image/imageTypes";
 
 const CUBE_FACE_ROTATIONS_CW = [3, 1, 0, 2, 0, 0];
 

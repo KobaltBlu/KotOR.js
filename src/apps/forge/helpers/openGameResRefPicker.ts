@@ -6,21 +6,21 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ModalItemBrowserState, ModalItemBrowserOptions, UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { ModalBlueprintBrowserState, BlueprintType, BlueprintItem } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { ModalScriptBrowserState } from "@/apps/forge/states/modal/ModalScriptBrowserState";
-import { ModalResRefBrowserState, ResRefKind, RESREF_KIND_SPEC } from "@/apps/forge/states/modal/ModalResRefBrowserState";
-import { ModalResRefPromptState, ModalResRefPromptOptions } from "@/apps/forge/states/modal/ModalResRefPromptState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
+import { ModalItemBrowserState, ModalItemBrowserOptions, UTIItem } from "@apps/forge/states/modal/ModalItemBrowserState";
+import { ModalBlueprintBrowserState, BlueprintType, BlueprintItem } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { ModalScriptBrowserState } from "@apps/forge/states/modal/ModalScriptBrowserState";
+import { ModalResRefBrowserState, ResRefKind, RESREF_KIND_SPEC } from "@apps/forge/states/modal/ModalResRefBrowserState";
+import { ModalResRefPromptState, ModalResRefPromptOptions } from "@apps/forge/states/modal/ModalResRefPromptState";
 import {
   blueprintFromTypedResRef,
   blueprintResRefTitle,
   catalogNeedsResRefPrompt,
   NO_GAME_RESREF_HINT,
   utiFromTypedResRef,
-} from "@/apps/forge/helpers/gameResRefPrompt";
+} from "@apps/forge/helpers/gameResRefPrompt";
 
 function present(modal: ModalState): void {
   modal.attachToModalManager(ForgeState.modalManager);

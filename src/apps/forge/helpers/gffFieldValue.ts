@@ -6,10 +6,10 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { CExoLocString } from "@core/resource/CExoLocString";
 
 export const GFF_LABEL_MAX = 16;
 export const GFF_RESREF_MAX = 16;

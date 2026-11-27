@@ -6,14 +6,14 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import * as KotOR from "@apps/forge/KotOR";
 import {
   IProjectVFS,
   ProjectVFSBackend,
   ProjectVFSCapabilities,
   ProjectVFSWriteRequest,
-} from "@/apps/forge/module-editor/vfs/IProjectVFS";
+} from "@apps/forge/module-editor/vfs/IProjectVFS";
 
 function toUint8Array(data: Uint8Array | string): Uint8Array {
   if (typeof data === "string") {

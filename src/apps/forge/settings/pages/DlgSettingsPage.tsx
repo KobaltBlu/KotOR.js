@@ -7,11 +7,11 @@
  */
 
 import React from "react";
-import { ForgeSelect } from "@/apps/forge/components/ui";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeDlgSettings, type DlgGraphLayout } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ForgeSelect } from "@apps/forge/components/ui";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeDlgSettings, type DlgGraphLayout } from "@apps/forge/settings/forgeEditorsSettings";
 
 export function DlgSettingsPage() {
   const [settings, setSettings] = useForgeSettings(forgeDlgSettings);

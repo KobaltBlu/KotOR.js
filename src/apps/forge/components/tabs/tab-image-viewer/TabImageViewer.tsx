@@ -7,20 +7,20 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { MenuBar, type MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { executeCommand, isCommandEnabled } from "@/apps/forge/commands/forgeCommands";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
-import { IMAGE_TOOLS, type ImageToolId } from "@/apps/forge/image";
-import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
-import { ImageToolRail } from "@/apps/forge/components/tabs/tab-image-viewer/ImageToolRail";
-import { ImageToolOptions } from "@/apps/forge/components/tabs/tab-image-viewer/ImageToolOptions";
-import { ImageCanvas } from "@/apps/forge/components/tabs/tab-image-viewer/ImageCanvas";
-import { ImageEastDock } from "@/apps/forge/components/tabs/tab-image-viewer/ImageEastDock";
-import { ImageStatusBar } from "@/apps/forge/components/tabs/tab-image-viewer/ImageStatusBar";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { MenuBar, type MenuItem } from "@apps/forge/components/common/MenuBar";
+import { executeCommand, isCommandEnabled } from "@apps/forge/commands/forgeCommands";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
+import { IMAGE_TOOLS, type ImageToolId } from "@apps/forge/image";
+import { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
+import { ImageToolRail } from "@apps/forge/components/tabs/tab-image-viewer/ImageToolRail";
+import { ImageToolOptions } from "@apps/forge/components/tabs/tab-image-viewer/ImageToolOptions";
+import { ImageCanvas } from "@apps/forge/components/tabs/tab-image-viewer/ImageCanvas";
+import { ImageEastDock } from "@apps/forge/components/tabs/tab-image-viewer/ImageEastDock";
+import { ImageStatusBar } from "@apps/forge/components/tabs/tab-image-viewer/ImageStatusBar";
 
 import "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer.scss";
 

@@ -6,7 +6,7 @@ import {
   hsvToRgb01,
   rgb01ToHex,
   rgb01ToHsv,
-} from "@/apps/forge/helpers/forgeColor";
+} from "@apps/forge/helpers/forgeColor";
 
 describe("forgeColor", () => {
   test("clamps RGB 0-1 and converts to hex", () => {

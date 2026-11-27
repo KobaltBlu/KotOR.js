@@ -1,15 +1,15 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { EditorFileOptions } from "@apps/forge/interfaces/EditorFileOptions";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 import { 
   TabAREEditorState, TabBIKPlayerState, TabDLGEditorState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabHexEditorState, TabIFOEditorState, TabImageViewerState, TabJRLEditorState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSaveGameEditorState, TabSSFEditorState, TabTextEditorState, TabTLKEditorState, TabTwoDAEditorState, TabUTCEditorState,
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
-} from "@/apps/forge/states/tabs";
+} from "@apps/forge/states/tabs";
 import { ResourceTypes } from "@/KotOR";
-import { sniffBufferLooksLikeBinary } from "@/apps/forge/helpers/sniffBufferLooksLikeBinary";
-import { DefaultEditorKind, getDefaultEditor } from "@/apps/forge/settings/forgeSettings";
-import { isTopLevelSaveGameSav } from "@/apps/forge/savegame/saveGamePaths";
+import { sniffBufferLooksLikeBinary } from "@apps/forge/helpers/sniffBufferLooksLikeBinary";
+import { DefaultEditorKind, getDefaultEditor } from "@apps/forge/settings/forgeSettings";
+import { isTopLevelSaveGameSav } from "@apps/forge/savegame/saveGamePaths";
 
 /**
  * FileTypeManager class.

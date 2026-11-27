@@ -6,11 +6,11 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { tabCanOpenAsGff } from "@/apps/forge/commands/editorCommandGuards";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabGFFEditorState } from "@/apps/forge/states/tabs/TabGFFEditorState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { tabCanOpenAsGff } from "@apps/forge/commands/editorCommandGuards";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabGFFEditorState } from "@apps/forge/states/tabs/TabGFFEditorState";
+import { TabState } from "@apps/forge/states/tabs/TabState";
 
 interface BlueprintExportTab extends TabState {
   blueprint?: { getExportBuffer: () => Uint8Array };

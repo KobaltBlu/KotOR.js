@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabSaveGameEditorState } from "@/apps/forge/states/tabs/TabSaveGameEditorState";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTabHost } from "@/apps/forge/components/SubTabHost";
-import type { SubTab } from "@/apps/forge/components/SubTabHost";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { DefaultEditorKind } from "@/apps/forge/settings/forgeSettings";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabSaveGameEditorState } from "@apps/forge/states/tabs/TabSaveGameEditorState";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
+import { ForgeButton, ForgeInput } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTabHost } from "@apps/forge/components/SubTabHost";
+import type { SubTab } from "@apps/forge/components/SubTabHost";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { DefaultEditorKind } from "@apps/forge/settings/forgeSettings";
 import {
   SaveAvailNpc,
   SaveErfKey,
@@ -18,8 +18,8 @@ import {
   SaveJournalEntry,
   SavePackedModule,
   SavePartyMember,
-} from "@/apps/forge/savegame/saveGameDocument";
-import { compareSaveModuleGffKeys, isSaveModuleGffExt } from "@/apps/forge/savegame/saveGamePaths";
+} from "@apps/forge/savegame/saveGameDocument";
+import { compareSaveModuleGffKeys, isSaveModuleGffExt } from "@apps/forge/savegame/saveGamePaths";
 import "@/apps/forge/components/tabs/tab-savegame-editor/TabSaveGameEditor.scss";
 
 function formatPlayed(seconds: number): string {
@@ -31,7 +31,7 @@ function formatPlayed(seconds: number): string {
 }
 
 async function openUri(uri: string, kind?: DefaultEditorKind): Promise<void> {
-  const { FileTypeManager } = await import("@/apps/forge/FileTypeManager");
+  const { FileTypeManager } = await import("@apps/forge/FileTypeManager");
   const file = new EditorFile({ path: uri });
   if (kind && kind !== "native") {
     FileTypeManager.openWithEditor(kind, file);
@@ -42,8 +42,8 @@ async function openUri(uri: string, kind?: DefaultEditorKind): Promise<void> {
 
 async function openAsErf(uri: string): Promise<void> {
   const [{ TabERFEditorState }, { ForgeState }] = await Promise.all([
-    import("@/apps/forge/states/tabs/TabERFEditorState"),
-    import("@/apps/forge/states/ForgeState"),
+    import("@apps/forge/states/tabs/TabERFEditorState"),
+    import("@apps/forge/states/ForgeState"),
   ]);
   ForgeState.tabManager.addTab(new TabERFEditorState({
     editorFile: new EditorFile({ path: uri }),

@@ -1,5 +1,5 @@
-import { GameEngineType } from "@/enums/engine/GameEngineType";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
+import { ProjectType } from "@apps/forge/enum/ProjectType";
 
 interface OpenFilesList extends Array<string> { }
 

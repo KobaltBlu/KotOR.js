@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
-import * as KotOR from "@/apps/forge/KotOR";
+import { SectionContainer } from "@apps/forge/components/SectionContainer";
+import { TextureCanvas } from "@apps/forge/components/TextureCanvas/TextureCanvas";
+import * as KotOR from "@apps/forge/KotOR";
 
 export interface EmitterSectionProps {
   node: KotOR.OdysseyObject3D;

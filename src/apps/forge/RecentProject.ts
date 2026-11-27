@@ -1,6 +1,6 @@
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { isProjectDirectoryHandle } from "@/apps/forge/virtual/VirtualProjectFolder";
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import { ApplicationProfile } from "@core/utility/ApplicationProfile";
+import { isProjectDirectoryHandle } from "@apps/forge/virtual/VirtualProjectFolder";
 
 export interface RecentProjectOptions {
   path?: string;

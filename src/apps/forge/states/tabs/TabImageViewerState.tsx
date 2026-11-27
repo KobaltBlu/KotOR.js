@@ -1,10 +1,10 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs";
-import { TabImageViewer } from "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { PixelManager } from "@/utility/PixelManager";
+import { TabState } from "@apps/forge/states/tabs";
+import { TabImageViewer } from "@apps/forge/components/tabs/tab-image-viewer/TabImageViewer";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { PixelManager } from "@apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 import {
   addLayer,
   buildTpcExportBuffer,
@@ -46,8 +46,8 @@ import {
   type ImageRect,
   type ImageRgba,
   type ImageToolId,
-} from "@/apps/forge/image";
-import { flipYInPlace, grayToRgba, rgbToRgba, sampleRgba, swapRB } from "@/apps/forge/image/imageIo";
+} from "@apps/forge/image";
+import { flipYInPlace, grayToRgba, rgbToRgba, sampleRgba, swapRB } from "@apps/forge/image/imageIo";
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
@@ -348,7 +348,7 @@ export class TabImageViewerState extends TabState {
   }
 
   private decodeTpcPixels(tpc: KotOR.TPCObject): { pixels: Uint8Array; width: number; height: number } {
-    const dds = tpc.getDDS(false);
+    const dds = tpc.getDDS(false, { stitchCycleFrames: true });
     const width = tpc.header.width;
     const height = tpc.header.height;
     let imagePixels = new Uint8Array(0);

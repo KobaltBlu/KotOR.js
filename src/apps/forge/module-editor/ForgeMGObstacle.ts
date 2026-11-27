@@ -1,4 +1,4 @@
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 export class ForgeMGObstacle {
   // Basic properties

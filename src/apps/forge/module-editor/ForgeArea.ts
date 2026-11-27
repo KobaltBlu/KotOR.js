@@ -1,22 +1,22 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { AreaMap } from "@/module/AreaMap";
-import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { AreaMap } from "@apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
+import type { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import { GroupType, type UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ForgeMiniGame } from "@apps/forge/module-editor/ForgeMiniGame";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { ForgeCamera } from "@apps/forge/module-editor/ForgeCamera";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import { ForgeItem } from "@apps/forge/module-editor/ForgeItem";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
 import * as THREE from 'three';
 
 export class ForgeArea extends ForgeGameObject{
@@ -28,7 +28,7 @@ export class ForgeArea extends ForgeGameObject{
   visObject?: KotOR.VISObject;
   /** True when `${layoutResRef}.lyt` was read from the project on load. */
   layoutPresentOnDisk = false;
-  /** True when layout was Demanded from retail game KEY/BIF (not in the project). */
+  /** True when layout was Demanded from game KEY/BIF (not in the project). */
   layoutLoadedFromGame = false;
   /** True when the editor invented a layout because the user edited rooms/visibility. */
   layoutEnsuredByEditor = false;
@@ -256,6 +256,7 @@ export class ForgeArea extends ForgeGameObject{
     this.creatorId = this.readAreValue('Creator_ID', this.creatorId);
     this.dayNightCycle = !!this.readAreValue('DayNightCycle', this.dayNightCycle);
     this.defaultEnvMap = this.readAreValue('DefaultEnvMap', this.defaultEnvMap) || '';
+    KotOR.OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
     this.dynamicAmbientColor = this.readAreValue('DynAmbientColor', this.dynamicAmbientColor);
     this.expansionList = [];
 
@@ -351,37 +352,37 @@ export class ForgeArea extends ForgeGameObject{
 
     // //AreaMapData
     // if(areaMap){
-    //   const areaMapStruct = areaMap.getChildStructs()[0];
-    //   if(areaMapStruct){
-    //     this.areaMap.loadDataStruct(areaMapStruct);
-    //   }
+    // const areaMapStruct = areaMap.getChildStructs[0];
+    // if(areaMapStruct){
+    // this.areaMap.loadDataStruct(areaMapStruct);
+    // }
     // }
 
     // if(!(this.transWP instanceof GFFObject)){
-    //   this.transWP = null;
+    // this.transWP = null;
     // }
 
     // if(this.git.RootNode.hasField('SWVarTable')){
-    //   console.log("SWVarTable", this.git);
-    //   let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-    //   //console.log(localBools);
-    //   for(let i = 0; i < localBools.length; i++){
-    //     let data = localBools[i].getFieldByLabel('Variable').getValue();
-    //     for(let bit = 0; bit < 32; bit++){
-    //       this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-    //     }
-    //   }
+    // console.log("SWVarTable", this.git);
+    // let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs[0].getFieldByLabel('BitArray').getChildStructs;
+    // //console.log(localBools);
+    // for(let i = 0; i < localBools.length; i++){
+    // let data = localBools[i].getFieldByLabel('Variable').getValue;
+    // for(let bit = 0; bit < 32; bit++){
+    // this._locals.Booleans[bit + (i*32)] = ((data>>bit) % 2 != 0);
+    // }
+    // }
     // }
 
     // GameState.AlphaTest = this.alphaTest;
 
-    // AudioEngine.GetAudioEngine().setReverbProfile(this.audio.environmentAudio);
+    // AudioEngine.GetAudioEngine.setReverbProfile(this.audio.environmentAudio);
 
-    // FollowerCamera.setCameraStyle(this.getCameraStyle());
+    // FollowerCamera.setCameraStyle(this.getCameraStyle);
     // if(this.miniGame){
-    //   FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
+    // FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
     // }else{
-    //   FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
+    // FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
     // }
 
     try{
@@ -408,9 +409,9 @@ export class ForgeArea extends ForgeGameObject{
       console.error(e);
     }
 
-    // await this.loadVis();
-    // await this.loadLayout();
-    // await this.loadScripts();
+    // await this.loadVis;
+    // await this.loadLayout;
+    // await this.loadScripts;
     // GameState.scene.fog = this.fog;
 
     await this.loadRooms();
@@ -613,7 +614,7 @@ export class ForgeArea extends ForgeGameObject{
   }
 
   /**
-   * Project file first, then retail KEY/BIF Demand (incomplete modules restored from game data).
+   * Project file first, then KEY/BIF Demand (incomplete modules restored from game data).
    */
   private async loadLayoutBuffer(layoutResRef: string): Promise<Uint8Array | undefined> {
     const path = `${layoutResRef}.lyt`;
@@ -638,7 +639,7 @@ export class ForgeArea extends ForgeGameObject{
         return fromGame;
       }
     }catch(e){
-      // Missing from game as well — retail would leave 0 layout rooms.
+      // Missing from game as well — would leave 0 layout rooms.
     }
     return undefined;
   }
@@ -720,7 +721,11 @@ export class ForgeArea extends ForgeGameObject{
     }
     this.layout.rooms = this.rooms.map((room) => ({
       name: room.roomName,
-      position: room.position.clone(),
+      position: {
+        x: room.position.x,
+        y: room.position.y,
+        z: room.position.z,
+      },
     }));
 
     const vis = this.buildVisText();
@@ -913,8 +918,8 @@ export class ForgeArea extends ForgeGameObject{
    */
   async loadRooms(): Promise<void> {
     console.log('Loading Rooms');
-    // this.walkEdges = [];
-    // this.walkFaces = [];
+    // this.walkEdges =;
+    // this.walkFaces =;
     
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
@@ -963,7 +968,7 @@ export class ForgeArea extends ForgeGameObject{
           }
         }
       }
-      // this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values()));
+      // this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values));
     }
   }
 
@@ -1096,7 +1101,7 @@ export class ForgeArea extends ForgeGameObject{
 
     // Name
     const nameField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Name'))!;
-    // const nameLocString = new KotOR.CExoLocString();
+    // const nameLocString = new KotOR.CExoLocString;
     // nameLocString.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
     // nameField.setCExoLocString(nameLocString);
     nameField.setCExoLocString(this.name);

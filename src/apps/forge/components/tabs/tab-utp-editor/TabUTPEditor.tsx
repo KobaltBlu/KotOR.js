@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTIEditorState, TabUTPEditorState } from "@/apps/forge/states/tabs";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import * as KotOR from "@/apps/forge/KotOR";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps"
+import { TabUTIEditorState, TabUTPEditorState } from "@apps/forge/states/tabs";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import * as KotOR from "@apps/forge/KotOR";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
 import {
   sanitizeResRef,
   clampByte,
@@ -17,14 +17,14 @@ import {
   createCExoStringFieldHandler,
   createCExoLocStringFieldHandler,
   createForgeCheckboxFieldHandler
-} from "@/apps/forge/helpers/UTxEditorHelpers";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
-import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
+} from "@apps/forge/helpers/UTxEditorHelpers";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "@apps/forge/components/SubTabHost";
+import { FormField } from "@apps/forge/components/form-field/FormField";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
+import { ForgeTwoDAIndexField } from "@apps/forge/components/ui";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 

@@ -7,12 +7,12 @@
  */
 
 import React from "react";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabJRLEditor } from "@/apps/forge/components/tabs/tab-jrl-editor/TabJRLEditor";
-import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { TabJRLEditor } from "@apps/forge/components/tabs/tab-jrl-editor/TabJRLEditor";
+import { gffFromSnapshot, snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
 
 export interface JournalCategory {
   tag: string;

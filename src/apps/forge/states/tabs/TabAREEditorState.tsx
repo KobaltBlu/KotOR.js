@@ -7,14 +7,14 @@
  */
 
 import React from "react";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabAREEditor } from "@/apps/forge/components/tabs/tab-are-editor/TabAREEditor";
-import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabGFFEditorState } from "@/apps/forge/states/tabs/TabGFFEditorState";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { TabAREEditor } from "@apps/forge/components/tabs/tab-are-editor/TabAREEditor";
+import { gffFromSnapshot, snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabGFFEditorState } from "@apps/forge/states/tabs/TabGFFEditorState";
 
 export interface AREEditorModel {
   name: string;

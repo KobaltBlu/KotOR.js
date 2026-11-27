@@ -1,11 +1,11 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "@/apps/forge/KotOR";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "@apps/forge/KotOR";
+import { SceneGraphNode } from "@apps/forge/SceneGraphNode";
+import { GroupType, type UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
 
 export interface IModuleGroupNode {
   key: GroupType;
@@ -223,7 +223,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
       }
       else
       {
-        // Use setNodes() instead of direct assignment to fire onNodesChange event
+        // Use setNodes instead of direct assignment to fire onNodesChange event
         groupNode.setNodes([]);
       }
 

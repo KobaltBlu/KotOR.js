@@ -1,4 +1,4 @@
-import { CExoLocString } from "@/resource/CExoLocString";
+import { CExoLocString } from "@core/resource/CExoLocString";
 
 /**
  * Editable DLG document types for the Forge conversation editor.
@@ -10,7 +10,7 @@ import { CExoLocString } from "@/resource/CExoLocString";
 
 export type DLGNodeKind = "entry" | "reply";
 
-/** Retail Delay DWORD 0xFFFFFFFF means unset (fall back to DelayEntry / spoken estimate). */
+/** Delay DWORD 0xFFFFFFFF means unset (fall back to DelayEntry / spoken estimate). */
 export const DLG_DELAY_UNSET = 0xffffffff;
 
 export const DLG_NEIGHBOR_CAP = 50;

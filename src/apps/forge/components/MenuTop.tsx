@@ -1,10 +1,10 @@
 import React, { useState, useCallback, memo } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { MenuTopState } from "@/apps/forge/states/MenuTopState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { MenuBar, ForgeMenuItem } from "@/apps/forge/components/common/MenuBar";
-import { MenuTopPreviewButton } from "@/apps/forge/components/MenuTopPreviewButton";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { MenuTopState } from "@apps/forge/states/MenuTopState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { MenuBar, ForgeMenuItem } from "@apps/forge/components/common/MenuBar";
+import { MenuTopPreviewButton } from "@apps/forge/components/MenuTopPreviewButton";
 import "@/apps/forge/commands/registerForgeCommands";
 
 export interface MenuTopProps {

@@ -7,15 +7,15 @@
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import * as KotOR from "@/apps/forge/KotOR";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import * as KotOR from "@apps/forge/KotOR";
 import {
   formatERFOffset,
   getERFFileIconClass,
   isERFFolderNode,
   type ErfBrowserSortKey,
-} from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
-import type { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
+} from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
+import type { TabERFEditorState } from "@apps/forge/states/tabs/TabERFEditorState";
 
 export interface ERFBrowserListingProps {
   tab: TabERFEditorState;

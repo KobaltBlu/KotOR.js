@@ -1,0 +1,630 @@
+/**
+ * PlayerControl predicted resolve — creature solidity + wall slide.
+ * @jest-environment node
+ */
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import * as THREE from "three";
+
+const testCreatureMovementMock = jest.fn();
+const testStaticMovementMock = jest.fn();
+const findGroundMock = jest.fn();
+const findWalkableAttachmentAtMock = jest.fn();
+const queryDoorCrossingMock = jest.fn();
+const nudgeFriendlyCreaturesMock = jest.fn();
+
+jest.mock("@engine/runtime/GameState", () => ({
+  GameState: {
+    PartyManager: {
+      getCurrentPlayer: () => undefined,
+      party: [] as unknown[],
+    },
+    module: undefined,
+    debug: {},
+  },
+}));
+
+jest.mock("@core/utility/BitWise", () => ({
+  BitWise: {
+    InstanceOfObject: (v: unknown) => !!v,
+    InstanceOf: () => true,
+  },
+}));
+
+jest.mock("@engine/module/guards/isCreature", () => ({
+  isCreature: (o: unknown) => !!(o as { objectType?: number })?.objectType,
+}));
+
+jest.mock("@engine/combat/attack-range", () => ({
+  getCreaturePersonalSpace: () => 0.4,
+  getPathPersonalSpace: () => 0.5,
+}));
+
+jest.mock("@engine/pathfinding/nudge-friendlies", () => ({
+  nudgeFriendlyCreatures: (...args: unknown[]) =>
+    nudgeFriendlyCreaturesMock(...args),
+}));
+
+jest.mock("@engine/movement/area-movement-queries", () => ({
+  WalkLineHitCode: { Ok: 1, Fail: 0, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
+  testCreatureMovement: (...args: unknown[]) => testCreatureMovementMock(...args),
+  testStaticMovement: (...args: unknown[]) => testStaticMovementMock(...args),
+  // Thin drive probe — adapt legacy static-mock shape used by this suite.
+  testDriveStepClear: (
+    area: unknown,
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    opts?: unknown
+  ) => {
+    const r = testStaticMovementMock(area, from, to, opts) as {
+      clear?: boolean;
+      hit?: { objectId?: number };
+      walkHit?: {
+        code?: number;
+        clearT?: number;
+        clearPoint?: THREE.Vector3;
+        walkHit?: { normal?: THREE.Vector3 };
+      };
+    };
+    const wh = r?.walkHit ?? {};
+    return {
+      clear: !!r?.clear,
+      clearT: wh.clearT ?? (r?.clear ? 1 : 0),
+      clearPoint: wh.clearPoint?.clone?.() ?? to.clone(),
+      code: wh.code ?? (r?.clear ? 1 : -1),
+      normal: wh.walkHit?.normal,
+      blockingObjectId: r?.hit?.objectId,
+      walkHit: wh.walkHit,
+    };
+  },
+  findGround: (...args: unknown[]) => findGroundMock(...args),
+  findWalkableAttachmentAt: (...args: unknown[]) =>
+    findWalkableAttachmentAtMock(...args),
+  queryDoorCrossing: (...args: unknown[]) => queryDoorCrossingMock(...args),
+}));
+
+import {
+  projectOntoTangent,
+  resolvePlayerControlStep,
+} from "@engine/movement/player-control-policy";
+import { MovementHitKind, MovementStatus } from "@engine/movement/types";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
+
+function mockCreature(
+  id: number,
+  x: number,
+  y: number,
+  area?: Area
+): Creature {
+  return {
+    id,
+    objectType: GameObjectType.Creature,
+    position: new THREE.Vector3(x, y, 0),
+    area,
+  } as unknown as Creature;
+}
+
+describe("projectOntoTangent", () => {
+  it("removes the into-wall component of desired motion", () => {
+    const out = new THREE.Vector3();
+    // Outward wall normal faces player (−X); desired into +X wall
+    projectOntoTangent(1, 1, -1, 0, out);
+    expect(out.x).toBeCloseTo(0);
+    expect(out.y).toBeCloseTo(1);
+  });
+
+  it("keeps escape motion along the normal", () => {
+    const out = new THREE.Vector3();
+    projectOntoTangent(-1, 0, -1, 0, out);
+    expect(out.x).toBeCloseTo(-1);
+    expect(out.y).toBeCloseTo(0);
+  });
+});
+
+describe("resolvePlayerControlStep", () => {
+  let area: Area;
+  let player: Creature;
+  let npc: Creature;
+
+  beforeEach(() => {
+    testCreatureMovementMock.mockReset();
+    testStaticMovementMock.mockReset();
+    findGroundMock.mockReset();
+    findWalkableAttachmentAtMock.mockReset();
+    queryDoorCrossingMock.mockReset();
+    nudgeFriendlyCreaturesMock.mockReset();
+    findGroundMock.mockReturnValue(undefined);
+    findWalkableAttachmentAtMock.mockReturnValue(undefined);
+    queryDoorCrossingMock.mockReturnValue(undefined);
+    nudgeFriendlyCreaturesMock.mockReturnValue(false);
+
+    npc = mockCreature(9, 1, 0);
+    area = { creatures: [npc] } as unknown as Area;
+    player = mockCreature(1, 0, 0, area);
+    (npc as { area: Area }).area = area;
+  });
+
+  it("passes softClearStartOverlap false and allowPartyCreatures false on creature tests", () => {
+    testCreatureMovementMock.mockReturnValue({
+      clear: false,
+      hit: { kind: MovementHitKind.Creature, creatureId: 9, object: npc },
+      raw: { clear: false, blockingCreatureId: 9 },
+    });
+    // Slide probes also fail
+    testStaticMovementMock.mockReturnValue({
+      clear: false,
+      walkHit: {
+        code: 0,
+        ok: false,
+        clearT: 0,
+        clearPoint: new THREE.Vector3(0, 0, 0),
+      },
+    });
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Blocked);
+    expect(testCreatureMovementMock).toHaveBeenCalled();
+    for(const call of testCreatureMovementMock.mock.calls){
+      const opts = call[3] as {
+        softClearStartOverlap?: boolean;
+        allowPartyCreatures?: boolean;
+      };
+      expect(opts.softClearStartOverlap).toBe(false);
+      expect(opts.allowPartyCreatures).toBe(false);
+    }
+  });
+
+  it("does not accept full ideal step when start-overlapping creature soft-clear would have allowed it", () => {
+    // First gate hard-blocks (simulating soft-clear disabled)
+    testCreatureMovementMock.mockReturnValue({
+      clear: false,
+      hit: { kind: MovementHitKind.Creature, creatureId: 9, object: npc },
+      raw: { clear: false, blockingCreatureId: 9 },
+    });
+    testStaticMovementMock.mockReturnValue({
+      clear: true,
+      walkHit: {
+        code: 1,
+        ok: true,
+        clearT: 1,
+        clearPoint: new THREE.Vector3(1, 0, 0),
+      },
+    });
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0, 0)
+    );
+    // Ideal (+1,0) must not be accepted as clear walk-through
+    expect(result.finalPosition.x).toBeLessThan(0.99);
+    expect(
+      result.status === MovementStatus.Blocked ||
+        Math.abs(result.finalPosition.y) > 1e-6 ||
+        result.actualDistance < 0.99
+    ).toBe(true);
+  });
+
+  it("keeps party solid — never retries with allowPartyCreatures true", () => {
+    const partyMate = mockCreature(2, 0.5, 0, area);
+    (area as { creatures: Creature[] }).creatures = [partyMate];
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { GameState } = require("@engine/runtime/GameState");
+    GameState.PartyManager.party = [player, partyMate];
+
+    testCreatureMovementMock.mockReturnValue({
+      clear: false,
+      hit: { kind: MovementHitKind.Creature, creatureId: 2, object: partyMate },
+      raw: { clear: false, blockingCreatureId: 2 },
+    });
+    testStaticMovementMock.mockReturnValue({
+      clear: false,
+      walkHit: {
+        code: 0,
+        ok: false,
+        clearT: 0,
+        clearPoint: new THREE.Vector3(0, 0, 0),
+      },
+    });
+
+    resolvePlayerControlStep(player, new THREE.Vector3(1, 0, 0));
+    for(const call of testCreatureMovementMock.mock.calls){
+      const opts = call[3] as { allowPartyCreatures?: boolean };
+      expect(opts.allowPartyCreatures).toBe(false);
+    }
+  });
+
+  it("after static clip, accepts projected tangent without remain-renorm (wall slide)", () => {
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    let staticCalls = 0;
+    testStaticMovementMock.mockImplementation(
+      (_area: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        staticCalls += 1;
+        // Ideal step from origin into the wall (first resolve static test)
+        if(from.x === 0 && from.y === 0 && to.x > 0.5){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Walkmesh },
+            walkHit: {
+              code: -1,
+              ok: false,
+              clearT: 0.2,
+              clearPoint: new THREE.Vector3(0.2, 0, 0),
+              walkHit: { normal: new THREE.Vector3(-1, 0, 0) },
+            },
+          };
+        }
+        // origin+projected / clipped+projected — clear
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0.5, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    // Projected tangent is (0, 0.5) — not renormalized to |desired|
+    expect(Math.abs(result.acceptedDisplacement.y)).toBeGreaterThan(1e-4);
+    expect(result.actualDistance).toBeLessThan(0.9);
+    expect(staticCalls).toBeGreaterThan(1);
+  });
+
+  it("rejects into-wall step when tangent slide has no usable motion", () => {
+    // Pure into-wall desire + wall normal → projected slide length 0 → Blocked
+    // (thin probe path; no lateral fan of creature checks).
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockImplementation(
+      (_a: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        const dx = to.x - from.x;
+        if(dx > 0){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Walkmesh },
+            walkHit: {
+              code: -1,
+              ok: false,
+              clearT: 0,
+              clearPoint: from.clone(),
+              walkHit: { normal: new THREE.Vector3(-1, 0, 0) },
+            },
+          };
+        }
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Blocked);
+    expect(result.actualDistance).toBeLessThan(1e-6);
+  });
+
+  it("allows escape away from the wall (desired · outwardNormal >= 0)", () => {
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockImplementation(
+      (_area: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        // Ideal escape (−X) still reported blocked by start overlap with edge,
+        // but a short outward / projected escape probe is clear.
+        if(from.x === 0 && from.y === 0 && to.x < -0.5){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Walkmesh },
+            walkHit: {
+              code: -1,
+              ok: false,
+              clearT: 0,
+              clearPoint: from.clone(),
+              walkHit: { normal: new THREE.Vector3(-1, 0, 0) },
+            },
+          };
+        }
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(-1, 0, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    expect(result.acceptedDisplacement.x).toBeLessThan(-1e-4);
+    // Not forced into Y-only wall-run
+    expect(Math.abs(result.acceptedDisplacement.y)).toBeLessThan(0.05);
+  });
+
+  it("keeps slide speed at projected magnitude, not full desired length", () => {
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockImplementation(
+      (_area: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        if(from.x === 0 && from.y === 0 && to.x > 0.5){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Walkmesh },
+            walkHit: {
+              code: -1,
+              ok: false,
+              clearT: 0,
+              clearPoint: from.clone(),
+              walkHit: { normal: new THREE.Vector3(-1, 0, 0) },
+            },
+          };
+        }
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    // desired (1, 0.2) → projected (0, 0.2); must not renorm to ~1.02
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0.2, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    expect(result.actualDistance).toBeCloseTo(0.2, 2);
+    expect(Math.abs(result.acceptedDisplacement.x)).toBeLessThan(0.05);
+    expect(result.acceptedDisplacement.y).toBeCloseTo(0.2, 2);
+  });
+
+  it("depenetrates when already overlapping another creature", () => {
+    // PC at origin overlapping NPC at (0.2, 0) with creperspace 0.4+0.4+0.01
+    npc.position.set(0.2, 0, 0);
+    testCreatureMovementMock.mockImplementation(
+      (_a: unknown, from: THREE.Vector3, to: THREE.Vector3, opts?: { softClearStartOverlap?: boolean }) => {
+        const soft = opts?.softClearStartOverlap === true;
+        // Hard tests: always blocked while start overlaps
+        if(!soft){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Creature, creatureId: 9, object: npc },
+            raw: { clear: false, blockingCreatureId: 9 },
+          };
+        }
+        // Soft: allow exit probes that move away from NPC
+        const destDist = Math.hypot(to.x - 0.2, to.y - 0);
+        const originDist = Math.hypot(from.x - 0.2, from.y - 0);
+        if(destDist + 1e-4 >= originDist){
+          return { clear: true, raw: { clear: true } };
+        }
+        return {
+          clear: false,
+          hit: { kind: MovementHitKind.Creature, creatureId: 9, object: npc },
+          raw: { clear: false, blockingCreatureId: 9 },
+        };
+      }
+    );
+    testStaticMovementMock.mockReturnValue({
+      clear: true,
+      walkHit: {
+        code: 1,
+        ok: true,
+        clearT: 1,
+        clearPoint: new THREE.Vector3(0, 0, 0),
+      },
+    });
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(0.1, 0, 0) // still pushing into NPC
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    const after = Math.hypot(
+      result.finalPosition.x - npc.position.x,
+      result.finalPosition.y - npc.position.y
+    );
+    const before = Math.hypot(0 - npc.position.x, 0 - npc.position.y);
+    expect(after).toBeGreaterThan(before + 1e-4);
+    // Push is away from NPC (NPC at +X → self moves −X)
+    expect(result.finalPosition.x).toBeLessThan(0);
+  });
+
+  it("attaches room and groundFace from findWalkableAttachmentAt on clear step", () => {
+    const room = { roomName: "m02ac_02e" };
+    const face = { walkIndex: 21 };
+    findWalkableAttachmentAtMock.mockReturnValue({
+      room,
+      face,
+      z: 0.005,
+    });
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockReturnValue({
+      clear: true,
+      walkHit: {
+        code: 1,
+        ok: true,
+        clearT: 1,
+        clearPoint: new THREE.Vector3(1, 0, 0),
+      },
+    });
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    expect(result.room).toBe(room);
+    expect(result.groundFace).toBe(face);
+    expect(result.finalPosition.z).toBeCloseTo(0.005);
+    expect(findWalkableAttachmentAtMock).toHaveBeenCalled();
+  });
+
+  it("slides along collinear perimeter edges at a vertex despite bad mesh normal", () => {
+    // Live m02ac_02c: two walls meet at 111.7; mesh would report ±X.
+    const west = {
+      transition: -1,
+      line: new THREE.Line3(
+        new THREE.Vector3(104.25, 99.75, 0),
+        new THREE.Vector3(111.7, 99.75, 0)
+      ),
+      normal: new THREE.Vector3(0, 1, 0),
+    };
+    const east = {
+      transition: -1,
+      line: new THREE.Line3(
+        new THREE.Vector3(111.7, 99.75, 0),
+        new THREE.Vector3(120.75, 99.75, 0)
+      ),
+      normal: new THREE.Vector3(0, 1, 0),
+    };
+    (area as { walkEdges: unknown[] }).walkEdges = [west, east];
+    player.position.set(111.7, 100.16, 0);
+
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockImplementation(
+      (_a: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        const dy = to.y - from.y;
+        // Into-wall (south) blocked with corner normal; along-wall clear
+        if(dy < -0.05){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Static },
+            walkHit: {
+              code: -2,
+              ok: false,
+              clearT: 0,
+              clearPoint: from.clone(),
+              walkHit: { normal: new THREE.Vector3(-1, 0.008, 0) },
+            },
+          };
+        }
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(0.35, -0.2, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    expect(result.finalPosition.x).toBeGreaterThan(player.position.x + 0.2);
+    expect(result.finalPosition.y).toBeCloseTo(player.position.y, 2);
+  });
+
+  it("slides along perimeter when DetailedBlock returns near-Z Nonwalk normal", () => {
+    // Live m36aa: flat Nonwalk skirt shares walk edge; probe normal ≈ (0,0,1).
+    const edge = {
+      transition: -1,
+      line: new THREE.Line3(
+        new THREE.Vector3(92.999, 185.02, 0),
+        new THREE.Vector3(97.993, 189.302, 0)
+      ),
+      normal: new THREE.Vector3(-0.6509, 0.7591, 0),
+    };
+    (area as { walkEdges: unknown[] }).walkEdges = [edge];
+    player.position.set(94.2019, 186.484, 0);
+    const nx = -0.6509;
+    const ny = 0.7591;
+
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockImplementation(
+      (_a: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        const mx = to.x - from.x;
+        const my = to.y - from.y;
+        // Into Nonwalk (against outward walk-edge normal) blocked with near-Z normal
+        if(mx * nx + my * ny < -0.01){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Static },
+            walkHit: {
+              code: -2,
+              ok: false,
+              clearT: 0,
+              clearPoint: from.clone(),
+              walkHit: { normal: new THREE.Vector3(-0.00079, 0.0004, 1) },
+            },
+          };
+        }
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    // Live-style into-wall + along-edge desired (vel before pause)
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(0.198, 0.027, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    expect(result.actualDistance).toBeGreaterThan(0.05);
+    // Must not freeze at clearT=0; motion should keep a tangent component
+    const disp = result.acceptedDisplacement;
+    const along = Math.abs(disp.x * ny - disp.y * nx);
+    expect(along).toBeGreaterThan(0.04);
+  });
+
+  it("blocks XY and sets blockAfterDoorSignal when crossing a linked open door", () => {
+    const door = { id: 42, tag: "transdoor" };
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockReturnValue({
+      clear: true,
+      walkHit: {
+        code: 1,
+        ok: true,
+        clearT: 1,
+        clearPoint: new THREE.Vector3(1, 0, 0),
+      },
+    });
+    queryDoorCrossingMock.mockReturnValue({ door, linkedOpen: true });
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Blocked);
+    expect(result.blockAfterDoorSignal).toBe(true);
+    expect(result.crossedTransition).toBe(door);
+    expect(result.actualDistance).toBe(0);
+    expect(result.finalPosition.x).toBeCloseTo(player.position.x);
+  });
+});

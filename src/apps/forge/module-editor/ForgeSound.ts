@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
@@ -239,7 +239,7 @@ export class ForgeSound extends ForgeGameObject {
   setGITInstance(strt: KotOR.GFFStruct){
     this.generatedType = strt.getFieldByLabel('GeneratedType').getValue() as number;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    // Retail GIT uses XPosition*; accept legacy X/Y/Z from older Forge exports
+    // GIT uses XPosition*; accept legacy X/Y/Z from older Forge exports
     if(strt.hasField('XPosition')){
       this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
       this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;

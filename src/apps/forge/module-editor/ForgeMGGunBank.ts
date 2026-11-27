@@ -1,5 +1,5 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeMGGunBullet } from "@/apps/forge/module-editor/ForgeMGGunBullet";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeMGGunBullet } from "@apps/forge/module-editor/ForgeMGGunBullet";
 
 export class ForgeMGGunBank {
   // Basic properties
@@ -11,7 +11,7 @@ export class ForgeMGGunBank {
   sensingRadius: number = 0;
   vertSpread: number = 0;
 
-  /** Retail player banks omit spread / sensing fields; enemy banks include them. */
+  /** player banks omit spread / sensing fields; enemy banks include them. */
   isEnemyBank: boolean = false;
 
   // Bullet template

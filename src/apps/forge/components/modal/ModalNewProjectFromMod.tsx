@@ -1,5 +1,5 @@
 /**
- * Modal: create a new Forge project from a .mod / .rim / .erf archive.
+ * Modal: create a new Forge project from a.mod /.rim /.erf archive.
  *
  * @file ModalNewProjectFromMod.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
 import {
   ForgeButton,
   ForgeDialog,
@@ -15,29 +15,29 @@ import {
   ForgeInputGroup,
   ForgeProgress,
   ForgeSelect,
-} from "@/apps/forge/components/ui";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+} from "@apps/forge/components/ui";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@apps/forge/ForgeFileSystem";
 import {
   canCreateForgeProject,
   resolveProjectGame,
   type ProjectStorageMode,
-} from "@/apps/forge/helpers/projectCreateOptions";
+} from "@apps/forge/helpers/projectCreateOptions";
 import {
   createForgeProjectFromModule,
   projectNameFromModuleArchive,
-} from "@/apps/forge/helpers/createForgeProjectFromModule";
+} from "@apps/forge/helpers/createForgeProjectFromModule";
 import {
   companionRimFilename,
   inspectModuleArchive,
   tryReadCompanionRim,
   type ModuleArchivePreview,
-} from "@/apps/forge/helpers/importModuleArchive";
+} from "@apps/forge/helpers/importModuleArchive";
 import {
   MODULE_ARCHIVE_EXTS,
   readPickedModuleArchive,
-} from "@/apps/forge/helpers/moduleArchivePicker";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+} from "@apps/forge/helpers/moduleArchivePicker";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 interface ProjectDirectory {
   path?: string;

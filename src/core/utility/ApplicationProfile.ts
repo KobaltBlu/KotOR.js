@@ -1,0 +1,81 @@
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import { ApplicationMode } from "@core/enums/ApplicationMode";
+import { GameEngineType } from "@core/enums/engine";
+import { OSInfo } from "@core/utility/OSInfo";
+
+/**
+ * ApplicationProfile class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ApplicationProfile.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class ApplicationProfile {
+
+  static MODE: ApplicationMode = ApplicationMode.GAME;
+  static ENV: ApplicationEnvironment = ApplicationEnvironment.BROWSER;
+  static directory: string;
+  static directoryHandle: FileSystemDirectoryHandle;
+  static key: string;
+  static launch: any;
+  static path_sep: string = '/';
+  static GameKey: GameEngineType = GameEngineType.KOTOR;
+  static profile: any = {};
+  static isMac: boolean = false;
+
+  /**
+   * Map a launcher/Forge profile onto {@link GameEngineType}.
+   * TSL is `key === 'tsl'` or the game app's `launch.args.gameChoice === 2`.
+   */
+  static resolveGameKey(profile: { key?: string; launch?: { args?: { gameChoice?: number | string } } } | null | undefined): GameEngineType {
+    const choice = profile?.launch?.args?.gameChoice;
+    if (choice === 2 || choice === '2') {
+      return GameEngineType.TSL;
+    }
+    const key = String(profile?.key ?? '').toLowerCase();
+    if (key === 'tsl') {
+      return GameEngineType.TSL;
+    }
+    return GameEngineType.KOTOR;
+  }
+
+  static SetProfile(profile: any){
+    if(typeof profile === 'object' && profile){
+      ApplicationProfile.profile = profile;
+      ApplicationProfile.key = profile.key;
+      ApplicationProfile.GameKey = ApplicationProfile.resolveGameKey(profile);
+      ApplicationProfile.InitEnvironment();
+    }
+    if(ApplicationProfile.profile){
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+        ApplicationProfile.directory = ApplicationProfile.profile.directory;
+      }else{
+        ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle;
+      }
+    }
+  }
+
+  static InitEnvironment(){
+    if(window.location.origin === 'file://'){
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      if(typeof window.electron !== 'undefined'){
+        ApplicationProfile.isMac = window.electron.isMac();
+      }
+      if(OSInfo.isWindows()){
+        ApplicationProfile.path_sep = '/';
+      }else{
+        ApplicationProfile.path_sep = '/';
+      }
+    }else{
+      ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
+      if(OSInfo.isWindows()){
+        ApplicationProfile.path_sep = '/';
+      }else{
+        ApplicationProfile.path_sep = '/';
+      }
+    }
+  }
+
+}

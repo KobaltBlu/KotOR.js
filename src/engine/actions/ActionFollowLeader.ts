@@ -1,0 +1,282 @@
+import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
+import { ActionStatus } from "@core/enums/actions/ActionStatus";
+import { ActionType } from "@core/enums/actions/ActionType";
+import { EngineMode } from "@engine/enums/engine/EngineMode";
+import { GameState } from "@engine/runtime/GameState";
+import {
+  createFollowRuntime,
+  PartyFollowState,
+  FOLLOW_STUCK_ITERATIONS,
+  FOLLOW_TELEPORT_DIST,
+  isFollowWaitState,
+  type PartyFollowRuntime,
+} from "@engine/pathfinding/party-follow";
+import {
+  isActivelyApproaching,
+  stepPartyFollowState,
+} from "@engine/pathfinding/party-follow-sm";
+import { partySoftSeparate } from "@engine/pathfinding/party-soft-separate";
+import {
+  CreatureLocoState,
+  setCreatureLocoState,
+} from "@engine/pathfinding/creature-loco";
+import type { Creature } from "@engine/module/Creature";
+import { Action } from "@engine/actions/Action";
+import * as THREE from "three";
+import { TURN_SPEED_FAST } from "@engine/movement/TurnSpeeds";
+
+import { isCreature } from "@engine/module/guards/isCreature";
+import { teleportObject } from "@engine/movement/teleport";
+import { setMovementAuthority } from "@engine/movement/creature-movement-state";
+import { MovementAuthority } from "@engine/movement/types";
+
+const _followOffset = new THREE.Vector3();
+
+/**
+ * ActionFollowLeader class.
+ * Party companion follow — follow-leader creature loco
+ * 11-state SM + follow ring + creature walk update.
+ *
+ * @file ActionFollowLeader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class ActionFollowLeader extends Action {
+  private followRuntime: PartyFollowRuntime = createFollowRuntime();
+
+  constructor( actionId: number = -1, groupId: number = -1 ){
+    super(actionId, groupId);
+    this.type = ActionType.ActionFollowLeader;
+
+    //PARAMS
+    // none
+  }
+
+  update(delta: number = 0): ActionStatus {
+    if(!isCreature(this.owner)){
+      return ActionStatus.FAILED;
+    }
+
+    // party follow leader action — field438 = 3
+    setCreatureLocoState(this.owner, CreatureLocoState.PartyFollow);
+
+    if(GameState.Mode == EngineMode.DIALOG){
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      return ActionStatus.FAILED;
+    }
+
+    if(GameState.SOLOMODE){
+      this.parkIdle(this.owner);
+      return ActionStatus.COMPLETE;
+    }
+
+    const leader = GameState.PartyManager.party[0];
+    if(!leader || leader === this.owner){
+      this.parkIdle(this.owner);
+      return ActionStatus.COMPLETE;
+    }
+
+    this.target = leader;
+    // Sync in-safety range from party follow info into the SM runtime
+    if(this.owner.partyFollowInfo){
+      this.followRuntime.inSafetyRange = this.owner.partyFollowInfo.inSafetyRange | 0;
+    }
+    // Seed lastSample once before first WaitingForPath LOS
+    if(
+      this.followRuntime.lastSampleX === 0 &&
+      this.followRuntime.lastSampleY === 0 &&
+      this.followRuntime.lastSampleZ === 0
+    ){
+      this.followRuntime.lastSampleX = this.owner.position.x;
+      this.followRuntime.lastSampleY = this.owner.position.y;
+      this.followRuntime.lastSampleZ = this.owner.position.z;
+    }
+    _followOffset.copy(GameState.PartyManager.GetFollowPosition(this.owner));
+    const offset = _followOffset;
+
+    // retry loop; abort after stuck iterations → Reset
+    let iterations = 0;
+    let teleport = false;
+    while(iterations < FOLLOW_STUCK_ITERATIONS){
+      iterations++;
+      const step = stepPartyFollowState(
+        this.followRuntime,
+        this.owner,
+        leader,
+        offset,
+        delta
+      );
+      if(step.teleport){
+        teleport = true;
+        break;
+      }
+      if(!step.continueInner) break;
+    }
+
+    if(teleport || this.followRuntime.state === PartyFollowState.Teleport){
+      this.softTeleportForward(this.owner, leader, offset);
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    if(isActivelyApproaching(this.followRuntime)){
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    // WaitDest / WaitingForPath — hold without clearing a pending path
+    if(isFollowWaitState(this.followRuntime.state)){
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.moveDirOverride = undefined;
+      this.owner.clearLocomotionAnimation?.();
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    // Offset — continuous trail walk. Soft-park only after a short idle hold so
+    // intermittent zero-step frames cannot restart AnimRun mid run↔pause blend
+    // (frozen gait while SetPosition still advances = slide).
+    if(this.followRuntime.state === PartyFollowState.Offset){
+      if(this.followRuntime.offsetStepped){
+        this.followRuntime.offsetIdleTime = 0;
+        return ActionStatus.IN_PROGRESS;
+      }
+      this.followRuntime.offsetIdleTime += Math.max(0, delta);
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.moveDirOverride = undefined;
+      if(this.followRuntime.offsetIdleTime >= 0.25){
+        this.parkIdleSoft(this.owner);
+      }
+      this.lookAtLeader(this.owner, leader);
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    // Fallback idle
+    this.parkIdle(this.owner);
+    this.lookAtLeader(this.owner, leader);
+    return ActionStatus.IN_PROGRESS;
+  }
+
+  /** Hard stop — solo / leave party / no leader. */
+  private parkIdle(owner: Creature){
+    owner.force = 0;
+    owner.speed = 0;
+    owner.walk = false;
+    owner.locomotionScale = 1;
+    owner.moveDirOverride = undefined;
+    owner.setComputedPath(undefined);
+    owner.clearLocomotionAnimation?.();
+    // Party members are not nudgeFriendlyCreatures targets — soft-separate when idle
+    partySoftSeparate(owner);
+  }
+
+  /**
+   * Soft park when Offset sample has been stationary ≥0.25s — keep walkSpeedFactor
+   * so the next Offset/Moving frame does not ramp from zero. Clear sticky run/walk
+   * anim so companions do not moonwalk in place once truly parked on the follow sample.
+   */
+  private parkIdleSoft(owner: Creature){
+    owner.force = 0;
+    owner.speed = 0;
+    owner.walk = false;
+    owner.moveDirOverride = undefined;
+    owner.clearLocomotionAnimation?.();
+    // Do not resetWalkSpeedFactor / setComputedPath
+    partySoftSeparate(owner);
+  }
+
+  private lookAtLeader(owner: Creature, leader: Creature){
+    const dx = leader.position.x - owner.position.x;
+    const dy = leader.position.y - owner.position.y;
+    if(dx * dx + dy * dy < 1e-8) return;
+    const atan = Math.atan2(-dy, -dx);
+    owner.setFacing(atan + Math.PI / 2, false, TURN_SPEED_FAST);
+  }
+
+  /**
+   * TeleportForward — advance one safe ring slot, seed the
+   * walk sample, then enter MovingToPath (not JumpToPoint + WaitingForPath).
+   * Jump only if the ring cannot catch up and the companion is still ≥15m out.
+   */
+  private softTeleportForward(
+    owner: Creature,
+    leader: Creature,
+    offset: THREE.Vector3
+  ){
+    const dest = new THREE.Vector3();
+    this.followRuntime.stuckTimer = 0;
+    this.followRuntime.stuckCounter = 0;
+
+    if(GameState.PartyManager.teleportFollowForward(owner, dest)){
+      owner.force = 0;
+      owner.speed = 0;
+      owner.locomotionScale = 1;
+      owner.moveDirOverride = undefined;
+      owner.setComputedPath(undefined);
+      setMovementAuthority(owner, MovementAuthority.FollowLeader);
+      teleportObject(owner, dest, 0, 0, {
+        findGround: true,
+        caller: "ActionFollowLeader.softTeleportForward",
+      });
+      this.followRuntime.lastSampleX = dest.x;
+      this.followRuntime.lastSampleY = dest.y;
+      this.followRuntime.lastSampleZ = dest.z;
+      // TeleportForward → state MovingToPath (2)
+      this.followRuntime.state = PartyFollowState.MovingToPath;
+      return;
+    }
+
+    // Ring cannot advance — only hard-jump when still beyond teleport band
+    const distLeader = Math.hypot(
+      owner.position.x - leader.position.x,
+      owner.position.y - leader.position.y
+    );
+    if(distLeader < FOLLOW_TELEPORT_DIST){
+      this.followRuntime.state = PartyFollowState.FindPath;
+      return;
+    }
+
+    this.jumpToFollowOffset(owner, offset);
+    this.followRuntime.state = PartyFollowState.WaitingForPath;
+  }
+
+  /**
+   * Last-resort JumpToPoint when TeleportForward cannot place a ring slot.
+   */
+  private jumpToFollowOffset(owner: Creature, offset: THREE.Vector3){
+    const area = owner.area;
+    const dest = new THREE.Vector3();
+    dest.copy(offset);
+    if(area?.getNearestWalkablePoint){
+      dest.copy(area.getNearestWalkablePoint(offset, 0.5));
+    }
+    // Avoid Jump-to-self (cold GetFollowPosition === feet)
+    const dx = dest.x - owner.position.x;
+    const dy = dest.y - owner.position.y;
+    if(dx * dx + dy * dy < 0.25){
+      const leader = GameState.PartyManager.party[0];
+      if(leader){
+        dest.copy(leader.position);
+        if(area?.getNearestWalkablePoint){
+          dest.copy(area.getNearestWalkablePoint(leader.position, 1.5));
+        }
+      }
+    }
+    owner.force = 0;
+    owner.speed = 0;
+    owner.locomotionScale = 1;
+    owner.moveDirOverride = undefined;
+    owner.setComputedPath(undefined);
+    const jump = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
+    jump.setParameter(0, ActionParameterType.FLOAT, dest.x);
+    jump.setParameter(1, ActionParameterType.FLOAT, dest.y);
+    jump.setParameter(2, ActionParameterType.FLOAT, dest.z);
+    jump.setParameter(3, ActionParameterType.DWORD, area?.id ?? owner.area?.id ?? 0);
+    jump.setParameter(4, ActionParameterType.INT, 0);
+    jump.setParameter(5, ActionParameterType.FLOAT, 20.0);
+    jump.setParameter(6, ActionParameterType.FLOAT, 0);
+    jump.setParameter(7, ActionParameterType.FLOAT, 0);
+    owner.actionQueue.addFront(jump);
+  }
+
+}

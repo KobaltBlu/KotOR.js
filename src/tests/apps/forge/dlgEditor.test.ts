@@ -1,6 +1,6 @@
 import { describe, expect, jest, test } from "@jest/globals";
 
-jest.mock("@/GameState", () => ({
+jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     NWScript: {
       Load: jest.fn(),
@@ -8,17 +8,17 @@ jest.mock("@/GameState", () => ({
   },
 }));
 
-import { GameState } from "@/GameState";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import { DLG_NEIGHBOR_CAP } from "@/apps/forge/dlg/ForgeDLGTypes";
-import { buildFocusNeighborhood } from "@/apps/forge/dlg/dlgNeighborhood";
-import { locStringPreview, prefetchDlgNodeTexts, resolveDlgLineText } from "@/apps/forge/dlg/dlgLocString";
-import { findDlgTreePath, dlgTreeRowId } from "@/apps/forge/dlg/dlgOutline";
+import { GameState } from "@engine/runtime/GameState";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
+import { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import { DLG_NEIGHBOR_CAP } from "@apps/forge/dlg/ForgeDLGTypes";
+import { buildFocusNeighborhood } from "@apps/forge/dlg/dlgNeighborhood";
+import { locStringPreview, prefetchDlgNodeTexts, resolveDlgLineText } from "@apps/forge/dlg/dlgLocString";
+import { findDlgTreePath, dlgTreeRowId } from "@apps/forge/dlg/dlgOutline";
 
 function roundTrip(dlg: ForgeDLG): ForgeDLG {
   const buffer = dlg.getExportBuffer();

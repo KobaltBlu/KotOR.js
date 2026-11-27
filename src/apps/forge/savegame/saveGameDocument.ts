@@ -7,19 +7,19 @@
  */
 
 import * as path from "path";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ERFObject } from "@/resource/ERFObject";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { TGAObject } from "@/resource/TGAObject";
-import { GameFileSystem } from "@/utility/GameFileSystem";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ERFObject } from "@core/resource/ERFObject";
+import { GFFObject } from "@core/resource/GFFObject";
+import { ResourceTypes } from "@core/resource/ResourceTypes";
+import { TGAObject } from "@core/resource/TGAObject";
+import { GameFileSystem } from "@core/filesystem/GameFileSystem";
 import {
   compareSaveModuleGffKeys,
   isSaveModuleGffExt,
   normalizeGameRelPath,
   resolveSaveFolderListedPath,
-} from "@/apps/forge/savegame/saveGamePaths";
+} from "@apps/forge/savegame/saveGamePaths";
 import {
   applyNfoFields,
   applyPartyTable,
@@ -42,9 +42,9 @@ import {
   type SavePackedModule,
   type SavePartyTable,
   type SaveThumbnail,
-} from "@/apps/forge/savegame/saveGameCodecs";
+} from "@apps/forge/savegame/saveGameCodecs";
 
-export * from "@/apps/forge/savegame/saveGameCodecs";
+export * from "@apps/forge/savegame/saveGameCodecs";
 
 export function listErfKeys(erf: ERFObject): SaveErfKey[] {
   const keys: SaveErfKey[] = [];

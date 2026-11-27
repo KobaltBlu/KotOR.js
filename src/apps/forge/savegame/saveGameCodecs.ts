@@ -6,11 +6,11 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
+import { BinaryReader } from "@core/binary/BinaryReader";
 
 const WIN_EPOCH_MS = Date.parse("1601-01-01T00:00:00Z");
 
@@ -312,7 +312,11 @@ export function applyNfoFields(gff: GFFObject, fields: SaveNfoFields): void {
   }
 }
 
-/** Retail CSWGlobalVariableTable::WriteTable: (count >> 3) + 1 */
+/**
+ * Calculate the number of bytes required to encode the booleans.
+ * @param booleanCount Number of booleans to encode.
+ * @returns Number of bytes required to encode the booleans.
+ */
 export function valBooleanByteSize(booleanCount: number): number {
   return (booleanCount >> 3) + 1;
 }

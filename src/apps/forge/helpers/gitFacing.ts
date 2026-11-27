@@ -13,7 +13,7 @@ export interface GitFacingXY {
   y: number;
 }
 
-/** Convert editor yaw (rotation.z radians) to retail GIT facing vector. */
+/** Convert editor yaw (rotation.z radians) to GIT facing vector. */
 export function facingFromYaw(yaw: number): GitFacingXY {
   return {
     x: Math.cos(yaw + Math.PI / 2),
@@ -21,7 +21,7 @@ export function facingFromYaw(yaw: number): GitFacingXY {
   };
 }
 
-/** Convert retail GIT facing vector to editor yaw (rotation.z radians). */
+/** Convert GIT facing vector to editor yaw (rotation.z radians). */
 export function yawFromFacing(xOrientation: number, yOrientation: number): number {
   return -Math.atan2(xOrientation, yOrientation);
 }

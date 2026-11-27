@@ -17,8 +17,8 @@ import {
   renameLayer,
   type ImageBlendMode,
   type ImageLayer,
-} from "@/apps/forge/image";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+} from "@apps/forge/image";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
 
 const THUMB_W = 36;
 const THUMB_H = 28;

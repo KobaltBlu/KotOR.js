@@ -6,17 +6,17 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { createForgeProject } from "@/apps/forge/helpers/createForgeProject";
-import type { CreateForgeProjectOptions } from "@/apps/forge/helpers/projectCreateOptions";
+import { createForgeProject } from "@apps/forge/helpers/createForgeProject";
+import type { CreateForgeProjectOptions } from "@apps/forge/helpers/projectCreateOptions";
 import {
   inspectProjectZip,
   materializeProjectZip,
   type InspectProjectZipResult,
-} from "@/apps/forge/helpers/projectZip";
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { DeepObject } from "@/utility/DeepObject";
+} from "@apps/forge/helpers/projectZip";
+import { Project } from "@apps/forge/Project";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { DeepObject } from "@core/utility/DeepObject";
 
 export interface CreateForgeProjectFromZipOptions extends CreateForgeProjectOptions {
   buffer: Uint8Array;

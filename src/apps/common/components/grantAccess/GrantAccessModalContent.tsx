@@ -1,7 +1,7 @@
 import React from "react";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
-import GrantAccessInfo from "@/apps/common/components/grantAccess/GrantAccessInfo";
-import { NeedKotorCollapsibleSection } from "@/apps/common/components/needKotor/NeedKotorCollapsibleSection";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
+import GrantAccessInfo from "@apps/common/components/grantAccess/GrantAccessInfo";
+import { NeedKotorCollapsibleSection } from "@apps/common/components/needKotor/NeedKotorCollapsibleSection";
 
 export interface GrantAccessModalContentProps {
   gameKey?: GameEngineType;

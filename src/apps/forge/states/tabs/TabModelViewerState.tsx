@@ -1,15 +1,15 @@
 import * as fs from "fs";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
 import React from "react";
-import { TabModelViewer } from "@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import { TabModelViewer } from "@apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { BinaryReader } from "@core/binary/BinaryReader";
+import { SceneGraphNode } from "@apps/forge/SceneGraphNode";
+import { UI3DOverlayComponent } from "@apps/forge/components/UI3DOverlayComponent";
 import {
   promptForDirectory,
   collectModelAssets,
@@ -18,10 +18,10 @@ import {
   fetchModelBuffers,
   showExtractionResults,
   createProgressModal,
-} from "@/apps/forge/helpers/AssetExtraction";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { isNonEmptyEditorBuffer } from "@/apps/forge/helpers/editorFileBuffer";
-import { DEFAULT_VIEWPORT_LAYERS, forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/helpers/AssetExtraction";
+import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
+import { isNonEmptyEditorBuffer } from "@apps/forge/helpers/editorFileBuffer";
+import { DEFAULT_VIEWPORT_LAYERS, forgeViewportSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 declare const dialog: any;
 
@@ -214,7 +214,14 @@ export class TabModelViewerState extends TabState {
     }
 
     next.emitters.map((emitter) => {
-      emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+      // Lightning / P2P: override MDL omenref (e.g. v_coldray_dur) with the gizmo.
+      if(
+        emitter.node?.updateMode === 'Lightning' ||
+        emitter.node?.flags?.isP2P ||
+        emitter.hasReferenceTarget
+      ){
+        emitter.setReferenceNode(this.ui3DRenderer.referenceNode);
+      }
     });
 
     this.ui3DRenderer.sceneGraphManager.rebuild();
@@ -242,7 +249,7 @@ export class TabModelViewerState extends TabState {
     this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
     this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
     this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
-    // this.unselectable.add( this.groundMesh );
+    // this.unselectable.add(this.groundMesh);
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.windowPower = forgeViewportSettings.get().windPower;
@@ -414,7 +421,13 @@ export class TabModelViewerState extends TabState {
               this.paused = true;
 
               model.emitters.map( (emitter) => {
-                emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+                if(
+                  emitter.node?.updateMode === 'Lightning' ||
+                  emitter.node?.flags?.isP2P ||
+                  emitter.hasReferenceTarget
+                ){
+                  emitter.setReferenceNode(this.ui3DRenderer.referenceNode);
+                }
               })
 
               if(model.camerahook){
@@ -431,7 +444,7 @@ export class TabModelViewerState extends TabState {
                 lightHelpers: this.ui3DRenderer.group.light_helpers,
               });
 
-              // this.updateCameraFocus();
+              // this.updateCameraFocus;
               this.processEventListener('onEditorFileLoad', [this]);
               this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
               resolve(this.model);
@@ -545,15 +558,15 @@ export class TabModelViewerState extends TabState {
 
   playAnimation(){
     // if(!this.currentAnimation){
-    //   this.pause();
-    //   return;
+    // this.pause;
+    // return;
     // }
     // if(this.currentAnimation != this.model.animationManager.currentAnimation){
-    //   this.model.playAnimation(this.currentAnimation, this.looping);
+    // this.model.playAnimation(this.currentAnimation, this.looping);
     // }else{
-    //   this.stopAnimation();
+    // this.stopAnimation;
     // }
-    // this.play();
+    // this.play;
   }
 
   stopAnimation(){
@@ -618,7 +631,7 @@ export class TabModelViewerState extends TabState {
       return new Promise<void>( async (resolve, reject) => {
         const data = await KotOR.KEYManager.Key.getFileBuffer(key);
         // this.tab.tabLoader.SetMessage(`Loading: Layout...`);
-        // this.tab.tabLoader.Show();
+        // this.tab.tabLoader.Show;
         const lyt = new KotOR.LYTObject(data);
         this.layout = lyt;
         for(let i = 0, len = this.layout.rooms.length; i < len; i++){
@@ -648,7 +661,7 @@ export class TabModelViewerState extends TabState {
         KotOR.TextureLoader.LoadQueue().then(() => {
           if(this.ui3DRenderer.renderer)
             this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
-          // this.tab.tabLoader.Hide();
+          // this.tab.tabLoader.Hide;
           resolve();
         }, (texObj: KotOR.ITextureLoaderQueuedRef) => {
           if(texObj.material){
@@ -684,7 +697,7 @@ export class TabModelViewerState extends TabState {
           modelIndex--;
         }
       }
-      // this.modelViewSideBarComponent.buildNodeTree();
+      // this.modelViewSideBarComponent.buildNodeTree;
     }catch(e){
       console.error(e);
     }

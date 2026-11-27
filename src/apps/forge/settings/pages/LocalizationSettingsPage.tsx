@@ -7,16 +7,16 @@
  */
 
 import React from "react";
-import { ForgeSelect } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
+import { ForgeSelect } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
 import {
   FORGE_LOC_GENDERS,
   FORGE_LOC_LANGUAGES,
   forgeLocalizationSettings,
-} from "@/apps/forge/settings/forgeLocalizationSettings";
+} from "@apps/forge/settings/forgeLocalizationSettings";
 
 export function LocalizationSettingsPage() {
   const [settings, setSettings] = useForgeSettings(forgeLocalizationSettings);

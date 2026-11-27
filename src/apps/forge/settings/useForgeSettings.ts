@@ -7,8 +7,8 @@
  */
 
 import { useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import type { ForgeSettingsBag } from "@/apps/forge/settings/forgeSettingsStore";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import type { ForgeSettingsBag } from "@apps/forge/settings/forgeSettingsStore";
 
 export function useForgeSettings<T>(bag: ForgeSettingsBag<T>): [T, (patch: Partial<T>) => T] {
   const [, setRevision] = useState(0);

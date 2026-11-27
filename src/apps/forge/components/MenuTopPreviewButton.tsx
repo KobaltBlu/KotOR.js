@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { executeCommand, isCommandEnabled } from "@/apps/forge/commands/forgeCommands";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
+import { executeCommand, isCommandEnabled } from "@apps/forge/commands/forgeCommands";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
 
 /** True only when the Module Editor tab is the active visible tab. */
 export function isModuleEditorTabActive(): boolean {

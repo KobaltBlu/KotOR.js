@@ -7,9 +7,9 @@
  */
 
 import { useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TraskTourState } from "@/apps/forge/tutorial/TraskTourState";
-import type { TraskTourStep } from "@/apps/forge/tutorial/traskTourSteps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TraskTourState } from "@apps/forge/tutorial/TraskTourState";
+import type { TraskTourStep } from "@apps/forge/tutorial/traskTourSteps";
 
 export interface TraskTourViewModel {
   visible: boolean;

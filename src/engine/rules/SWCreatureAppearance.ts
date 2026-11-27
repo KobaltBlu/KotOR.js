@@ -1,11 +1,18 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import { Utility } from "@/utility/Utility";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
+import { Utility } from "@core/utility/Utility";
+
+/** GetBTypeModelAndTextureResRef clamp: K1 A–J (10), K2 A–N (14). */
+export const APPEARANCE_BODY_MAX_K1 = 0xa;
+export const APPEARANCE_BODY_MAX_K2 = 0xe;
+
+/** SetAppearanceAlignment: evil body tex when GoodEvil < 41 (0x29). */
+export const APPEARANCE_EVIL_BODY_ALIGN_MAX = 0x29;
 
 /**
  * SWCreatureAppearance class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWCreatureAppearance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -17,10 +24,21 @@ export class SWCreatureAppearance {
   race: string = '';
   walkdist: number = 1.7;
   rundist: number = 5.4;
-  driveanimwalk: number = 1.7;
-  driveanimrun: number = 5.4;
-  driveanimrun_pc: number = 5.4; //TSL
-  driveanimrun_xbox: number = 5.4; //TSL
+  /** Anim pacing distance — default 2 when zero. */
+  driveanimwalk: number = 2;
+  /**
+   * Anim pacing distance — default 4 when zero.
+   * K1: appearance.2da DriveAnimRun. TSL: Load2DArrays_Appearance /
+   * CreateBodyAppearance cache DriveAnimRun_PC into this same slot.
+   */
+  driveanimrun: number = 4;
+  /**
+   * Raw DriveAnimRun_PC cell (TSL). Mirrored into driveanimrun by From2DA so
+   * CreateBodyAppearance-equivalent paths share one run distance.
+   */
+  driveanimrun_pc: number = 4;
+  /** TSL DriveAnimRun_XBOX — not cached by PC Load2DArrays_Appearance. */
+  driveanimrun_xbox: number = 4;
   racetex: string = '';
   modeltype: 'B'|'F'|'S'|'L' = 'B';
   normalhead: number = -1;
@@ -64,13 +82,19 @@ export class SWCreatureAppearance {
 
   modell: string = ''; //TSL
   texl: string = ''; //TSL
+  texlevil: string = ''; //TSL
 
   modelm: string = ''; //TSL
   texm: string = ''; //TSL
 
   modeln: string = ''; //TSL
   texn: string = ''; //TSL
-  texnevil: string = ''; //TSL
+  /**
+   * Body-N evil tex prefix. SetAppearanceAlignment looks up "TEXMEVIL"
+   * for body index 0xE, but appearance.2da's column is texnevil — From2DA reads
+   * texnevil (and texmevil as a mod alias) into this field.
+   */
+  texmevil: string = ''; //TSL (2DA: texnevil)
 
   skin: string = '';
   headtexve: string = '';
@@ -83,8 +107,10 @@ export class SWCreatureAppearance {
   weaponscale: number = 1.0;
   wing_tail_scale: number = 1.0;
   moverate: 'PLAYER'|'NOMOVE'|'VSLOW'|'SLOW'|'NORM'|'FAST'|'VFAST'|'DEFAULT'|'DFAST'|'HUGE'|'GIANT'|'WEE_FOLK' = 'NORM';
-  driveaccl: number = 50;
-  drivemaxspeed: number = 5.4;
+  /** fallback when appearance zero / missing — GetAcceleration uses 25. */
+  driveaccl: number = 25;
+  /** GetMaxSpeed null-creature fallback — 6. */
+  drivemaxspeed: number = 6;
   hitradius: number = 0.25;
   perspace: number = 0.35;
   creperspace: number = 0.4;
@@ -99,7 +125,7 @@ export class SWCreatureAppearance {
   footstepsound: string = '';
   footstepvolume: number = 1;
   sizecategory: number = 3;
-  
+
   armor_sound: string = '';
   combat_sound: string = '';
   helmet_scale_m: number = 1.0;
@@ -117,81 +143,133 @@ export class SWCreatureAppearance {
   body_bag: number = -1;
   freelookeffect: number = -1;
   cameraheightoffset: number = -1;
-  deathfx: number = -1;
-  deathfxnode: string = '';
+  /** appearance.2da DeathVFX — visualeffects.2da row. */
+  deathvfx: number = -1;
+  /** DeathVFXNode — model node name (default "impact"). */
+  deathvfxnode: string = '';
   fadedelayondeath: number = -1;
   destroyobjectdelay: number = -1;
   disableinjuredanim: boolean = false;
   equipslotslocked: number = -1;
 
-  getBodyModelInfo(bodyVariation: string = '', textureVariation: number = 1): { model: string, texture: string } {
-    textureVariation = Math.max(1, textureVariation);
-    const defaultModel = this.modela.replace(/\0[\s\S]*$/g,'');
-    const defaultTexture = this.texa.replace(/\0[\s\S]*$/g,'');
-    let bodyModel = defaultModel; 
-    let bodyTexture = defaultTexture;
+  /** body variation clamp: K1 → 10 (J), K2 → 14 (N). */
+  static maxBodyVariationIndex(isTSL: boolean): number {
+    return isTSL ? APPEARANCE_BODY_MAX_K2 : APPEARANCE_BODY_MAX_K1;
+  }
+
+  /**
+   * Parse armor body letter / byte into 1..N index (A=1).
+   * Empty / zero → 1 (ModelA), matching GetBTypeModelAndTextureResRef.
+   */
+  static clampBodyVariationIndex(raw: string | number, maxBodyIndex: number): number {
+    let index = 0;
+    if(typeof raw === 'number' && Number.isFinite(raw)){
+      index = raw | 0;
+    }else if(typeof raw === 'string' && raw.length){
+      const c = raw.replace(/\0[\s\S]*$/g, '').trim().charAt(0).toUpperCase();
+      if(c >= 'A' && c <= 'Z'){
+        index = c.charCodeAt(0) - 64;
+      }
+    }
+    if(index < 1) index = 1;
+    if(index > maxBodyIndex) index = maxBodyIndex;
+    return index;
+  }
+
+  private static cleanResRef(value: string): string {
+    return (value || '').replace(/\0[\s\S]*$/g, '').trim();
+  }
+
+  private getModelTexForIndex(index: number): { model: string, texture: string } {
+    const letter = String.fromCharCode(0x40 + index).toLowerCase(); // a..n
+    const model = SWCreatureAppearance.cleanResRef((this as any)[`model${letter}`] as string);
+    const texture = SWCreatureAppearance.cleanResRef((this as any)[`tex${letter}`] as string);
+    return { model, texture };
+  }
+
+  /**
+   * SetAppearanceAlignment TEX*Evil prefix for the given body letter index.
+   * K1 only has TEXAEVIL (no body variation). K2: B=2, I=9, L=0xC, N=0xE →
+   * string "TEXMEVIL" / 2DA column texnevil (stored as texmevil).
+   */
+  getEvilBodyTexPrefix(bodyIndex: number, hasBodyVariation: boolean): string {
+    if(!hasBodyVariation){
+      return SWCreatureAppearance.cleanResRef(this.texaevil);
+    }
+    switch(bodyIndex){
+      case 2: return SWCreatureAppearance.cleanResRef(this.texbevil);
+      case 9: return SWCreatureAppearance.cleanResRef(this.texievil);
+      case 0xc: return SWCreatureAppearance.cleanResRef(this.texlevil);
+      case 0xe: return SWCreatureAppearance.cleanResRef(this.texmevil); // body N
+      default: return '';
+    }
+  }
+
+  /**
+   * GetBTypeModelAndTextureResRef + SetAppearanceAlignment body path.
+   * @param bodyVariation Armor bodyVar letter (or '' for ModelA).
+   * @param textureVariation TextureVar (min 1).
+   * @param maxBodyIndex K1=10 / K2=14 clamp.
+   * @param goodEvil Creature GoodEvil for TEX*Evil (< 41).
+   * @param hasBodyVariation True when armor supplies a body letter (use_body_variation_).
+   */
+  getBodyModelInfo(
+    bodyVariation: string = '',
+    textureVariation: number = 1,
+    maxBodyIndex: number = APPEARANCE_BODY_MAX_K2,
+    goodEvil: number = 50,
+    hasBodyVariation: boolean = false,
+  ): { model: string, texture: string } {
+    textureVariation = Math.max(1, textureVariation | 0);
+    const defaultModel = SWCreatureAppearance.cleanResRef(this.modela);
+    const defaultTexture = SWCreatureAppearance.cleanResRef(this.texa);
 
     if(this.modeltype != 'B'){
-      bodyModel = this.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      bodyTexture = this.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
       return {
-        model: bodyModel,
-        texture: bodyTexture
+        model: SWCreatureAppearance.cleanResRef(this.race).toLowerCase(),
+        texture: SWCreatureAppearance.cleanResRef(this.racetex).toLowerCase(),
+      };
+    }
+
+    const useVar = hasBodyVariation || !!(bodyVariation && bodyVariation.length);
+    const bodyIndex = SWCreatureAppearance.clampBodyVariationIndex(
+      useVar ? bodyVariation : 1,
+      maxBodyIndex,
+    );
+    const { model: slotModel, texture: slotTex } = this.getModelTexForIndex(bodyIndex);
+    // GetBTypeModelAndTextureResRef: empty TEX* → empty resref (MDL default),
+    // not ModelA's TEXA. Falling back to TEXA is why Atton/Mira party bodies got PMBAMC/PFBAMC.
+    const bodyModel = slotModel || defaultModel;
+    let bodyTexture = slotTex;
+    if(!slotModel && !slotTex){
+      bodyTexture = defaultTexture;
+    }
+
+    // SetAppearanceAlignment: evil body tex + "01" when GoodEvil < 0x29
+    if(goodEvil < APPEARANCE_EVIL_BODY_ALIGN_MAX){
+      const evilPrefix = this.getEvilBodyTexPrefix(bodyIndex, useVar);
+      if(evilPrefix){
+        bodyTexture = evilPrefix + '01';
+        return {
+          model: bodyModel.toLowerCase(),
+          texture: bodyTexture.toLowerCase(),
+        };
       }
     }
 
-    switch(bodyVariation?.toLowerCase()){
-      case 'b':
-        bodyModel = this.modelb.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texb.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'c':
-        bodyModel = this.modelc.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texc.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'd':
-        bodyModel = this.modeld.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texd.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'e':
-        bodyModel = this.modele.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texe.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'f':
-        bodyModel = this.modelf.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texf.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'g':
-        bodyModel = this.modelg.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texg.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'h':
-        bodyModel = this.modelh.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texh.replace(/\0[\s\S]*$/g,'');
-      break;
-      case 'i':
-        bodyModel = this.modeli.replace(/\0[\s\S]*$/g,'');
-        bodyTexture = this.texi.replace(/\0[\s\S]*$/g,'');
-      break;
-      default:
-        bodyModel = defaultModel;
-        bodyTexture = defaultTexture;
-      break;
-    }
-
-    if(!!bodyTexture){
-      bodyTexture += Utility.PadInt( textureVariation, 2);
+    if(bodyTexture){
+      bodyTexture += Utility.PadInt(textureVariation, 2);
     }
 
     return {
-      model: !!bodyModel ? bodyModel.toLowerCase() : defaultModel.toLowerCase(), 
-      texture: !!bodyTexture ? bodyTexture.toLowerCase() : defaultTexture.toLowerCase()
+      model: bodyModel.toLowerCase(),
+      texture: bodyTexture.toLowerCase(),
     };
   }
 
   static From2DA (row: any = {}): SWCreatureAppearance {
     const appearance = new SWCreatureAppearance();
-    
+
     appearance.id = parseInt(row.__index);
 
     if(row.hasOwnProperty('label'))
@@ -204,14 +282,29 @@ export class SWCreatureAppearance {
       appearance.walkdist = TwoDAObject.normalizeValue(row.walkdist, 'number', 1.7);
     if(row.hasOwnProperty('rundist'))
       appearance.rundist = TwoDAObject.normalizeValue(row.rundist, 'number', 5.4);
-    if(row.hasOwnProperty('driveanimwalk'))
-      appearance.driveanimwalk = TwoDAObject.normalizeValue(row.driveanimwalk, 'number', 1.7);
-    if(row.hasOwnProperty('driveanimrun'))
-      appearance.driveanimrun = TwoDAObject.normalizeValue(row.driveanimrun, 'number', 5.4);
-    if(row.hasOwnProperty('driveanimrun_pc'))
-      appearance.driveanimrun_pc = TwoDAObject.normalizeValue(row.driveanimrun_pc, 'number', 5.4); //TSL
-    if(row.hasOwnProperty('driveanimrun_xbox'))
-      appearance.driveanimrun_xbox = TwoDAObject.normalizeValue(row.driveanimrun_xbox, 'number', 5.4); //TSL
+    if(row.hasOwnProperty('driveanimwalk')){
+      appearance.driveanimwalk = TwoDAObject.normalizeValue(row.driveanimwalk, 'number', 2);
+      if(!(appearance.driveanimwalk > 0)) appearance.driveanimwalk = 2;
+    }
+    // K1: DriveAnimRun. TSL Load2DArrays_Appearance indexes DriveAnimRun_PC into
+    // the same COL2DA_APPEARANCETABLE_DRIVEANIMRUN slot CreateBodyAppearance reads.
+    let loadedDriveAnimRun = false;
+    if(row.hasOwnProperty('driveanimrun')){
+      appearance.driveanimrun = TwoDAObject.normalizeValue(row.driveanimrun, 'number', 4);
+      if(!(appearance.driveanimrun > 0)) appearance.driveanimrun = 4;
+      loadedDriveAnimRun = true;
+    }
+    if(row.hasOwnProperty('driveanimrun_pc')){
+      appearance.driveanimrun_pc = TwoDAObject.normalizeValue(row.driveanimrun_pc, 'number', 4);
+      if(!(appearance.driveanimrun_pc > 0)) appearance.driveanimrun_pc = 4;
+      if(!loadedDriveAnimRun){
+        appearance.driveanimrun = appearance.driveanimrun_pc;
+      }
+    }
+    if(row.hasOwnProperty('driveanimrun_xbox')){
+      appearance.driveanimrun_xbox = TwoDAObject.normalizeValue(row.driveanimrun_xbox, 'number', 4);
+      if(!(appearance.driveanimrun_xbox > 0)) appearance.driveanimrun_xbox = 4;
+    }
     if(row.hasOwnProperty('racetex'))
       appearance.racetex = TwoDAObject.normalizeValue(row.racetex, 'string', '');
     if(row.hasOwnProperty('modeltype'))
@@ -233,7 +326,7 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('texb'))
       appearance.texb = TwoDAObject.normalizeValue(row.texb, 'string', '');
     if(row.hasOwnProperty('texbevil'))
-      appearance.texbevil = TwoDAObject.normalizeValue(row.texbevil, 'string', ''); //TSL
+      appearance.texbevil = TwoDAObject.normalizeValue(row.texbevil, 'string', '');
 
     if(row.hasOwnProperty('modelc'))
       appearance.modelc = TwoDAObject.normalizeValue(row.modelc, 'string', '');
@@ -270,7 +363,7 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('texi'))
       appearance.texi = TwoDAObject.normalizeValue(row.texi, 'string', '');
     if(row.hasOwnProperty('texievil'))
-      appearance.texievil = TwoDAObject.normalizeValue(row.texievil, 'string', ''); //TSL
+      appearance.texievil = TwoDAObject.normalizeValue(row.texievil, 'string', '');
 
     if(row.hasOwnProperty('modelj'))
       appearance.modelj = TwoDAObject.normalizeValue(row.modelj, 'string', '');
@@ -278,26 +371,31 @@ export class SWCreatureAppearance {
       appearance.texj = TwoDAObject.normalizeValue(row.texj, 'string', '');
 
     if(row.hasOwnProperty('modelk'))
-      appearance.modelk = TwoDAObject.normalizeValue(row.modelk, 'string', ''); //TSL
+      appearance.modelk = TwoDAObject.normalizeValue(row.modelk, 'string', '');
     if(row.hasOwnProperty('texk'))
-      appearance.texk = TwoDAObject.normalizeValue(row.texk, 'string', ''); //TSL
+      appearance.texk = TwoDAObject.normalizeValue(row.texk, 'string', '');
 
     if(row.hasOwnProperty('modell'))
-      appearance.modell = TwoDAObject.normalizeValue(row.modell, 'string', ''); //TSL
+      appearance.modell = TwoDAObject.normalizeValue(row.modell, 'string', '');
     if(row.hasOwnProperty('texl'))
-      appearance.texl = TwoDAObject.normalizeValue(row.texl, 'string', ''); //TSL
+      appearance.texl = TwoDAObject.normalizeValue(row.texl, 'string', '');
+    if(row.hasOwnProperty('texlevil'))
+      appearance.texlevil = TwoDAObject.normalizeValue(row.texlevil, 'string', '');
 
     if(row.hasOwnProperty('modelm'))
-      appearance.modelm = TwoDAObject.normalizeValue(row.modelm, 'string', ''); //TSL
+      appearance.modelm = TwoDAObject.normalizeValue(row.modelm, 'string', '');
     if(row.hasOwnProperty('texm'))
-      appearance.texm = TwoDAObject.normalizeValue(row.texm, 'string', ''); //TSL
+      appearance.texm = TwoDAObject.normalizeValue(row.texm, 'string', '');
 
     if(row.hasOwnProperty('modeln'))
-      appearance.modeln = TwoDAObject.normalizeValue(row.modeln, 'string', ''); //TSL
+      appearance.modeln = TwoDAObject.normalizeValue(row.modeln, 'string', '');
     if(row.hasOwnProperty('texn'))
-      appearance.texn = TwoDAObject.normalizeValue(row.texn, 'string', ''); //TSL
+      appearance.texn = TwoDAObject.normalizeValue(row.texn, 'string', '');
+    // SetAppearanceAlignment string is "TEXMEVIL" for body N; 2DA column is texnevil.
     if(row.hasOwnProperty('texnevil'))
-      appearance.texnevil = TwoDAObject.normalizeValue(row.texnevil, 'string', ''); //TSL
+      appearance.texmevil = TwoDAObject.normalizeValue(row.texnevil, 'string', '');
+    else if(row.hasOwnProperty('texmevil'))
+      appearance.texmevil = TwoDAObject.normalizeValue(row.texmevil, 'string', '');
 
     if(row.hasOwnProperty('skin'))
       appearance.skin = TwoDAObject.normalizeValue(row.skin, 'string', '');
@@ -314,16 +412,20 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('bloodcolr'))
       appearance.bloodcolr = TwoDAObject.normalizeValue(row.bloodcolr, 'string', 'R');
 
-      if(row.hasOwnProperty('weaponscale'))
+    if(row.hasOwnProperty('weaponscale'))
       appearance.weaponscale = TwoDAObject.normalizeValue(row.weaponscale, 'number', 1.0);
     if(row.hasOwnProperty('wing_tail_scale'))
       appearance.wing_tail_scale = TwoDAObject.normalizeValue(row.wing_tail_scale, 'number', 1.0);
     if(row.hasOwnProperty('moverate'))
       appearance.moverate = TwoDAObject.normalizeValue(row.moverate, 'string', 'NORM');
-    if(row.hasOwnProperty('driveaccl'))
-      appearance.driveaccl = TwoDAObject.normalizeValue(row.driveaccl, 'number', 50);
-    if(row.hasOwnProperty('drivemaxspeed'))
-      appearance.drivemaxspeed = TwoDAObject.normalizeValue(row.drivemaxspeed, 'number', 5.4);
+    if(row.hasOwnProperty('driveaccl')){
+      appearance.driveaccl = TwoDAObject.normalizeValue(row.driveaccl, 'number', 25);
+      if(!(appearance.driveaccl > 0)) appearance.driveaccl = 25;
+    }
+    if(row.hasOwnProperty('drivemaxspeed')){
+      appearance.drivemaxspeed = TwoDAObject.normalizeValue(row.drivemaxspeed, 'number', 6);
+      if(!(appearance.drivemaxspeed > 0)) appearance.drivemaxspeed = 6;
+    }
     if(row.hasOwnProperty('hitradius'))
       appearance.hitradius = TwoDAObject.normalizeValue(row.hitradius, 'number', 0.25);
     if(row.hasOwnProperty('perspace'))
@@ -352,7 +454,7 @@ export class SWCreatureAppearance {
       appearance.footstepvolume = TwoDAObject.normalizeValue(row.footstepvolume, 'number', 1);
     if(row.hasOwnProperty('sizecategory'))
       appearance.sizecategory = TwoDAObject.normalizeValue(row.sizecategory, 'number', 3);
-    
+
     if(row.hasOwnProperty('armor_sound'))
       appearance.armor_sound = TwoDAObject.normalizeValue(row.armor_sound, 'string', '');
     if(row.hasOwnProperty('combat_sound'))
@@ -387,10 +489,15 @@ export class SWCreatureAppearance {
       appearance.freelookeffect = TwoDAObject.normalizeValue(row.freelookeffect, 'number', -1);
     if(row.hasOwnProperty('cameraheightoffset'))
       appearance.cameraheightoffset = TwoDAObject.normalizeValue(row.cameraheightoffset, 'number', 0);
-    if(row.hasOwnProperty('deathfx'))
-      appearance.deathfx = TwoDAObject.normalizeValue(row.deathfx, 'number', -1);
-    if(row.hasOwnProperty('deathfxnode'))
-      appearance.deathfxnode = TwoDAObject.normalizeValue(row.deathfxnode, 'string', '');
+    // DeathVFX / DeathVFXNode (accept legacy deathfx* aliases for mods)
+    if(row.hasOwnProperty('deathvfx'))
+      appearance.deathvfx = TwoDAObject.normalizeValue(row.deathvfx, 'number', -1);
+    else if(row.hasOwnProperty('deathfx'))
+      appearance.deathvfx = TwoDAObject.normalizeValue(row.deathfx, 'number', -1);
+    if(row.hasOwnProperty('deathvfxnode'))
+      appearance.deathvfxnode = TwoDAObject.normalizeValue(row.deathvfxnode, 'string', '');
+    else if(row.hasOwnProperty('deathfxnode'))
+      appearance.deathvfxnode = TwoDAObject.normalizeValue(row.deathfxnode, 'string', '');
     if(row.hasOwnProperty('fadedelayondeath'))
       appearance.fadedelayondeath = TwoDAObject.normalizeValue(row.fadedelayondeath, 'number', -1);
     if(row.hasOwnProperty('destroyobjectdelay'))

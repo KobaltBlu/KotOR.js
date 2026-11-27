@@ -1,16 +1,16 @@
 import React, { useEffect, useLayoutEffect, useCallback, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
-import { CAMERA_VIEW_PRESETS } from "@/apps/forge/UI3DRenderer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
-import { ModuleEditorSidebarComponent } from "@/apps/forge/components/ModuleEditorSidebarComponent";
-import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import { UI3DToolPalette, Tool, SubTool } from "@/apps/forge/components/UI3DToolPalette";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { GameObjectType, TabModuleEditorControlMode } from "@apps/forge/states/tabs/TabModuleEditorTypes";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
+import { CAMERA_VIEW_PRESETS } from "@apps/forge/UI3DRenderer";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { UI3DOverlayComponent } from "@apps/forge/components/UI3DOverlayComponent";
+import { ModuleEditorSidebarComponent } from "@apps/forge/components/ModuleEditorSidebarComponent";
+import { useContextMenu, ContextMenuItem } from "@apps/forge/components/common/ContextMenu";
+import { UI3DToolPalette, Tool, SubTool } from "@apps/forge/components/UI3DToolPalette";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faArrowPointer, 
@@ -32,17 +32,17 @@ import {
   faExpand,
 } from "@fortawesome/free-solid-svg-icons";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 import "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor.scss";
 import "@/apps/forge/components/tabs/tab-module-editor/ModulePreviewHost.scss";
-import { ModuleViewportToolbar } from "@/apps/forge/components/tabs/tab-module-editor/ModuleViewportToolbar";
-import { ModuleProblemsPanel } from "@/apps/forge/components/tabs/tab-module-editor/ModuleProblemsPanel";
-import { ModuleAssetBrowserPanel } from "@/apps/forge/components/tabs/tab-module-editor/ModuleAssetBrowserPanel";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { forgeModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
-import type { ScreenRect } from "@/apps/forge/module-editor/kernel/PickService";
-import { describeSelection } from "@/apps/forge/module-editor/a11y/moduleEditorA11y";
+import { ModuleViewportToolbar } from "@apps/forge/components/tabs/tab-module-editor/ModuleViewportToolbar";
+import { ModuleProblemsPanel } from "@apps/forge/components/tabs/tab-module-editor/ModuleProblemsPanel";
+import { ModuleAssetBrowserPanel } from "@apps/forge/components/tabs/tab-module-editor/ModuleAssetBrowserPanel";
+import { SceneGraphTreeView } from "@apps/forge/components/SceneGraphTreeView";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
+import { forgeModuleSettings } from "@apps/forge/settings/forgeEditorsSettings";
+import type { ScreenRect } from "@apps/forge/module-editor/kernel/PickService";
+import { describeSelection } from "@apps/forge/module-editor/a11y/moduleEditorA11y";
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {
   icon?: any;

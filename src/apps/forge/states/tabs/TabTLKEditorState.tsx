@@ -1,12 +1,12 @@
 import React from "react";
-import { TabTLKEditor } from "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { searchTLKStrings, TLKSearchOptions, TLKSearchResult } from "@/managers/TLKManager";
-import { TLKStringUpdate } from "@/resource/TLKObject";
-import { TLKString } from "@/resource/TLKString";
+import { TabTLKEditor } from "@apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { searchTLKStrings, TLKSearchOptions, TLKSearchResult } from "@core/managers/TLKManager";
+import { TLKStringUpdate } from "@core/resource/TLKObject";
+import { TLKString } from "@core/resource/TLKString";
 
 const MAX_TLK_UNDO = 25;
 

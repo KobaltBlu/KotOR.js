@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
-import type { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
+import type { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
 
 export type BlueprintCatalogSource = "project" | "override" | "game";
 

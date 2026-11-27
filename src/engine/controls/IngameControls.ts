@@ -1,0 +1,2084 @@
+import * as THREE from "three";
+import { GameState } from "@engine/runtime/GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar, GameMenu } from "@engine/gui";
+import { Utility } from "@core/utility/Utility";
+import { EngineMode } from "@engine/enums/engine/EngineMode";
+import { EngineState } from "@engine/enums/engine/EngineState";
+import { AutoPauseState } from "@engine/enums/engine/AutoPauseState";
+import { KeyMapAction } from "@core/enums/controls/KeyMapAction";
+import { MiniGameType } from "@engine/enums/engine/MiniGameType";
+import { FollowerCamera } from "@engine/render/FollowerCamera";
+import { ViewportController } from "@engine/runtime/ViewportController";
+import { BitWise } from "@core/utility/BitWise";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
+import { ClientCameraMode } from "@engine/enums/engine/ClientCameraMode";
+import { GUIControlTypeMask } from "@core/enums/gui/GUIControlTypeMask";
+import { GUIControlEventFactory } from "@engine/gui/GUIControlEventFactory";
+import { Keyboard } from "@engine/controls/Keyboard";
+import { GamePad } from "@engine/controls/GamePad";
+import { resolvePadFamily } from "@engine/controls/gamepad-glyphs";
+import { computePrompts, GamepadPromptBar, type GamepadPromptContext } from "@engine/controls/GamepadPrompts";
+import { GamepadButtonGlyphs, placeButtonGlyphs, type GlyphPlacement } from "@engine/controls/GamepadButtonGlyphs";
+import { GamepadQuickMenu, type QuickMenuAvailability, type QuickMenuEntry } from "@engine/controls/GamepadQuickMenu";
+import { Mouse } from "@engine/controls/Mouse";
+import { KeyMapper } from "@engine/controls/KeyMapper";
+import type { KeyInput } from "@engine/controls/KeyInput";
+import { AnalogInput } from "@engine/controls/AnalogInput";
+import { TGAObject } from "@core/resource/TGAObject";
+import { GameFileSystem } from "@core/filesystem/GameFileSystem";
+import { SaveGame } from "@engine/save/SaveGame";
+import {
+  createPlayerCamRelativeState,
+  setPlayerAxes,
+} from "@engine/controls/player-cam-relative-control";
+import { EventManager } from "@engine/managers/EventManager";
+import type { Creature } from "@engine/module/Creature";
+import { ActionType } from "@core/enums/actions/ActionType";
+import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
+import { EngineModeController } from '@engine/runtime/EngineModeController';
+import { GameplayCapture } from '@engine/render/GameplayCapture';
+import { OdysseyRenderPipeline } from '@engine/render/OdysseyRenderPipeline';
+
+function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
+  if(!creature.playerControl){
+    creature.playerControl = createPlayerCamRelativeState();
+  }
+  return creature.playerControl;
+}
+
+/**
+ * Build forward axis from W+S together.
+ * ProcessMappings runs every action every frame — per-key !down handlers that
+ * zero axisForward race and wipe the other key (W lost to S's idle clear).
+ */
+function resolveKeyboardForwardAxis(): number {
+  const up = !!KeyMapper.Actions[KeyMapAction.ActionUp]?.keyboardInput?.down;
+  const down = !!KeyMapper.Actions[KeyMapAction.ActionDown]?.keyboardInput?.down;
+  let forward = 0;
+  if(up) forward += 1;
+  if(down) forward -= 1;
+  return forward;
+}
+
+/**
+ * LMB-forward inject while chase-cam look is held:
+ * When look is active and LMB is down, inject forward if the keyboard/stick
+ * forward axis is 0. Mouse Look on: look is active while RMB is up → LMB alone
+ * walks/runs forward. Classic: RMB look + LMB → forward while turning the camera.
+ */
+function resolvePlayerForwardAxis(): number {
+  let forward = resolveKeyboardForwardAxis();
+  if(Math.abs(forward) < 1e-4 && Mouse.leftDown && Mouse.isCameraHoldDesired()){
+    forward = 1;
+  }
+  return forward;
+}
+
+/**
+ * Build swoop/turret lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
+ * Keys contribute ±1 to the minigame lateral axis.
+ */
+function resolveMinigameKeyAxisX(): number {
+  const left = !!KeyMapper.Actions[KeyMapAction.MGActionLeft]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionLeft]?.gamepadInput?.pressed;
+  const right = !!KeyMapper.Actions[KeyMapAction.MGActionRight]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionRight]?.gamepadInput?.pressed;
+  let x = 0;
+  if(left) x -= 1;
+  if(right) x += 1;
+  return x;
+}
+
+/**
+ * Turret pitch axis from W+S / d-pad up+down.
+ */
+function resolveMinigameKeyAxisZ(): number {
+  const up = !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput?.pressed;
+  const down = !!KeyMapper.Actions[KeyMapAction.MGActionDown]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionDown]?.gamepadInput?.pressed;
+  let z = 0;
+  if(up) z += 1;
+  if(down) z -= 1;
+  return z;
+}
+
+/**
+ * ClientOptions minigame_yaxis — INI
+ * "Game Options"."Reverse Minigame YAxis" (turret Z / mouse Y invert).
+ */
+function isMinigameYAxisReversed(): boolean {
+  if(!GameState.iniConfig) return false;
+  const raw = GameState.iniConfig.getProperty('Game Options.Reverse Minigame YAxis');
+  if(raw === undefined || raw === null || raw === '') return false;
+  return String(raw) !== '0';
+}
+
+/** Mouse delta scale applied before minigame mouse update. */
+const MG_MOUSE_POLL_SCALE = 20;
+
+/**
+ * IngameControls class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file IngameControls.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class IngameControls {
+  /** Control flag bits — match ActionDrive / AddDriveAction. */
+  static readonly DRIVE_FORWARD = 0x01;
+  static readonly DRIVE_BACKWARD = 0x02;
+  static readonly DRIVE_RUN = 0x03;
+  static readonly DRIVE_STRAFE_LEFT = 0x04;
+  static readonly DRIVE_STRAFE_RIGHT = 0x08;
+  static readonly DRIVE_YAW_LEFT = 0x10;
+  static readonly DRIVE_YAW_RIGHT = 0x20;
+
+  /**
+   * Drive-control gate: camera mode DRIVE or creature.driveControlActive.
+   * DRIVE is shared with FreeLook. Not swoop minigame.
+   */
+  static isDriveControlActive(creature: Creature | undefined): boolean {
+    if(!creature) return false;
+    if(!creature.isCommandable) return false;
+    if(creature.driveControlActive) return true;
+    return GameState.clientCameraMode === ClientCameraMode.DRIVE;
+  }
+
+  /**
+   * Apply stick/keyboard drive bits via AddDriveAction.
+   */
+  static applyDriveInput(creature: Creature, flags: number): void {
+    if(!creature || !flags) return;
+    if(!creature.canMove?.()) return;
+    if(!creature.isCommandable) return;
+
+    const facingRad = Utility.NormalizeRadian(FollowerCamera.facing + Math.PI / 2);
+    let facingDeg = (facingRad * 180) / Math.PI;
+    while(facingDeg < 0) facingDeg += 360;
+    while(facingDeg >= 360) facingDeg -= 360;
+
+    GameState.ActionFactory.AddDriveAction(creature, flags, facingDeg, {
+      x: creature.position.x,
+      y: creature.position.y,
+      clear: true,
+      retry: 2,
+    });
+    creature.controlled = true;
+  }
+
+  /**
+   * Abort the front Drive action retry.
+   */
+  static abortDriveControl(creature: Creature | undefined): void {
+    if(!creature?.actionQueue) return;
+    const front = creature.actionQueue[0] as any;
+    if(front?.type === ActionType.ActionDrive){
+      front.setParameter?.(5, ActionParameterType.INT, 0);
+    }
+  }
+
+  Mouse: Mouse = Mouse;
+  KeyMapper: KeyMapper = KeyMapper;
+
+  camera: THREE.Camera;
+  element: HTMLElement;
+
+  //controllers
+  keyboard: Keyboard = new Keyboard();
+  gamePad: GamePad;
+
+  gamePadMovement: boolean = false;
+
+  /** Touch stick is driving the party leader this frame (keyboard idle must not zero it). */
+  touchMovement: boolean = false;
+
+  /** Last pointer input came from a touch screen; cleared by real mouse / keyboard input. */
+  touchInputActive: boolean = false;
+
+  /** Corner overlay showing pad button symbols for the current screen. */
+  padPrompts: GamepadPromptBar = new GamepadPromptBar();
+  padButtonGlyphs: GamepadButtonGlyphs = new GamepadButtonGlyphs();
+  /** Y quick menu while playing with a pad. */
+  quickMenu: GamepadQuickMenu = new GamepadQuickMenu();
+
+  /** Touch input handler, ticked from Update (attached by the runtime bootstrap). */
+  touch?: { update(delta: number): void };
+
+  /**
+   * When true, hide the software cursor until a keyboard or mouse event arrives.
+   * Set by gamepad activity; cleared by key/mouse handlers.
+   */
+  controllerHidesCursor: boolean = false;
+
+  /**
+   * Gamepad HUD action-panel selection — selected panel for d-pad / A.
+   * -1 = none (A → default action on selected object).
+   */
+  selectedActionPanelIndex: number = -1;
+
+  plMoveEvent: (e: any) => void;
+
+  constructor(camera: THREE.Camera, element: HTMLElement){
+
+    this.camera = camera;
+    this.element = element;
+
+    this.gamePad = new GamePad();
+
+    this.initKeys();
+
+    // Ask the browser to release the pointer
+    document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
+    document.addEventListener('pointerlockerror', this.plErrorCallback.bind(this), true);
+
+    // Browser context menu breaks RMB hold tracking; captures RMB for look.
+    this.element.addEventListener('contextmenu', (event: Event) => {
+      event.preventDefault();
+    });
+
+    window.addEventListener('blur', () => {
+      Mouse.clearButtonState();
+      Mouse.syncCameraHold();
+    });
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      this.notifyKeyboardOrMouseInput();
+      this.keyboard.onKeyDown(e);
+
+      // While game-over, hurry the death fade on any key
+      if(GameState.GameOverManager?.GetGameOver?.()){
+        GameState.GameOverManager.OnDeathSequenceInput();
+      }
+
+      // F8 — toggle Navigate free-fly (debug); original cheat path remains CapsLock
+      if(e.code === 'F8' && !e.repeat
+        && (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.FREELOOK)
+        && GameState.State != EngineState.PAUSED){
+        if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+          FollowerCamera.endNavigate();
+          if(GameState.Mode == EngineMode.FREELOOK){
+            EngineModeController.SetEngineMode(EngineMode.INGAME);
+          }
+        }else if((GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK){
+          if(GameState.Mode == EngineMode.FREELOOK){
+            EngineModeController.SetEngineMode(EngineMode.INGAME);
+          }
+          FollowerCamera.beginNavigate(false);
+        }
+        e.preventDefault();
+      }
+
+      if(GameState.MenuManager.activeGUIElement){
+        if(typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function'){
+          GameState.MenuManager.activeGUIElement.onKeyDown(e);
+        }
+      }
+
+      const ae = GameState.MenuManager.activeGUIElement as { editable?: boolean } | undefined;
+      const editingTextField = !!(ae && ae.editable === true);
+
+      if(
+        !editingTextField &&
+        (GameState.Mode == EngineMode.GUI || GameState.Mode == EngineMode.DIALOG) &&
+        (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'UpArrow' || e.code === 'DownArrow')
+      ){
+        const fg = GameState.MenuManager.GetForegroundMenu();
+        if(fg){
+          if(e.code === 'ArrowUp' || e.code === 'UpArrow'){
+            fg.triggerControllerDUpPress();
+          }else{
+            fg.triggerControllerDDownPress();
+          }
+          e.preventDefault();
+        }
+      }
+
+      // Overlay modals (save name, confirm) must receive keys — not the menu underneath.
+      const foreground = GameState.MenuManager.GetForegroundMenu();
+      if(foreground){
+        foreground.triggerEventListener('keydown', e);
+      }
+    });
+
+    window.addEventListener('keyup', (e: KeyboardEvent) => {
+      this.notifyKeyboardOrMouseInput();
+      /**
+       * Debugger Hotkey
+       */
+      if(e.key == 'D' && e.ctrlKey && e.shiftKey){
+        GameState.Debugger.toggle();
+      }
+
+      /**
+       * Generate a TGA Screenshot of the Game canvas and export it to the game directory
+       */
+      if(e.key == 'PrintScreen'){
+        if(GameState.iniConfig.getProperty('Game Options.EnableScreenShot') != 1){
+          return;
+        }
+        /**
+         * Render the scene
+         */
+        const oldCursorState = GameState.scene_cursor_holder.visible;
+        GameState.scene_cursor_holder.visible = false;
+        GameState.renderer.clear();
+        OdysseyRenderPipeline.composer.render(0);
+        GameState.scene_cursor_holder.visible = oldCursorState;
+
+        const width = GameState.ResolutionManager.getViewportWidth();
+        const height = GameState.ResolutionManager.getViewportHeight();
+        const ssCanvas = GameplayCapture.captureFramebufferToOffscreenCanvas(width, height);
+        const tga = TGAObject.FromCanvas(ssCanvas);
+
+        void (async () => {
+          /**
+           * Generate the export filename
+           */
+          const count = (await GameFileSystem.readdir('')).filter( (file) => {
+            return !!file.match(/KotOR\d{4}.tga/);
+          }).length;
+          const isK1 = GameState.GameKey == 'KOTOR';
+          const ssName = isK1 ? 'KotOR' : 'K2_';
+          const ssNumber = "00000" + count;
+          const ssMaxDigits = isK1 ? 4 : 5;
+          const ssFilename = `${ssName}${ssNumber.substring(ssNumber.length-ssMaxDigits)}.tga`;
+
+          /**
+           * Export the generated TGAObject as a TGA Image
+           */
+          await GameFileSystem.writeFile(ssFilename, await tga.toExportBuffer());
+        })();
+      }
+
+      this.keyboard.onKeyUp(e);
+
+      if(GameState.MenuManager.activeGUIElement){
+        if(typeof GameState.MenuManager.activeGUIElement.onKeyUp === 'function'){
+          GameState.MenuManager.activeGUIElement.onKeyUp(e);
+        }
+      }
+
+      const foreground = GameState.MenuManager.GetForegroundMenu();
+      if(foreground){
+        foreground.triggerEventListener('keyup', e);
+      }
+    });
+
+    window.addEventListener('mousedown', (event: MouseEvent) => {
+      this.notifyKeyboardOrMouseInput();
+      // Ignore clicks on React/chrome overlays that sit above the game canvas.
+      if(!this.isGameCanvasMouseTarget(event)){
+        return;
+      }
+
+      // Block GUI selection while a movie is playing
+      if(GameState.VideoManager.isMoviePlaying()){
+        return;
+      }
+
+      const logical = Mouse.mapBrowserButton(event.button);
+      Mouse.updateButtonStateFromEvent(event);
+      this.primaryDownAt(event.clientX, event.clientY, !!event.shiftKey, logical === 'left', event.target == this.element);
+
+      // Clicking the game canvas requests pointer lock (user gesture).
+      // GUI clicks and non-canvas targets keep the absolute-mouse fallback.
+      // If the browser denies lock, look continues with absolute mouse movement.
+      Mouse.syncCameraHold();
+      if(
+        event.target === this.element &&
+        !(logical === 'left' && Mouse.clickItem) &&
+        (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.FREELOOK)
+      ){
+        // Mouse.tryRequestPointerLock(this.element);
+      }
+    });
+
+    window.addEventListener('wheel', () => {
+      this.notifyKeyboardOrMouseInput();
+    }, { passive: true });
+
+    window.addEventListener('mousemove', (event: MouseEvent) => {
+      // Real mouse motion restores the cursor after gamepad use (any target).
+      if(event.movementX || event.movementY){
+        this.notifyKeyboardOrMouseInput();
+      }
+
+      // Allow look while pointer-locked; otherwise only track when over the canvas
+      // (or while a canvas-started drag is held).
+      if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
+        return;
+      }
+
+      // Block GUI selection while a movie is playing
+      if(GameState.VideoManager.isMoviePlaying()){
+        return;
+      }
+
+      // Recover from missed mouseup (context menu, focus loss, etc.).
+      Mouse.updateButtonStateFromEvent(event);
+      Mouse.syncCameraHold();
+
+      const trackLookDeltas =
+        Mouse.pointerLock ||
+        Mouse.isCameraHoldDesired() ||
+        GameState.Mode == EngineMode.FREELOOK ||
+        (
+          GameState.Mode == EngineMode.MINIGAME &&
+          GameState.module?.area?.miniGame?.type === MiniGameType.TURRET
+        );
+
+      if(trackLookDeltas && (event.movementX || event.movementY)){
+        Mouse.MouseX += event.movementX;
+        Mouse.MouseY += event.movementY;
+      }
+
+      if(Mouse.pointerLock){
+        Mouse.Update( Mouse.positionWindow.x + event.movementX, Mouse.positionWindow.y + event.movementY );
+      }else{
+        // Always track absolute position for GUI / world clicks.
+        Mouse.Update( event.clientX, event.clientY );
+        const offsetLeft = this.element?.offsetLeft ?? 0;
+        const offsetTop = this.element?.offsetTop ?? 0;
+        if(trackLookDeltas){
+          if(!event.movementX && !event.movementY){
+            Mouse.MouseX = event.pageX - offsetLeft;
+            Mouse.MouseY = event.pageY - offsetTop;
+          }
+        }else{
+          // Not looking — keep delta buffers aligned so stray movement never rotates.
+          Mouse.MouseX = event.pageX - offsetLeft;
+          Mouse.MouseY = event.pageY - offsetTop;
+          Mouse.OldMouseX = Mouse.MouseX;
+          Mouse.OldMouseY = Mouse.MouseY;
+        }
+      }
+
+      const showCursor =
+        !this.controllerHidesCursor &&
+        !Mouse.pointerLock &&
+        GameState.Mode != EngineMode.FREELOOK &&
+        !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled());
+      if(showCursor && GameState.scene_cursor_holder){
+        GameState.scene_cursor_holder.visible = true;
+      }
+
+      this.forwardDragToDownItem();
+    });
+
+    window.addEventListener('mouseup', (event: MouseEvent) => {
+      // Finish a canvas-started press even if release lands on overlay chrome;
+      // otherwise ignore presses that never hit the canvas.
+      if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
+        return;
+      }
+
+      // Block GUI and in-game selection while a movie is playing
+      if(GameState.VideoManager.isMoviePlaying() && event.button == 0){
+        if(this.isGameCanvasMouseTarget(event)){
+          GameState.VideoManager.skipMovie();
+        }
+        return;
+      }
+
+      const logical = Mouse.mapBrowserButton(event.button);
+      Mouse.shiftKey = !!event.shiftKey;
+
+      Mouse.updateButtonStateFromEvent(event);
+
+      // End/start look immediately on button release (releases pointer lock).
+      Mouse.syncCameraHold();
+
+      // Only logical left release drives GUI / world click / dialog skip
+      if(logical !== 'left'){
+        return;
+      }
+
+      this.primaryUpAt(event.clientX, event.clientY);
+    });
+
+    // Wheel → one-index (or oversized page-step) scroll via GUIListBox.scrollUp/Down
+    document.body.addEventListener('wheel', (e: WheelEvent) => {
+      if(!this.isGameCanvasMouseTarget(e)){
+        return;
+      }
+      if(e.deltaY < 0){
+        if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+          (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
+        }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+          (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollUp();
+        }else{
+          this.cycleHoveredActionMenu(-1);
+        }
+      }else{
+        if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+          (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollDown();
+        }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+          (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollDown();
+        }else{
+          this.cycleHoveredActionMenu(1);
+        }
+      }
+    });
+
+    GameState.canvas.addEventListener('contextmenu', (e: MouseEvent) => {
+      e.preventDefault();
+    });
+
+  }
+
+  /**
+   * Primary (logical left) press at a client position. Shared by the mouse
+   * listener and touch input; button state must already be set by the caller.
+   * Non-primary presses only refresh the cursor position and clear GUI state.
+   */
+  primaryDownAt(clientX: number, clientY: number, shift: boolean, isPrimary: boolean = true, onCanvas: boolean = true){
+    if(!Mouse.pointerLock){
+      Mouse.Update(clientX, clientY);
+    }
+    if(onCanvas){
+      GameState.MenuManager.activeGUIElement = undefined;
+    }
+
+    GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
+
+    const customEvent = GUIControlEventFactory.generateEventObject();
+
+    Mouse.downItem = null;
+    Mouse.clickItem = null;
+    Mouse.shiftKey = !!shift;
+
+    // GUI / world action clicks (logical left). Camera hold is RMB-only
+    // (Mouse Look inverts RMB sense per-frame — never steals LMB).
+    if(!isPrimary){
+      return;
+    }
+    const uiControls = this.MenuGetActiveUIElements();
+    for(let i = 0; i < uiControls.length; i++){
+      if(!customEvent.propagate)
+        break;
+
+      const control = uiControls[i];
+      if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
+        if(GameState.debug.CONTROLS)
+          console.log('uiControls', control)
+        try{
+          if(control.processEventListener('mouseDown', [customEvent])){
+            Mouse.downItem = control;
+            customEvent.propagate = false;
+          }
+
+          if(control.eventListeners['click'].length){
+            Mouse.clickItem = control;
+            customEvent.propagate = false;
+          }
+        }catch(e){
+
+        }
+      }
+    }
+  }
+
+  /** Send a held primary-button drag to the GUI control that took the press (sliders, scrollbars). */
+  forwardDragToDownItem(){
+    if(Mouse.downItem && Mouse.leftDown && !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled())){
+      if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+        if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+          Mouse.downItem.processEventListener('mouseMove', [])
+        }
+      }
+    }
+  }
+
+  /**
+   * Primary (logical left) release at a client position: GUI mouseUp/click,
+   * then world selection / use on the in-game overlay.
+   */
+  primaryUpAt(clientX: number, clientY: number){
+    Mouse.leftClick = true;
+
+    if(!Mouse.pointerLock){
+      Mouse.Update( clientX, clientY );
+    }
+
+    //If the NoClickTimer is active then we will return out of this function
+    if(GameState.noClickTimer){
+      Mouse.downItem = undefined;
+      Mouse.clickItem = undefined;
+      return;
+    }
+
+    // : click during death sequence hurries the fade (before UI click handling)
+    if(GameState.GameOverManager?.GetGameOver?.()){
+      GameState.GameOverManager.OnDeathSequenceInput();
+    }
+
+    let clickCaptured = false;
+
+    const customEvent = GUIControlEventFactory.generateEventObject();
+
+    //Try to fire mouse up regardless if mouse is still inside object
+    if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+      if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+        try{
+          Mouse.downItem.processEventListener('mouseUp', [customEvent]);
+          Mouse.leftClick = false;
+        }catch(e){
+          console.error(e);
+        }
+      }
+    }
+
+    // Fire click on the control that received mousedown — do not require the
+    // cursor to still be over it. Floating target menus move with the camera
+    // (edge-turn / focus), so a re-hit-test between down and up drops clicks.
+    if(
+      BitWise.InstanceOf(Mouse.clickItem?.objectType, GUIControlTypeMask.GUIControl) &&
+      Mouse.clickItem.widget?.visible &&
+      !(Mouse.clickItem.widget.parent instanceof THREE.Scene)
+    ){
+      clickCaptured = true;
+      try{
+        const control = Mouse.clickItem;
+        Mouse.clickItem = null;
+        GameState.MenuManager.activeGUIElement = control;
+        control.processEventListener('click', [customEvent]);
+        GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
+        Mouse.leftClick = false;
+        EventManager.FireEvent('menu.click', {
+          name: control.name,
+          menu: control.menu.constructor.name
+        });
+      }catch(e){
+        console.error(e);
+      }
+    }
+
+    let selectedObject = clickCaptured;
+
+    if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
+      if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
+        const gameObject = GameState.CursorManager.onMouseHitInteractive();
+        if(BitWise.InstanceOf(gameObject?.objectType, GameObjectType.GameObject)){
+          if(gameObject.isUseable() && gameObject != GameState.PartyManager.getCurrentPlayer()){
+
+            selectedObject = true;
+
+            const distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
+            const distanceThreshold = 20;
+
+            if(GameState.CursorManager.selectedObject == gameObject && distance <= distanceThreshold){
+              if(typeof gameObject.onClick === 'function'){
+                // case-2 attack → AddAttackActions(clear=0) appends with no
+                // ClearAllActions. Only clear the action queue when not already
+                // fighting (exploration → combat), matching ActionManager(1).
+                const pc = GameState.PartyManager.getCurrentPlayer();
+                if(!pc.combatData?.combatState){
+                  pc.clearAllActions(true);
+                }
+                gameObject.onClick(pc);
+              }else{
+                let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
+                if(distance > 1.5){
+                  GameState.PartyManager.getCurrentPlayer().clearAllActions();
+                  gameObject.clearAllActions();
+                  GameState.PartyManager.getCurrentPlayer().actionDialogObject(gameObject);
+                }
+              }
+            }
+            GameState.CursorManager.setReticleSelectedObject(gameObject);
+            FollowerCamera.clearFocusObject();
+          }
+          if(GameState.debug.SELECTED_OBJECT)
+            console.log('Ingame Object', gameObject);
+        }else{
+          if(GameState.debug.SELECTED_OBJECT)
+            console.log('Object', gameObject);
+        }
+
+        if(!selectedObject){
+          // GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
+        }
+      }
+    }
+
+    Mouse.downItem = undefined;
+    Mouse.clickItem = undefined;
+  }
+
+  /**
+   * Which screen the pad is driving, for the button prompt bar.
+   */
+  getGamepadPromptContext(): GamepadPromptContext {
+    if(GameState.VideoManager?.isMoviePlaying?.() || GameState.Mode == EngineMode.MOVIE){
+      return { screen: 'movie' };
+    }
+    const menu = this.getPadMenu();
+    switch(GameState.Mode){
+      case EngineMode.MINIGAME:
+        return { screen: 'minigame' };
+      case EngineMode.DIALOG: {
+        const replies = (menu as any)?.LB_REPLIES;
+        return { screen: 'dialog', dialogHasReplies: !!replies?.isVisible?.() };
+      }
+      case EngineMode.INGAME:
+        if(!menu || menu === GameState.MenuManager.InGameOverlay){
+          return { screen: this.selectedActionPanelIndex >= 0 ? 'actionPanel' : 'ingame' };
+        }
+        break;
+      case EngineMode.GUI:
+        break;
+      default:
+        return { screen: 'none' };
+    }
+    if(!menu) return { screen: 'none' };
+    // The in-game overlay keeps the base (no-op) bumper handlers, so a menu
+    // with its own handler supports LB / RB tab switching.
+    const baseBumper = GameState.MenuManager.InGameOverlay?.triggerControllerBumperLPress;
+    return {
+      screen: 'menu',
+      menuHasBack: !!menu.padTarget().findPadBackButton(),
+      menuHasTabs: !!baseBumper && menu.triggerControllerBumperLPress !== baseBumper,
+    };
+  }
+
+  /** Show pad button prompts while the pad is the active input; hide them otherwise. */
+  updateGamepadPrompts(){
+    const host = (GameState.canvas as HTMLElement | undefined)?.parentElement;
+    const promptSetting = GameState.iniConfig?.getProperty?.('Game Options.Controller Prompts');
+    const enabled = promptSetting === undefined || promptSetting === null || promptSetting === '' || Number(promptSetting) !== 0;
+    const override = Number(GameState.iniConfig?.getProperty?.('Game Options.Controller Glyphs')) || 0;
+    const family = resolvePadFamily(this.gamePad.gamePad?.id, override);
+    this.quickMenu.render(host, this.quickMenuAvailability(), family);
+    // A simulated pad keeps its prompts up while the mouse is in use.
+    const padInputActive = this.controllerHidesCursor || !!GamePad.simulatedFamily;
+    if(!enabled || !this.gamePad.gamePad || !padInputActive || this.touchInputActive || this.quickMenu.isOpen){
+      this.padPrompts.hide();
+      this.padButtonGlyphs.hide();
+      return;
+    }
+    const placements = this.placeMenuButtonGlyphs(host);
+    this.padButtonGlyphs.update(host, placements, family);
+    // Buttons already drawn on a control are left out of the corner bar.
+    const onControls = new Set<string>();
+    for(const p of placements) for(const b of p.buttons) onControls.add(b);
+    const prompts = computePrompts(this.getGamepadPromptContext()).filter((p) => !onControls.has(p.button));
+    this.padPrompts.update(host, prompts, family);
+  }
+
+  /** Where the open menu's pad button symbols go, in CSS pixels inside `host`. */
+  placeMenuButtonGlyphs(host: HTMLElement | null | undefined): GlyphPlacement[] {
+    const canvas = GameState.canvas as HTMLElement | undefined;
+    if(!host || !canvas || GameState.VideoManager?.isMoviePlaying?.()) return [];
+    const menu = this.getPadMenu();
+    if(!menu || menu === GameState.MenuManager.InGameOverlay) return [];
+    const width = GameState.ResolutionManager.getViewportWidth();
+    const height = GameState.ResolutionManager.getViewportHeight();
+    const canvasRect = canvas.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+    if(!width || !height || !canvasRect.width || !canvasRect.height) return [];
+    const targets = menu.getPadButtonGlyphs();
+    return placeButtonGlyphs(targets, {
+      width, height,
+      scaleX: canvasRect.width / width,
+      scaleY: canvasRect.height / height,
+      offsetX: canvasRect.left - hostRect.left,
+      offsetY: canvasRect.top - hostRect.top,
+    });
+  }
+
+  /**
+   * True when the event landed on the game canvas (or pointer lock owns look input).
+   * React chrome overlaying the canvas uses other targets and must not drive game input.
+   */
+  isGameCanvasMouseTarget(event: Event): boolean {
+    if(Mouse.pointerLock){
+      return true;
+    }
+    return event.target === this.element;
+  }
+
+  /** Keyboard / mouse activity — show software cursor again. */
+  notifyKeyboardOrMouseInput(){
+    this.controllerHidesCursor = false;
+    this.touchInputActive = false;
+  }
+
+  /** Any meaningful pad activity — hide software cursor until KBM returns. */
+  pollGamepadHidesCursor(){
+    if(!(this.gamePad.gamePad instanceof Gamepad)) return;
+    const gp = this.gamePad;
+    const stick =
+      Math.abs(gp.stick_l_x.value) > 0.2 || Math.abs(gp.stick_l_y.value) > 0.2 ||
+      Math.abs(gp.stick_r_x.value) > 0.2 || Math.abs(gp.stick_r_y.value) > 0.2 ||
+      Math.abs(gp.trigger_l.value) > 0.25 || Math.abs(gp.trigger_r.value) > 0.25;
+    const btn =
+      gp.button_a.down || gp.button_b.down || gp.button_x.down || gp.button_y.down ||
+      gp.button_bumper_l.down || gp.button_bumper_r.down ||
+      gp.button_d_up.down || gp.button_d_down.down || gp.button_d_left.down || gp.button_d_right.down ||
+      gp.button_start.down || gp.button_back.down ||
+      gp.stick_l.down || gp.stick_r.down ||
+      gp.button_a.pressed || gp.button_b.pressed || gp.button_x.pressed || gp.button_y.pressed ||
+      gp.button_bumper_l.pressed || gp.button_bumper_r.pressed ||
+      gp.button_d_up.pressed || gp.button_d_down.pressed || gp.button_d_left.pressed || gp.button_d_right.pressed ||
+      gp.button_start.pressed || gp.button_back.pressed ||
+      gp.stick_l.pressed || gp.stick_r.pressed ||
+      gp.trigger_l.pressed || gp.trigger_r.pressed;
+    if(stick || btn){
+      this.controllerHidesCursor = true;
+    }
+  }
+
+  initKeys(){
+    KeyMapper.BindKeyboard(this.keyboard, GameState.iniConfig);
+    KeyMapper.BindGamepad(this.gamePad);
+
+    //W / S / dual-mouse — resolve forward together (see resolvePlayerForwardAxis)
+    const applyWasdMove = () => {
+      if(this.gamePadMovement || this.touchMovement) return;
+      const followee = GameState.PartyManager.party[0] as Creature | undefined;
+      if(!followee?.canMove?.()) return;
+
+      const forward = resolvePlayerForwardAxis();
+      const walking = !!followee.walk;
+
+      if(IngameControls.isDriveControlActive(followee)){
+        if(!forward){
+          IngameControls.abortDriveControl(followee);
+          return;
+        }
+        if(forward > 0){
+          IngameControls.applyDriveInput(followee, walking ? IngameControls.DRIVE_FORWARD : IngameControls.DRIVE_RUN);
+        }else{
+          IngameControls.applyDriveInput(followee, IngameControls.DRIVE_BACKWARD);
+        }
+        GameState.scene_cursor_holder.visible = true;
+        FollowerCamera.clearFocusObject();
+        return;
+      }
+
+      const ctrl = ensurePlayerControl(followee);
+      if(!forward){
+        setPlayerAxes(ctrl, 0, ctrl.axisRight || 0, walking);
+        return;
+      }
+
+      followee.cancelLocomotionActions();
+      setPlayerAxes(ctrl, forward, ctrl.axisRight || 0, walking);
+      followee.controlled = true;
+      GameState.scene_cursor_holder.visible = true;
+      FollowerCamera.clearFocusObject();
+    };
+
+    //W
+    KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, 1);
+        return;
+      }
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down){
+          FollowerCamera.setFreeLookAxes(0, 1);
+        }
+        return;
+      }
+      if(GameState.State == EngineState.PAUSED) return;
+      applyWasdMove();
+    });
+
+    //S
+    KeyMapper.Actions[KeyMapAction.ActionDown].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, -1);
+        return;
+      }
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down){
+          FollowerCamera.setFreeLookAxes(0, -1);
+        }
+        return;
+      }
+      if(GameState.State == EngineState.PAUSED) return;
+      applyWasdMove();
+    });
+
+    //Z
+    KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, undefined, -1);
+        return;
+      }
+      if(GameState.State == EngineState.PAUSED) return;
+      if(!keymap.keyboardInput?.down) return;
+      const followee = GameState.PartyManager.party[0];
+      if(!followee) return;
+      if(!followee.canMove()) return;
+      if(IngameControls.isDriveControlActive(followee)){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_LEFT);
+      }
+    });
+
+    //C
+    KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, undefined, 1);
+        return;
+      }
+      if(GameState.State == EngineState.PAUSED) return;
+      if(!keymap.keyboardInput?.down) return;
+      const followee = GameState.PartyManager.party[0];
+      if(!followee) return;
+      if(!followee.canMove()) return;
+      if(IngameControls.isDriveControlActive(followee)){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_RIGHT);
+      }
+    });
+
+    //A
+    KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor( (keymap) => {
+      const padAxis = (keymap.gamepadInput as AnalogInput | undefined)?.value;
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis < 0)){
+          FollowerCamera.setNavigateAxes(1);
+        }
+        return;
+      }
+      // if(GameState.State == EngineState.PAUSED) return;
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis < 0)){
+          const stick = this.gamePad.stick_r_x.value;
+          FollowerCamera.setFreeLookAxes(stick ? -stick : 1, 0);
+        }
+        return;
+      }
+      if(GameState.Mode != EngineMode.INGAME) return;
+      const followee = GameState.PartyManager.party[0];
+      if(IngameControls.isDriveControlActive(followee) && keymap.keyboardInput?.down){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_LEFT);
+        return;
+      }
+      if(keymap.keyboardInput?.down || (padAxis != null && padAxis < 0)){
+        FollowerCamera.clearFocusObject();
+        FollowerCamera.turning = true;
+        if(this.gamePad.stick_r_x.value){
+          GameState.scene_cursor_holder.visible = false;
+          FollowerCamera.dir = -this.gamePad.stick_r_x.value;
+        }else{
+          FollowerCamera.dir = 1;
+          GameState.scene_cursor_holder.visible = true;
+        }
+      }
+    });
+
+    //D
+    KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor( (keymap) => {
+      const padAxis = (keymap.gamepadInput as AnalogInput | undefined)?.value;
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis > 0)){
+          FollowerCamera.setNavigateAxes(-1);
+        }
+        return;
+      }
+      // if(GameState.State == EngineState.PAUSED) return;
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis > 0)){
+          const stick = this.gamePad.stick_r_x.value;
+          FollowerCamera.setFreeLookAxes(stick ? -stick : -1, 0);
+        }
+        return;
+      }
+      if(GameState.Mode != EngineMode.INGAME) return;
+      const followee = GameState.PartyManager.party[0];
+      if(IngameControls.isDriveControlActive(followee) && keymap.keyboardInput?.down){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_RIGHT);
+        return;
+      }
+      if(keymap.keyboardInput?.down || (padAxis != null && padAxis > 0)){
+        FollowerCamera.clearFocusObject();
+        FollowerCamera.turning = true;
+        if(this.gamePad.stick_r_x.value){
+          GameState.scene_cursor_holder.visible = false;
+          FollowerCamera.dir = -this.gamePad.stick_r_x.value;
+        }else{
+          FollowerCamera.dir = -1;
+          GameState.scene_cursor_holder.visible = true;
+        }
+      }
+    });
+
+    //ChangeLeader
+    KeyMapper.Actions[KeyMapAction.ChangeChar].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.PartyManager.ShiftLeader();
+    });
+
+    KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.toggleFreelook();
+    });
+
+    KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const pc = GameState.PartyManager.getCurrentPlayer() as Creature | undefined;
+      if(pc){
+        pc.walk = !pc.walk;
+        if(pc.playerControl){
+          pc.playerControl.walking = !!pc.walk;
+        }
+      }
+    });
+
+    //Dialog1
+    KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(0);
+    });
+
+    //Dialog2
+    KeyMapper.Actions[KeyMapAction.Dialog2].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(1);
+    });
+
+    //Dialog3
+    KeyMapper.Actions[KeyMapAction.Dialog3].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(2);
+    });
+
+    //Dialog4
+    KeyMapper.Actions[KeyMapAction.Dialog4].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(3);
+    });
+
+    //Dialog5
+    KeyMapper.Actions[KeyMapAction.Dialog5].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(4);
+    });
+
+    //Dialog6
+    KeyMapper.Actions[KeyMapAction.Dialog6].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(5);
+    });
+
+    //Dialog7
+    KeyMapper.Actions[KeyMapAction.Dialog7].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(6);
+    });
+
+    //Dialog8
+    KeyMapper.Actions[KeyMapAction.Dialog8].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(7);
+    });
+
+    //Dialog9
+    KeyMapper.Actions[KeyMapAction.Dialog9].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.CutsceneManager.selectReplyAtIndex(8);
+    });
+
+    //DialogSkip
+    KeyMapper.Actions[KeyMapAction.DialogSkip].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed && !Mouse.leftClick) return;
+
+      if(GameState.CutsceneManager.active && GameState.CutsceneManager.isListening){
+        if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
+          GameState.CutsceneManager.playerSkipEntry(GameState.CutsceneManager.currentEntry);
+        }else if(Mouse.leftClick){
+          GameState.CutsceneManager.playerSkipEntry(GameState.CutsceneManager.currentEntry);
+        }
+      }
+    });
+
+    //DialogAbort
+    KeyMapper.Actions[KeyMapAction.DialogAbort].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+
+      if(GameState.CutsceneManager.active){
+        GameState.CutsceneManager.endConversation(true);
+      }
+    })
+
+    KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.GameObjectManager.selectNearestObject(false);
+    });
+
+    KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.GameObjectManager.selectNearestObject(true);
+    });
+
+    // Keys feed the minigame axis via resolveMinigameKeyAxis* — do not rotate here.
+    // Swoop accelerate (MGActionUp) is polled in the minigame update → onAccelerate.
+    KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (_keymap, _delta = 0) => {});
+
+    KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (_keymap, _delta = 0) => {});
+
+    KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (_keymap, _delta = 0) => {});
+
+    KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (_keymap, _delta = 0) => {});
+
+    KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      // Same manual combat-pause as the pause overlay button
+      GameState.AutoPauseManager.ToggleManualPause();
+    });
+
+    KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
+      // Held fire — GunBank RoF timer gates spawn (BehaviorFire).
+      const pad = keymap.gamepadInput as KeyInput | AnalogInput | undefined;
+      const padDown = !!(pad && ('down' in pad ? pad.down : false) || pad?.pressed);
+      const keyOrPad = !!(keymap.keyboardInput?.down || padDown);
+      const mouseFire =
+        GameState.Mode === EngineMode.MINIGAME &&
+        GameState.module?.area?.miniGame?.type === MiniGameType.TURRET &&
+        Mouse.leftDown;
+      if(!keyOrPad && !mouseFire) return;
+      if(GameState.State != EngineState.RUNNING) return;
+      // player may be cleared after death (SetPlayer null) — no-op until restart.
+      GameState.module?.area?.miniGame?.player?.shoot();
+    });
+
+    KeyMapper.Actions[KeyMapAction.GUI].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const currentMenu = GameState.MenuManager.GetCurrentMenu();
+      switch(GameState.Mode){
+        case EngineMode.GUI:
+          if(currentMenu.userCanClose){
+            currentMenu.close();
+          }
+        break;
+        default:
+          if(GameState.MenuManager.activeModals.length > 0){
+            GameState.MenuManager.activeModals[GameState.MenuManager.activeModals.length - 1].close();
+            return;
+          }
+          GameState.MenuManager.MenuOptions.open();
+        break;
+      }
+    });
+
+    KeyMapper.Actions[KeyMapAction.Pause1].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+
+      const currentMenu = GameState.MenuManager.GetCurrentMenu();
+      if(currentMenu == GameState.MenuManager.InGameOverlay){
+        // Pause key — same as the pause overlay button
+        GameState.AutoPauseManager.ToggleManualPause();
+      }else if( currentMenu == GameState.MenuManager.InGameConfirm){
+        GameState.MenuManager.InGameConfirm.close();
+      }
+    });
+
+    KeyMapper.Actions[KeyMapAction.Flourish].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.PartyManager.getCurrentPlayer().flourish();
+    });
+
+    // Clear-all (BTN_CLEARALL): keyboard clears all; gamepad B deselects the
+    // action panel when one is selected, otherwise ClearOne.
+    KeyMapper.Actions[KeyMapAction.CancleCombat]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      if(keymap.gamepadInput?.pressed){
+        if(this.selectedActionPanelIndex >= 0){
+          this.clearSelectedActionPanel();
+          return;
+        }
+        GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
+        return;
+      }
+      GameState.MenuManager.InGameOverlay.onClearAllButtonPressed();
+    });
+
+    // ClearOneAction (BTN_CLEARONE) — keyboard ClearOne
+    KeyMapper.Actions[KeyMapAction.ClearOneAction]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
+    });
+
+    // Gamepad A — default action / activate selected HUD action panel
+    KeyMapper.Actions[KeyMapAction.DefaultAction]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      if(this.selectedActionPanelIndex >= 0){
+        this.activateSelectedActionPanel();
+        return;
+      }
+      GameState.MenuManager.InGameOverlay.triggerControllerAPress();
+    });
+
+    // Gamepad Y — quick menu (free look, solo, stealth, quick save, menu, switch weapons)
+    KeyMapper.Actions[KeyMapAction.GamepadQuickMenu]?.setProcessor( (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(this.getPadMenu() != GameState.MenuManager.InGameOverlay) return;
+      this.openQuickMenu();
+    });
+
+    // D-pad L/R — cycle HUD action-panel slot
+    KeyMapper.Actions[KeyMapAction.ActionMenuLeft]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionPanelSlot(-1);
+    });
+    KeyMapper.Actions[KeyMapAction.ActionMenuRight]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionPanelSlot(1);
+    });
+    // D-pad U/D — cycle action within selected panel
+    KeyMapper.Actions[KeyMapAction.ActionMenuUp]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionWithinSelectedPanel(-1);
+    });
+    KeyMapper.Actions[KeyMapAction.ActionMenuDown]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionWithinSelectedPanel(1);
+    });
+
+    // LB/RB — PrevSWInGameGui / NextSWInGameGui (menu tab cycle)
+    KeyMapper.Actions[KeyMapAction.PrevMenu]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const menu = this.getPadMenu();
+      if(menu && menu !== GameState.MenuManager.InGameOverlay){
+        menu.triggerControllerBumperLPress();
+      }
+    });
+    KeyMapper.Actions[KeyMapAction.NextMenu]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const menu = this.getPadMenu();
+      if(menu && menu !== GameState.MenuManager.InGameOverlay){
+        menu.triggerControllerBumperRPress();
+      }
+    });
+
+    // Quick-menu helpers (unbound on face buttons; keyboard / later pad menu)
+    KeyMapper.Actions[KeyMapAction.STEALTH]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.InGameOverlay?.onStealthToggle?.();
+    });
+    KeyMapper.Actions[KeyMapAction.PartyActive]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.PartyManager.setSoloMode(!GameState.SOLOMODE);
+    });
+    KeyMapper.Actions[KeyMapAction.SwitchWeaps]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      const pc = GameState.PartyManager.getCurrentPlayer() as Creature | undefined;
+      if(!pc || GameState.GameKey !== GameEngineType.TSL) return;
+      GameState.ActionFactory.AddSwitchWeaponsAction(pc);
+    });
+
+    // HUD action-menu activate (Personal*/Target*Act digit binds)
+    const actionMenuPressed = (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) =>
+      !!(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed);
+    const actionMenuInGame = () =>
+      GameState.Mode == EngineMode.INGAME &&
+      GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay;
+
+    KeyMapper.Actions[KeyMapAction.PersonalPowerAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(0);
+    });
+    KeyMapper.Actions[KeyMapAction.PersonalMedicalAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(1);
+    });
+    KeyMapper.Actions[KeyMapAction.PersonalOtherAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(2);
+    });
+    KeyMapper.Actions[KeyMapAction.PersonalMinesAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(3);
+    });
+    KeyMapper.Actions[KeyMapAction.TargetLeftAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onTargetMenuAction(0);
+    });
+    KeyMapper.Actions[KeyMapAction.TargetMiddleAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onTargetMenuAction(1);
+    });
+    KeyMapper.Actions[KeyMapAction.TargetRightAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onTargetMenuAction(2);
+    });
+
+    KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
+      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        FollowerCamera.setNavigateAxes(undefined, undefined, undefined, undefined, 1);
+        return;
+      }
+      const followee = GameState.PartyManager.party[0];
+      if(!followee) return;
+      followee.position.z += 5 * delta;
+    });
+
+    KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor( (keymap, delta = 0) => {
+      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        FollowerCamera.setNavigateAxes(undefined, undefined, undefined, undefined, -1);
+        return;
+      }
+      const followee = GameState.PartyManager.party[0];
+      if(!followee) return;
+      followee.position.z -= 5 * delta;
+    });
+
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, delta = 0) => {
+      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+       GameState.rendererUpscaleFactor += 0.25;
+      if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
+      ViewportController.EventOnResize();
+    });
+
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, delta = 0) => {
+      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      GameState.rendererUpscaleFactor -= 0.25;
+      if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
+      ViewportController.EventOnResize();
+    });
+
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, delta = 0) => {
+      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      GameState.rendererUpscaleFactor = 1.0;
+      ViewportController.EventOnResize();
+    });
+
+    KeyMapper.Actions[KeyMapAction.Equip].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuEquipment.open();
+    });
+
+    KeyMapper.Actions[KeyMapAction.Inventory].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuInventory.open();
+    });
+    
+    KeyMapper.Actions[KeyMapAction.Character].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuCharacter.open();
+    });
+    
+    KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuAbilities.open();
+    });
+    
+    
+    KeyMapper.Actions[KeyMapAction.Messages].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuMessages.open();
+    });
+    
+    
+    KeyMapper.Actions[KeyMapAction.Quests].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuJournal.open();
+    });
+    
+    
+    KeyMapper.Actions[KeyMapAction.Map].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuMap.open();
+    });
+    
+    KeyMapper.Actions[KeyMapAction.Options].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuOptions.open();
+    });
+
+    // DoQuickSave / DoQuickLoad
+    KeyMapper.Actions[KeyMapAction.Quicksave]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      void SaveGame.QuickSave();
+    });
+
+    KeyMapper.Actions[KeyMapAction.QUICKLOAD]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      void SaveGame.QuickLoad();
+    });
+
+      // Handle movie skipping
+    KeyMapper.Actions[KeyMapAction.MovieSkip].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+
+      if(GameState.VideoManager.isMoviePlaying()){
+        GameState.VideoManager.skipMovie();
+      }
+    });
+  }
+
+  /** Enter or leave free look (freelook key, pad quick menu). */
+  toggleFreelook(){
+    // freelook key: hsMode==1 → SetNavigateCamera + hsMode++
+    if(GameState.cameraHsMode === 1
+      && (GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK
+      && (GameState.clientCameraMode | 0) !== ClientCameraMode.NAVIGATE){
+      FollowerCamera.beginNavigateHover();
+      GameState.cameraHsMode = 2;
+      return;
+    }
+    // Exiting navigate restores chase (RestoreCamera when leaving mode 5/7)
+    if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+      FollowerCamera.endNavigate();
+      if(GameState.Mode == EngineMode.FREELOOK){
+        EngineModeController.SetEngineMode(EngineMode.INGAME);
+      }
+      return;
+    }
+    EngineModeController.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
+  }
+
+  /** What the quick menu can offer right now. */
+  quickMenuAvailability(): QuickMenuAvailability {
+    const pc = GameState.PartyManager?.getCurrentPlayer?.() as Creature | undefined;
+    return {
+      stealth: !!pc?.isStealthCapable?.(),
+      switchWeapons: !!pc && GameState.GameKey === GameEngineType.TSL,
+      soloMode: !!GameState.SOLOMODE,
+    };
+  }
+
+  /** Open the quick menu; it pauses play until it closes. */
+  openQuickMenu(){
+    if(this.quickMenu.isOpen) return;
+    this.quickMenu.pausedOnOpen = GameState.State != EngineState.PAUSED;
+    if(this.quickMenu.pausedOnOpen){
+      GameState.AutoPauseManager?.SetPausedByCombat?.(true, AutoPauseState.Manual);
+    }
+    this.quickMenu.open(this.quickMenuAvailability());
+    GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+  }
+
+  /** Close the quick menu and resume play if opening it paused the game. */
+  closeQuickMenu(){
+    if(!this.quickMenu.isOpen) return;
+    const resume = this.quickMenu.pausedOnOpen;
+    this.quickMenu.pausedOnOpen = false;
+    this.quickMenu.close();
+    if(resume && GameState.State == EngineState.PAUSED){
+      GameState.AutoPauseManager?.Unpause?.();
+    }
+  }
+
+  runQuickMenuEntry(entry: QuickMenuEntry){
+    const pc = GameState.PartyManager?.getCurrentPlayer?.() as Creature | undefined;
+    // Close first so the game is running again for what follows.
+    this.closeQuickMenu();
+    switch(entry){
+      case 'freelook':
+        this.toggleFreelook();
+        break;
+      case 'solo':
+        GameState.PartyManager.setSoloMode(!GameState.SOLOMODE);
+        break;
+      case 'stealth':
+        GameState.MenuManager.InGameOverlay?.onStealthToggle?.();
+        break;
+      case 'quicksave':
+        void SaveGame.QuickSave();
+        break;
+      case 'menu':
+        GameState.MenuManager.MenuOptions.open();
+        break;
+      case 'switchweapons':
+        if(pc) GameState.ActionFactory.AddSwitchWeaponsAction(pc);
+        break;
+    }
+  }
+
+  /** Pad input while the quick menu is open. Every press is used up here. */
+  handleQuickMenuInput(){
+    const pad = this.gamePad;
+    const availability = this.quickMenuAvailability();
+    const left = pad.button_d_left.pressed || (pad.stick_l_x.pressed && pad.stick_l_x.value < 0);
+    const right = pad.button_d_right.pressed || (pad.stick_l_x.pressed && pad.stick_l_x.value > 0);
+    const up = pad.button_d_up.pressed || (pad.stick_l_y.pressed && pad.stick_l_y.value < 0);
+    const down = pad.button_d_down.pressed || (pad.stick_l_y.pressed && pad.stick_l_y.value > 0);
+
+    if(pad.button_a.pressed){
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+      this.runQuickMenuEntry(this.quickMenu.entry);
+    }else if(pad.button_b.pressed || pad.button_y.pressed || pad.button_back.pressed || pad.button_start.pressed){
+      this.closeQuickMenu();
+    }else if(left || right){
+      this.quickMenu.step(left ? -1 : 1, availability);
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_scroll');
+    }else if(up || down){
+      const party = GameState.PartyManager?.party || [];
+      if(party.length > 1){
+        if(down) GameState.PartyManager.ShiftLeader();
+        else GameState.PartyManager.SwitchLeaderAtIndex(party.length - 1);
+        GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_scroll');
+      }
+    }
+
+    for(const input of pad.allInputs()){
+      input.pressed = false;
+    }
+  }
+
+  /**
+   * Menu the pad talks to: the top modal that takes input (confirm boxes,
+   * containers, save name, ...), otherwise the top menu.
+   */
+  getPadMenu(): GameMenu | undefined {
+    const mm = GameState.MenuManager;
+    if(!mm) return undefined;
+    for(let i = mm.activeModals.length - 1; i >= 0; i--){
+      const modal = mm.activeModals[i];
+      if(modal && modal.acceptsPadInput !== false && modal.isVisible()) return modal;
+    }
+    return mm.GetCurrentMenu();
+  }
+
+  /**
+   * Send this frame's pad press to `menu`. A press the menu handles is used
+   * up, so closing a menu with B or A does not also fire the in-game action
+   * bound to the same button once the game is back in play.
+   */
+  routePadToMenu(menu: GameMenu){
+    const pad = this.gamePad;
+    const consume = (input: { pressed: boolean }) => { input.pressed = false; };
+    if(pad.button_a.pressed){
+      menu.triggerControllerAPress(); consume(pad.button_a);
+    }else if(pad.button_b.pressed){
+      menu.triggerControllerBPress(); consume(pad.button_b);
+    }else if(pad.button_x.pressed){
+      menu.triggerControllerXPress(); consume(pad.button_x);
+    }else if(pad.button_y.pressed){
+      menu.triggerControllerYPress(); consume(pad.button_y);
+    }else if(pad.button_start.pressed){
+      menu.triggerControllerStartPress(); consume(pad.button_start);
+    }else if(pad.button_back.pressed){
+      menu.triggerControllerBackPress(); consume(pad.button_back);
+    }else if(pad.button_d_up.pressed){
+      menu.triggerControllerDUpPress(); consume(pad.button_d_up);
+    }else if(pad.button_d_down.pressed){
+      menu.triggerControllerDDownPress(); consume(pad.button_d_down);
+    }else if(pad.button_d_left.pressed){
+      menu.triggerControllerDLeftPress(); consume(pad.button_d_left);
+    }else if(pad.button_d_right.pressed){
+      menu.triggerControllerDRightPress(); consume(pad.button_d_right);
+    }else if(pad.stick_l_x.pressed){
+      menu.triggerControllerLStickXPress( pad.stick_l_x.value > 0 );
+    }else if(pad.stick_l_y.pressed){
+      menu.triggerControllerLStickYPress( pad.stick_l_y.value > 0 );
+    }else if(pad.stick_r_x.pressed){
+      menu.triggerControllerRStickXPress( pad.stick_r_x.value > 0 );
+    }else if(pad.stick_r_y.pressed){
+      menu.triggerControllerRStickYPress( pad.stick_r_y.value > 0 );
+    }
+  }
+
+  MenuGetActiveUIElements(): GUIControl[] {
+    let elements: GUIControl[] = [];
+
+    for(let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++){
+      const activeMenu = GameState.MenuManager.activeModals[i];
+      if(!activeMenu.isVisible()) continue;
+      
+      elements = elements.concat(activeMenu.getActiveControls());
+    }
+
+    if(GameState.MenuManager.activeModals.length) return elements;
+
+    for(let i = 0, len = GameState.MenuManager.activeMenus.length; i < len; i++){
+      const activeMenu = GameState.MenuManager.activeMenus[i];
+      if(!activeMenu.isVisible()) continue;
+
+      elements = elements.concat(activeMenu.getActiveControls());
+    }
+
+    if(GameState.State == EngineState.PAUSED){
+      elements = elements.concat(GameState.MenuManager.InGamePause.getActiveControls());
+    }
+
+    return elements.reverse();
+  }
+
+  Update(delta: number = 0){
+
+    let xoffset = 0;
+    let yoffset = 0;
+    let currentMenu = GameState.MenuManager.GetCurrentMenu();
+
+    this.gamePadMovement = false;
+
+    // Take a fresh pad snapshot each frame. When the pad is gone, release every
+    // input so a held stick or button cannot stay stuck on the last reading.
+    const gp = GamePad.pollActive();
+    if(gp){
+      this.gamePad.setGamePad(gp);
+      KeyMapper.BindGamepad(this.gamePad);
+    }else if(this.gamePad.gamePad){
+      this.gamePad.setGamePad(undefined);
+      this.gamePad.reset();
+      this.controllerHidesCursor = false;
+    }
+    this.gamePad.updateState(delta);
+    this.pollGamepadHidesCursor();
+
+    // GUI menus only — INGAME overlay pad actions go through KeyMapper (pad HUD layout).
+    // Bumpers use PrevMenu/NextMenu processors (avoid double-fire).
+    const padMenu = this.getPadMenu();
+    const moviePlaying = !!GameState.VideoManager?.isMoviePlaying?.();
+    if(this.quickMenu.isOpen){
+      // Leave the quick menu when play moves on without it (dialog, menu, movie, pad gone).
+      if(GameState.Mode != EngineMode.INGAME || padMenu != GameState.MenuManager.InGameOverlay || moviePlaying || !this.gamePad.gamePad){
+        this.closeQuickMenu();
+      }else{
+        this.handleQuickMenuInput();
+      }
+    }else if(padMenu && padMenu !== GameState.MenuManager.InGameOverlay && !moviePlaying){
+      this.routePadToMenu(padMenu);
+    }
+
+    if(GameState.State == EngineState.RUNNING){
+
+      if(
+        (GameState.Mode == EngineMode.INGAME) && 
+        currentMenu != GameState.MenuManager.InGameConfirm && 
+        currentMenu != GameState.MenuManager.MenuContainer &&
+        // A modal that takes pad input (container, confirm box) owns the stick.
+        (!padMenu || padMenu === currentMenu)
+      ){
+        const followee = GameState.PartyManager.party[0];
+        if(followee){
+          if(followee.canMove()){
+            if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
+              if(IngameControls.isDriveControlActive(followee)){
+                let flags = 0;
+                const lx = this.gamePad.stick_l_x.value;
+                const ly = this.gamePad.stick_l_y.value;
+                if(ly < -0.2) flags |= IngameControls.DRIVE_FORWARD;
+                if(ly > 0.2) flags |= IngameControls.DRIVE_BACKWARD;
+                if((flags & IngameControls.DRIVE_FORWARD) && Math.abs(ly) > 0.7) flags = IngameControls.DRIVE_RUN;
+                if(lx < -0.2) flags |= IngameControls.DRIVE_YAW_LEFT;
+                if(lx > 0.2) flags |= IngameControls.DRIVE_YAW_RIGHT;
+                if(flags) IngameControls.applyDriveInput(followee, flags);
+                GameState.scene_cursor_holder.visible = false;
+                this.gamePadMovement = true;
+              }else{
+                // Preserve float stick magnitude for cam-relative RK4
+                followee.cancelLocomotionActions();
+                const lx = this.gamePad.stick_l_x.value;
+                const ly = this.gamePad.stick_l_y.value;
+                const ctrl = ensurePlayerControl(followee);
+                // stick: -y forward, x right (left_right / up_down)
+                setPlayerAxes(ctrl, -ly, lx, !!followee.walk);
+                followee.controlled = true;
+                GameState.scene_cursor_holder.visible = false;
+                this.gamePadMovement = true;
+              }
+            }else if(this.gamePadMovement){
+              this.gamePadMovement = false;
+              if(followee.playerControl){
+                setPlayerAxes(followee.playerControl, 0, 0, !!followee.playerControl.walking);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    this.touch?.update(delta);
+
+    KeyMapper.ProcessMappings(GameState.Mode, delta);
+
+    // look state: RMB hold, or always-on when Mouse Look (inverted RMB)
+    Mouse.syncCameraHold();
+
+    // Leave pointer lock when not in a gameplay camera mode (menus, loading, etc.)
+    if(
+      Mouse.pointerLock &&
+      GameState.Mode != EngineMode.INGAME &&
+      GameState.Mode != EngineMode.FREELOOK
+    ){
+      Mouse.exitPointerLock();
+    }
+
+    // Mouse look while camera hold is desired (RMB or Mouse Look)
+    if(Mouse.isCameraHoldDesired() && GameState.Mode == EngineMode.INGAME){
+      const dx = Mouse.MouseX - Mouse.OldMouseX;
+      const dy = Mouse.MouseY - Mouse.OldMouseY;
+      if(dx || dy){
+        if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+          // Fly-cam look — feed Message turn/tilt from mouse
+          const sens = Mouse.getSensitivityDegrees();
+          const norm = FollowerCamera.MOUSE_DELTA_NORMALIZE_PX;
+          let nx = dx / norm;
+          let ny = dy / norm;
+          if(nx > 1) nx = 1;
+          else if(nx < -1) nx = -1;
+          if(ny > 1) ny = 1;
+          else if(ny < -1) ny = -1;
+          FollowerCamera.setNavigateAxes(-nx * (sens / 30), -ny * (sens / 30));
+        }else{
+          FollowerCamera.applyMouseLookDelta(dx, dy);
+        }
+      }
+      // Hide software cursor only for classic RMB-hold look (Mouse Look keeps
+      // cursor for LMB picking while camera tracks movement).
+      if(!Mouse.isMouseLookEnabled() && GameState.scene_cursor_holder){
+        GameState.scene_cursor_holder.visible = false;
+      }
+    }else if(
+      GameState.Mode == EngineMode.INGAME &&
+      !Mouse.cameraHoldActive &&
+      !this.touchInputActive &&
+      currentMenu == GameState.MenuManager.InGameOverlay
+    ){
+      // Screen-edge turn — cursor near left/right screen frame
+      this.updateScreenEdgeCameraTurn();
+    }
+
+    // Minigame: update axis every frame, then mouse for turret;
+    // combat/Engine pause blocks Fire only, not axis damping.
+    if(GameState.Mode == EngineMode.MINIGAME){
+      const mg = GameState.module?.area?.miniGame;
+      if(mg){
+        const stickX = this.gamePad.stick_l_x.value;
+        const stickY = this.gamePad.stick_l_y.value;
+        const keyX = resolveMinigameKeyAxisX();
+        const reverseY = isMinigameYAxisReversed();
+
+        if(mg.type === MiniGameType.SWOOPRACE){
+          // Stick and keys sum, then clamp to ±1
+          const x = Math.max(-1, Math.min(1, stickX + keyX));
+          mg.updateAxis(x, 0, 0, delta);
+          // Swoop accelerate (W / MGActionUp / pad up) → OnAccelerate every frame while held.
+          // onaccelerate.ncs gates on MIN_RACE_GEAR / speed thresholds (gear 0 → 1+).
+          // TSL only: K1 HandleInputEvent (0x00621210) never runs OnAccelerate —
+          // K1 speed comes from CSWMiniPlayer::Control auto-acceleration.
+          const mgUpPad = KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput;
+          const accelHeld =
+            !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
+            || !!mgUpPad?.pressed
+            || !!(mgUpPad && 'down' in mgUpPad && mgUpPad.down)
+            || !!KeyMapper.Actions[KeyMapAction.ActionUp]?.keyboardInput?.down;
+          if(
+            GameState.GameKey == GameEngineType.TSL &&
+            accelHeld && GameState.State == EngineState.RUNNING && mg.player?.running
+          ){
+            mg.player.onAccelerate();
+          }
+        }else if(mg.type === MiniGameType.TURRET){
+          // Axis X/Z; optional negate Z when minigame Y-axis is reversed.
+          const x = Math.max(-1, Math.min(1, stickX + keyX));
+          let z = Math.max(-1, Math.min(1, stickY + resolveMinigameKeyAxisZ()));
+          if(reverseY){ z = -z; }
+          mg.updateAxis(x, 0, z, delta);
+
+          const dx = Mouse.MouseX - Mouse.OldMouseX;
+          const dy = Mouse.MouseY - Mouse.OldMouseY;
+          if(dx || dy){
+            let mx = Math.max(-1, Math.min(1, dx / MG_MOUSE_POLL_SCALE));
+            let my = Math.max(-1, Math.min(1, dy / MG_MOUSE_POLL_SCALE));
+            if(reverseY){ my = -my; }
+            mg.updateMouse(mx, my, delta);
+          }
+          // recenter cursor unless combat-paused.
+          if(GameState.State == EngineState.RUNNING){
+            const cx = (this.element?.clientWidth || window.innerWidth) * 0.5;
+            const cy = (this.element?.clientHeight || window.innerHeight) * 0.5;
+            const ox = this.element?.offsetLeft || 0;
+            const oy = this.element?.offsetTop || 0;
+            Mouse.Update(ox + cx, oy + cy);
+            Mouse.MouseX = cx;
+            Mouse.MouseY = cy;
+            Mouse.OldMouseX = cx;
+            Mouse.OldMouseY = cy;
+          }
+        }
+      }
+    }
+
+    // Chase / combat camera: right stick yaw+pitch (pad look; not FreeLook-only).
+    // Use camerastyle FL_RotateSpeed / FL_TiltSpeed (~60°/s), not Keyboard Camera DPS (~200°/s).
+    if(
+      GameState.State == EngineState.RUNNING &&
+      GameState.Mode == EngineMode.INGAME &&
+      currentMenu == GameState.MenuManager.InGameOverlay
+    ){
+      const rx = this.gamePad.stick_r_x.value;
+      const ry = this.gamePad.stick_r_y.value;
+      if(rx){
+        const yawSpeed = THREE.MathUtils.degToRad(FollowerCamera.flRotateSpeed || 60);
+        FollowerCamera.facing = Utility.NormalizeRadian(
+          FollowerCamera.facing + (-rx) * yawSpeed * delta
+        );
+        FollowerCamera.clearFocusObject();
+        GameState.scene_cursor_holder.visible = false;
+      }
+      if(ry){
+        const tiltSpeed = FollowerCamera.flTiltSpeed || 60;
+        const pitchMin = FollowerCamera.stylePitch
+          - THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltDown));
+        const pitchMax = FollowerCamera.stylePitch
+          + THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltUp));
+        let nextPitch = FollowerCamera.pitch + THREE.MathUtils.degToRad(-ry * tiltSpeed * delta);
+        if(nextPitch < pitchMin) nextPitch = pitchMin;
+        if(nextPitch > pitchMax) nextPitch = pitchMax;
+        if(nextPitch < 0) nextPitch = 0;
+        if(nextPitch > Math.PI * 0.5) nextPitch = Math.PI * 0.5;
+        FollowerCamera.pitch = nextPitch;
+        FollowerCamera.clearFocusObject();
+      }
+    }
+
+    // FreeLook: right-stick look (tilt/rotate axes)
+    if(GameState.Mode == EngineMode.FREELOOK){
+      const rx = this.gamePad.stick_r_x.value;
+      const ry = this.gamePad.stick_r_y.value;
+      if(rx || ry){
+        FollowerCamera.setFreeLookAxes(
+          rx ? -rx : 0,
+          ry ? -ry : 0
+        );
+      }
+      GameState.scene_cursor_holder.visible = false;
+    }
+
+    this.updateGamepadPrompts();
+
+    //Keyboard: onFrameEnd
+    this.keyboard.onFrameEnd(delta);
+
+    //Mouse: onFrameEnd
+    Mouse.leftClick = false;
+    Mouse.rightClick = false;
+
+    Mouse.OldMouseX = Mouse.MouseX;
+    Mouse.OldMouseY = Mouse.MouseY;
+  }
+
+  /**
+   * Turn when the cursor is within screenFramePercentage of the left/right
+   * viewport edge (min 2px). Skip while over GUI so floating target-menu
+   * clicks are not invalidated by camera motion.
+   */
+  updateScreenEdgeCameraTurn(){
+    if(this.MenuGetActiveUIElements().length > 0){
+      return;
+    }
+    const vpW = GameState.ResolutionManager.getViewportWidth();
+    const edge = Math.max(2, Math.floor(vpW * 0.02));
+    const x = Mouse.positionViewport.x;
+    if(x <= edge){
+      FollowerCamera.clearFocusObject();
+      FollowerCamera.turning = true;
+      FollowerCamera.dir = 1;
+    }else if(x >= vpW - edge){
+      FollowerCamera.clearFocusObject();
+      FollowerCamera.turning = true;
+      FollowerCamera.dir = -1;
+    }
+  }
+
+  /**
+   * HandleZMouse — wheel over action buttons
+   * cycles the matching ActionMenuPanel (BTN_TARGET* / BTN_ACTION*).
+   */
+  cycleHoveredActionMenu(direction: number){
+    const controls = this.MenuGetActiveUIElements();
+    for(let i = 0; i < controls.length; i++){
+      const control = controls[i];
+      if(!control?.isVisible?.() || !control.name) continue;
+      const name = control.name.toUpperCase();
+
+      let panelIndex = -1;
+      let isTarget = false;
+      let match = name.match(/^BTN_TARGET(?:UP|DOWN)?(\d+)$/);
+      if(match){
+        isTarget = true;
+        panelIndex = parseInt(match[1], 10);
+      }else{
+        match = name.match(/^BTN_ACTION(?:UP|DOWN)?(\d+)$/);
+        if(match){
+          panelIndex = parseInt(match[1], 10);
+        }
+      }
+      if(panelIndex < 0) continue;
+
+      const panels = isTarget
+        ? GameState.ActionMenuManager.ActionPanels.targetPanels
+        : GameState.ActionMenuManager.ActionPanels.selfPanels;
+      const panel = panels?.[panelIndex];
+      if(!panel || panel.actions.length <= 1) return;
+
+      if(direction < 0){
+        panel.previousAction();
+      }else{
+        panel.nextAction();
+      }
+      return;
+    }
+  }
+
+  /** Self panels then target panels — pad action-slot order for d-pad L/R. */
+  getActionPanelSlots(): { isTarget: boolean; index: number }[] {
+    const slots: { isTarget: boolean; index: number }[] = [];
+    const selfCount = GameState.ActionMenuManager.SELF_MENU_COUNT;
+    const targetCount = GameState.ActionMenuManager.TARGET_MENU_COUNT;
+    for(let i = 0; i < selfCount; i++){
+      slots.push({ isTarget: false, index: i });
+    }
+    for(let i = 0; i < targetCount; i++){
+      slots.push({ isTarget: true, index: i });
+    }
+    return slots;
+  }
+
+  getActionPanelAtSlot(slotIndex: number){
+    const slots = this.getActionPanelSlots();
+    const slot = slots[slotIndex];
+    if(!slot) return undefined;
+    const panels = slot.isTarget
+      ? GameState.ActionMenuManager.ActionPanels.targetPanels
+      : GameState.ActionMenuManager.ActionPanels.selfPanels;
+    return { slot, panel: panels?.[slot.index] };
+  }
+
+  /** Cycle which HUD action panel is selected (gamepad HUD panel cycle). */
+  cycleActionPanelSlot(direction: number){
+    if(GameState.Mode != EngineMode.INGAME) return;
+    if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+
+    const slots = this.getActionPanelSlots();
+    if(!slots.length) return;
+
+    let idx = this.selectedActionPanelIndex;
+    for(let n = 0; n < slots.length; n++){
+      if(idx < 0){
+        idx = direction > 0 ? 0 : slots.length - 1;
+      }else{
+        idx = (idx + direction + slots.length) % slots.length;
+      }
+      const entry = this.getActionPanelAtSlot(idx);
+      if(entry?.panel && entry.panel.actions.length > 0){
+        this.selectedActionPanelIndex = idx;
+        this.refreshSelectedActionPanelUI(entry.slot.isTarget, entry.slot.index);
+        GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
+        return;
+      }
+    }
+  }
+
+  /** Cycle actions within the selected HUD panel. */
+  cycleActionWithinSelectedPanel(direction: number){
+    if(GameState.Mode != EngineMode.INGAME) return;
+    if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+
+    if(this.selectedActionPanelIndex < 0){
+      this.cycleActionPanelSlot(1);
+      return;
+    }
+
+    const entry = this.getActionPanelAtSlot(this.selectedActionPanelIndex);
+    if(!entry?.panel || entry.panel.actions.length <= 1) return;
+
+    if(direction < 0){
+      entry.panel.previousAction();
+    }else{
+      entry.panel.nextAction();
+    }
+    this.refreshSelectedActionPanelUI(entry.slot.isTarget, entry.slot.index);
+    GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
+  }
+
+  activateSelectedActionPanel(){
+    const entry = this.getActionPanelAtSlot(this.selectedActionPanelIndex);
+    if(!entry) return;
+    if(entry.slot.isTarget){
+      GameState.ActionMenuManager.onTargetMenuAction(entry.slot.index);
+    }else{
+      GameState.ActionMenuManager.onSelfMenuAction(entry.slot.index);
+    }
+  }
+
+  /** Clear HUD panel highlight / hover when B is pressed with a panel selected. */
+  clearSelectedActionPanel(){
+    this.selectedActionPanelIndex = -1;
+    const overlay = GameState.MenuManager.InGameOverlay;
+    overlay?.setActiveControl?.(undefined);
+  }
+
+  refreshSelectedActionPanelUI(isTarget: boolean, index: number){
+    const overlay = GameState.MenuManager.InGameOverlay;
+    if(!overlay) return;
+    if(isTarget){
+      overlay.UpdateTargetUIIcon?.(index);
+    }else{
+      overlay.UpdateSelfUIIcon?.(index);
+      overlay.UpdateActionDescription?.();
+    }
+    // D-pad selection drives button hover / active control.
+    const btnName = isTarget ? `BTN_TARGET${index}` : `BTN_ACTION${index}`;
+    const btn = overlay.getControlByName?.(btnName);
+    if(btn){
+      overlay.setActiveControl(btn);
+    }
+  }
+
+  plChangeCallback(_e: Event){
+    if(document.pointerLockElement === this.element){
+      Mouse.pointerLock = true;
+      Mouse.pointerLockDenied = false;
+      Mouse.pointerLockWanted = true;
+      // Avoid a look spike when entering relative mode
+      Mouse.OldMouseX = Mouse.MouseX;
+      Mouse.OldMouseY = Mouse.MouseY;
+      if(GameState.scene_cursor_holder){
+        GameState.scene_cursor_holder.visible = false;
+      }
+    }else{
+      Mouse.pointerLock = false;
+      // Esc / focus loss: keep looking via absolute mouse if hold still desired.
+      if(!Mouse.cameraHoldActive){
+        Mouse.pointerLockWanted = false;
+        if(
+          GameState.scene_cursor_holder &&
+          GameState.Mode != EngineMode.FREELOOK &&
+          !this.controllerHidesCursor
+        ){
+          GameState.scene_cursor_holder.visible = true;
+        }
+      }
+    }
+  }
+
+  plErrorCallback(_e: Event){
+    // Lock unavailable this attempt — continue with existing absolute-mouse look.
+    Mouse.pointerLock = false;
+    Mouse.pointerLockDenied = true;
+  }
+
+}

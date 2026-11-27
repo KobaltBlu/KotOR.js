@@ -1,20 +1,20 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { TabLYTEditor } from "@/apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor";
-import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
+import { TabLYTEditor } from "@apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor";
+import { ILayoutRoom } from "@core/interface/resource/ILayoutRoom";
 import {
   ModelViewerLayerKey,
   ModelViewerLayerVisibility,
   TabModelViewerState,
-} from "@/apps/forge/states/tabs/TabModelViewerState";
-import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
-import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/states/tabs/TabModelViewerState";
+import { utxShouldShow3DPreview } from "@apps/forge/helpers/utxPreview3D";
+import { forgeViewportSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import {
   promptForDirectory,
   collectModelAssets,
@@ -24,7 +24,7 @@ import {
   writeFile,
   showExtractionResults,
   createProgressModal,
-} from "@/apps/forge/helpers/AssetExtraction";
+} from "@apps/forge/helpers/AssetExtraction";
 
 export interface LYTRoomEntry {
   lytRoom: ILayoutRoom;

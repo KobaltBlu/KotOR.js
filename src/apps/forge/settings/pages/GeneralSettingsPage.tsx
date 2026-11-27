@@ -7,20 +7,20 @@
  */
 
 import React, { useState } from "react";
-import { ForgeButton } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { executeCommand } from "@/apps/forge/commands/forgeCommands";
-import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeGame";
-import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
-import { TraskTourState } from "@/apps/forge/tutorial/TraskTourState";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeButton } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { executeCommand } from "@apps/forge/commands/forgeCommands";
+import { ModalChangeGameState } from "@apps/forge/components/modal/ModalChangeGame";
+import { ModalSettingsState } from "@apps/forge/components/modal/ModalSettingsState";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeSessionSettings } from "@apps/forge/settings/forgeSessionSettings";
+import { TraskTourState } from "@apps/forge/tutorial/TraskTourState";
+import * as KotOR from "@apps/forge/KotOR";
 
 export function GeneralSettingsPage() {
   const [, setRevision] = useState(0);

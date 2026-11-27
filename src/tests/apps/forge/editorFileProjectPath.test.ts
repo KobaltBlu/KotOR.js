@@ -2,7 +2,7 @@ import { describe, expect, test } from "@jest/globals";
 import {
   editorFileProjectRelativePath,
   remapProjectRelativeAfterRename,
-} from "@/apps/forge/helpers/editorFileProjectPath";
+} from "@apps/forge/helpers/editorFileProjectPath";
 
 describe("editorFileProjectRelativePath", () => {
   test("returns the project-relative path for OPFS / project explorer files", () => {

@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 /**
  * ForgeInitializer class.
@@ -104,6 +104,7 @@ export class ForgeInitializer {
     KotOR.GameState.AutoPauseManager = KotOR.AutoPauseManager;
     KotOR.GameState.CameraShakeManager = KotOR.CameraShakeManager;
     KotOR.GameState.CharGenManager = KotOR.CharGenManager;
+    KotOR.GameState.LevelUpManager = KotOR.LevelUpManager;
     KotOR.GameState.CheatConsoleManager = KotOR.CheatConsoleManager;
     KotOR.GameState.ConfigManager = KotOR.ConfigManager;
     KotOR.GameState.CursorManager = KotOR.CursorManager;
@@ -116,8 +117,9 @@ export class ForgeInitializer {
     KotOR.GameState.JournalManager = KotOR.JournalManager;
     KotOR.GameState.LightManager = KotOR.LightManager;
     KotOR.GameState.WindManager = KotOR.WindManager;
+    KotOR.GameState.GrassManager = KotOR.GrassManager;
     KotOR.GameState.MenuManager = KotOR.MenuManager;
-    KotOR.GameState.ModuleObjectManager = KotOR.ModuleObjectManager;
+    KotOR.GameState.GameObjectManager = KotOR.GameObjectManager;
     KotOR.GameState.PartyManager = KotOR.PartyManager;
     KotOR.GameState.ResolutionManager = KotOR.ResolutionManager;
     KotOR.GameState.ShaderManager = KotOR.ShaderManager;
@@ -125,6 +127,8 @@ export class ForgeInitializer {
     KotOR.GameState.TwoDAManager = KotOR.TwoDAManager;
     KotOR.GameState.PazaakManager = KotOR.PazaakManager;
     KotOR.GameState.UINotificationManager = KotOR.UINotificationManager;
+    KotOR.GameState.GuiTimingBarManager = KotOR.GuiTimingBarManager;
+    KotOR.GameState.GameOverManager = KotOR.GameOverManager;
     KotOR.GameState.CutsceneManager = KotOR.CutsceneManager;
     KotOR.GameState.VideoManager = KotOR.VideoManager;
     KotOR.GameState.LegalScreenManager = KotOR.LegalScreenManager;
@@ -148,7 +152,7 @@ export class ForgeInitializer {
     ForgeInitializer.currentGame = game;
 
     KotOR.PerformanceMonitor.start('configclient');
-    await KotOR.ConfigClient.Init();
+    await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
     KotOR.PerformanceMonitor.stop('configclient');
 
     if(options?.loadGameData === false){

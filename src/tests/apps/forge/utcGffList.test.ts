@@ -8,7 +8,7 @@ import {
   utcRuleSetHasFeatGrid,
   utcRuleSetHasSkillGrid,
   utcRuleSetHasSpellGrid,
-} from "@/apps/forge/components/tabs/tab-utc-editor/utcGffList";
+} from "@apps/forge/components/tabs/tab-utc-editor/utcGffList";
 
 describe("utc GFF fallbacks", () => {
   test("feat and spell grids stay off when rule tables are empty or unlabeled", () => {

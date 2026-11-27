@@ -8,8 +8,8 @@
  */
 
 import * as THREE from "three";
-import type { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import type { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
 
 export const HIGHLIGHT_IDLE_COLOR = 0x44aaff;
 export const HIGHLIGHT_SELECTED_COLOR = 0xffee66;

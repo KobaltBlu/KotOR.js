@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useRef } from "react";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { isCellSelected, TwoDASelRange } from "@/apps/forge/helpers/twoDAEditorOps";
+import * as KotOR from "@apps/forge/KotOR";
+import { isCellSelected, TwoDASelRange } from "@apps/forge/helpers/twoDAEditorOps";
 
 export interface TwoDASearchMatch {
   row: number;

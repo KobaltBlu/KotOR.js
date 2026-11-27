@@ -7,11 +7,11 @@
  */
 
 import React from "react";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeSsfSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeSsfSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 export function SsfSettingsPage() {
   const [settings, setSettings] = useForgeSettings(forgeSsfSettings);

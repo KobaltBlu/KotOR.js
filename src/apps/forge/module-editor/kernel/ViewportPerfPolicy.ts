@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { prefersReducedMotion } from "@/apps/forge/module-editor/a11y/moduleEditorA11y";
+import { prefersReducedMotion } from "@apps/forge/module-editor/a11y/moduleEditorA11y";
 
 export interface ViewportPerfPolicy {
   idleRenderHz: number;

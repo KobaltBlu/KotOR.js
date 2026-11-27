@@ -1,13 +1,13 @@
 /**
- * Pack a Forge project's loose module files into a playable .mod ERF.
+ * Pack a Forge project's loose module files into a playable.mod ERF.
  *
  * @file exportProjectModule.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ERFObject } from "@/resource/ERFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ERFObject } from "@core/resource/ERFObject";
+import { ResourceTypes } from "@core/resource/ResourceTypes";
 
 const EXCLUDED_EXT = new Set(["nss", "json", "md", "txt", "ts", "tsx", "js", "map", "log"]);
 const EXCLUDED_PREFIXES = [".forge/", ".git/"];
@@ -35,7 +35,7 @@ export interface BuildProjectModuleErfResult {
   filename: string;
   resourceCount: number;
   erf?: ERFObject;
-  /** Project .nss files that were skipped (preview needs .ncs). */
+  /** Project.nss files that were skipped (preview needs.ncs). */
   skippedNss: string[];
 }
 

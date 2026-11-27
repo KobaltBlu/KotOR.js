@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import type { TwoDASortDir } from "@/apps/forge/helpers/twoDAEditorOps";
+import * as KotOR from "@apps/forge/KotOR";
+import type { TwoDASortDir } from "@apps/forge/helpers/twoDAEditorOps";
 
 export interface TwoDAEditorColumnHeaderProps {
   twoDAObject: KotOR.TwoDAObject;

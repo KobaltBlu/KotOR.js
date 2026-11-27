@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFField } from "@/resource/GFFField";
-import { clampGffLabel } from "@/apps/forge/helpers/gffFieldValue";
+import { GFFField } from "@core/resource/GFFField";
+import { clampGffLabel } from "@apps/forge/helpers/gffFieldValue";
 
 export function voidBinFileName(label: string): string {
   const base = clampGffLabel(label).replace(/[<>:"/\\|?*\s]/g, "") || "void";

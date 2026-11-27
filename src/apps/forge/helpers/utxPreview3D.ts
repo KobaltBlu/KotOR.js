@@ -6,10 +6,10 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { forgeBlueprintsSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { forgeBlueprintsSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import * as THREE from "three";
 
 export function utxShouldShow3DPreview(): boolean {

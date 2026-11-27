@@ -1,8 +1,10 @@
+const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
 const WebpackBar = require('webpackbar');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const { EsbuildPlugin } = require('esbuild-loader');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -12,6 +14,7 @@ const version = packageJson.version;
 const isProd = (process.env.NODE_ENV?.trim() === 'production');
 const isServe = process.argv.includes('serve');
 const isDevServe = !isProd && isServe;
+const isVerbose = process.env.WEBPACK_VERBOSE === '1';
 
 const srcPath = path.resolve(ROOT, 'src');
 
@@ -69,25 +72,46 @@ const assetRules = [
   }
 ];
 
-const commonStats = {
-  colors: true,
-  hash: false,
-  version: false,
-  timings: false,
-  assets: false,
-  chunks: false,
-  modules: false,
-  reasons: false,
-  children: false,
-  source: false,
-  errors: true,
-  errorDetails: false,
-  warnings: false,
-  publicPath: false
-};
+const commonStats = isVerbose
+  ? {
+      colors: true,
+      hash: true,
+      version: true,
+      timings: true,
+      assets: true,
+      chunks: true,
+      modules: false,
+      reasons: false,
+      children: false,
+      source: false,
+      errors: true,
+      errorDetails: true,
+      warnings: true,
+      publicPath: true,
+    }
+  : {
+      colors: true,
+      hash: false,
+      version: false,
+      timings: false,
+      assets: false,
+      chunks: false,
+      modules: false,
+      reasons: false,
+      children: false,
+      source: false,
+      errors: true,
+      errorDetails: false,
+      warnings: false,
+      publicPath: false,
+    };
 
 const commonResolve = {
   alias: {
+    '@core': path.resolve(srcPath, 'core'),
+    '@engine': path.resolve(srcPath, 'engine'),
+    '@apps': path.resolve(srcPath, 'apps'),
+    '@assets': path.resolve(srcPath, 'assets'),
     '@': srcPath,
     three: path.resolve(ROOT, 'node_modules/three')
   },
@@ -96,6 +120,44 @@ const commonResolve = {
     "path": require.resolve("path-browserify"),
   }
 };
+
+/** Webpack filesystem cache keyed per compiler + mode. */
+function makeCache(name, configPath) {
+  const mode = isProd ? 'prod' : (isDevServe ? 'serve' : 'dev');
+  return {
+    type: 'filesystem',
+    name: `kotor-${name}-${mode}`,
+    buildDependencies: {
+      config: [
+        __filename,
+        path.resolve(ROOT, 'webpack.config.js'),
+        configPath,
+      ].filter(Boolean),
+    },
+  };
+}
+
+/** Prod minify via esbuild (matches esbuild-loader transpile). */
+function makeProdOptimization() {
+  if (!isProd) return {};
+  return {
+    optimization: {
+      minimizer: [
+        new EsbuildPlugin({
+          target: 'esnext',
+          css: true,
+        }),
+      ],
+    },
+  };
+}
+
+/** Dev source maps: richer for library, cheaper for apps. Prod: none. */
+function makeDevtool(kind = 'app') {
+  if (isProd) return false;
+  if (process.env.WEBPACK_DEVTOOL) return process.env.WEBPACK_DEVTOOL;
+  return kind === 'library' ? 'eval-source-map' : 'eval-cheap-module-source-map';
+}
 
 function makeDefinePlugin() {
   return new webpack.DefinePlugin({
@@ -123,7 +185,9 @@ function makeDevServer() {
       watch: false,
     },
     devMiddleware: {
-      writeToDisk: true,
+      // Keep dist/ in sync for F5 debugging, but never write HMR payloads —
+      // each update uses a unique hash and would otherwise accumulate forever.
+      writeToDisk: (filePath) => !/\.hot-update\./.test(filePath),
     },
     historyApiFallback: {
       rewrites: [
@@ -141,11 +205,15 @@ function makeDevServer() {
       overlay: {
         errors: true,
         warnings: false,
+        // Keep runtime/console errors in the browser console only;
+        // the fullscreen overlay blocks the game client in dev.
+        runtimeErrors: false,
       },
     },
     watchFiles: [
       path.resolve(ROOT, 'dist/KotOR.js'),
       path.resolve(ROOT, 'dist/bink-worker.js'),
+      path.resolve(ROOT, 'dist/worker-tex.js'),
       path.resolve(ROOT, 'dist/server.js'),
     ],
   };
@@ -188,22 +256,64 @@ function makeReactEsbuildOptions(baseOptions) {
   };
 }
 
+/**
+ * three@0.186+ no longer ships three.min.js. Apps load THREE as a global
+ * (webpack externals: three → THREE). Build a browser IIFE into the cache dir.
+ * Skips rebuild when the output is newer than the three entry.
+ */
+function ensureThreeGlobalBundle() {
+  const esbuild = require('esbuild');
+  const entry = path.resolve(ROOT, 'node_modules/three/build/three.module.js');
+  const outDir = path.resolve(ROOT, 'node_modules/.cache/three-global');
+  const outfile = path.join(outDir, isProd ? 'three.prod.min.js' : 'three.dev.js');
+
+  fs.mkdirSync(outDir, { recursive: true });
+
+  let needsBuild = true;
+  try {
+    const inStat = fs.statSync(entry);
+    const outStat = fs.statSync(outfile);
+    needsBuild = outStat.mtimeMs < inStat.mtimeMs;
+  } catch {
+    needsBuild = true;
+  }
+
+  if (needsBuild) {
+    esbuild.buildSync({
+      entryPoints: [entry],
+      bundle: true,
+      format: 'iife',
+      globalName: 'THREE',
+      outfile,
+      minify: isProd,
+      logLevel: 'silent',
+    });
+  }
+
+  return outfile;
+}
+
 module.exports = {
   ROOT,
   version,
   isProd,
   isServe,
   isDevServe,
+  isVerbose,
   srcPath,
   scssRule,
   cssRule,
   assetRules,
   commonStats,
   commonResolve,
+  makeCache,
+  makeProdOptimization,
+  makeDevtool,
   makeDefinePlugin,
   makeWebpackBar,
   makeDevServer,
   makeHmrPlugins,
   makeDevOutput,
   makeReactEsbuildOptions,
+  ensureThreeGlobalBundle,
 };

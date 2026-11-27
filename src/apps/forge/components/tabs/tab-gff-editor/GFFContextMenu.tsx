@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import { gffFieldTypeOptions } from "@/apps/forge/helpers/gffJsonCodec";
+import { ContextMenuItem } from "@apps/forge/components/common/ContextMenu";
+import { gffFieldTypeOptions } from "@apps/forge/helpers/gffJsonCodec";
 
 export interface GFFStructContextMenuArgs {
   isRoot: boolean;

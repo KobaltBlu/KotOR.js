@@ -7,11 +7,11 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalResRefBrowserState } from "@/apps/forge/states/modal/ModalResRefBrowserState";
-import type { ResRefCatalogSource } from "@/apps/forge/helpers/resRefCatalog";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ModalResRefBrowserState } from "@apps/forge/states/modal/ModalResRefBrowserState";
+import type { ResRefCatalogSource } from "@apps/forge/helpers/resRefCatalog";
 import "@/apps/forge/components/modal/ModalScriptBrowser.scss";
 
 const SOURCE_LABEL: Record<ResRefCatalogSource, string> = {

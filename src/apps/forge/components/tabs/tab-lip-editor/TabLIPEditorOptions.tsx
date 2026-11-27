@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { SceneGraphTreeView } from "@apps/forge/components/SceneGraphTreeView";
 import {
   TabLIPEditorState,
   TabLIPEditorStateEventListenerTypes,
   TabLIPEditorOptionsState,
   LIP_EDITOR_DEFAULT_HEAD,
-} from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ForgeButton, ForgeInput, ForgeSelect, ForgeTextArea } from "@/apps/forge/components/ui";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+} from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ForgeButton, ForgeInput, ForgeSelect, ForgeTextArea } from "@apps/forge/components/ui";
+import { SectionContainer } from "@apps/forge/components/SectionContainer";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 export interface TabLIPEditorOptionsProps {
   tab: TabLIPEditorOptionsState;

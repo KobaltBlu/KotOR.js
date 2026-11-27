@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ImageEncodePolicy, ImageRgba } from "@/apps/forge/image/imageTypes";
+import type { ImageEncodePolicy, ImageRgba } from "@apps/forge/image/imageTypes";
 
 export function flipYInPlace(pixelData: Uint8Array | Uint8ClampedArray, width = 1, height = 1): void {
   const stride = width * 4;

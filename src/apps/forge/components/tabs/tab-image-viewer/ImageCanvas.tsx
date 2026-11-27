@@ -8,14 +8,14 @@
 
 import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
-import { TXI } from "@/resource/TXI";
-import * as KotOR from "@/apps/forge/KotOR";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeImageSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { TXI } from "@core/resource/TXI";
+import { OdysseyMaterialBuilder } from "@apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeImageSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 function clampScale(value: number): number {
   if (value < 0.1) return 0.1;
@@ -115,6 +115,15 @@ export function ImageCanvas(props: { tab: TabImageViewerState; txiPreview: strin
       if (!mesh || !material || !texture) return;
       if (material.uniforms.time) {
         material.uniforms.time.value += delta;
+      }
+      KotOR.TextureAnimationManager.update(delta);
+      if (material.defines?.ANIMATED_UV != null && material.uniforms.animatedUVState && material.uniforms.animatedUV) {
+        const state = material.uniforms.animatedUVState.value;
+        const uv = material.uniforms.animatedUV.value;
+        state.x += uv.x;
+        state.y += uv.y;
+        state.z += uv.w;
+        material.uniformsNeedUpdate = true;
       }
       mesh.rotation.y += delta * 0.5;
       mesh.rotation.x = Math.sin(material.uniforms.time?.value || 0) * 0.12;

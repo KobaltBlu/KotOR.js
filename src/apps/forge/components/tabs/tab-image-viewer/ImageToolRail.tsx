@@ -7,8 +7,8 @@
  */
 
 import React from "react";
-import { IMAGE_TOOLS } from "@/apps/forge/image";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+import { IMAGE_TOOLS } from "@apps/forge/image";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
 
 export function ImageToolRail(props: { tab: TabImageViewerState }) {
   const tab = props.tab;

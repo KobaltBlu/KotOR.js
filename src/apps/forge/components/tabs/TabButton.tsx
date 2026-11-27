@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useTabManager } from "@/apps/forge/context/TabManagerContext";
-import { TabState } from "@/apps/forge/states/tabs";
+import { useTabManager } from "@apps/forge/context/TabManagerContext";
+import { TabState } from "@apps/forge/states/tabs";
 
 export interface TabButtonProps {
   tab: TabState;

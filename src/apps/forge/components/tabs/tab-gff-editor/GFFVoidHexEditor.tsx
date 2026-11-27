@@ -1,5 +1,5 @@
 /**
- * Compact hex editor for GFF VOID fields, with .bin import/export.
+ * Compact hex editor for GFF VOID fields, with.bin import/export.
  *
  * @file GFFVoidHexEditor.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -7,10 +7,10 @@
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeButton } from "@/apps/forge/components/ui";
-import { TabGFFEditorState } from "@/apps/forge/states/tabs";
-import { gffVoidBytes, voidBinFileName } from "@/apps/forge/helpers/gffVoidBin";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeButton } from "@apps/forge/components/ui";
+import { TabGFFEditorState } from "@apps/forge/states/tabs";
+import { gffVoidBytes, voidBinFileName } from "@apps/forge/helpers/gffVoidBin";
 import {
   HEX_BYTES_PER_ROW,
   asciiChar,
@@ -20,7 +20,7 @@ import {
   parseByteHex2,
   parseHexNibble,
   rowCount,
-} from "@/apps/forge/components/tabs/tab-hex-editor/hexEditorFormat";
+} from "@apps/forge/components/tabs/tab-hex-editor/hexEditorFormat";
 
 const ROW_HEIGHT = 20;
 const OVERSCAN_ROWS = 4;

@@ -1,0 +1,35 @@
+import { ActionStatus } from "@core/enums/actions/ActionStatus";
+import { ActionType } from "@core/enums/actions/ActionType";
+import { GameState } from "@engine/runtime/GameState";
+import { Action } from "@engine/actions/Action";
+
+/**
+ * ActionPauseDialog class.
+ *
+ * pause-dialog action — marks the conversation paused so
+ * SendDialogEntry defers the next entry while the current node keeps ticking.
+ * NWScript ActionPauseConversation applies pause immediately; this action
+ * remains for any queued AI path.
+ *
+ * @file ActionPauseDialog.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class ActionPauseDialog extends Action {
+
+  constructor( actionId: number = -1, groupId: number = -1 ){
+    super(actionId, groupId);
+    this.type = ActionType.ActionPauseDialog;
+    // Keep with ActionResumeDialog — see ClearAllActions skipUnclearable path.
+    this.clearable = false;
+
+    //PARAMS
+    // none
+  }
+
+  update(delta: number = 0): ActionStatus {
+    GameState.CutsceneManager.pauseConversation();
+    return ActionStatus.COMPLETE;
+  }
+
+}

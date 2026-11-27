@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { compositeLayer, flattenDocument } from "@/apps/forge/image/imageBlend";
+import { compositeLayer, flattenDocument } from "@apps/forge/image/imageBlend";
 import {
   DEFAULT_ENCODE_POLICY,
   DEFAULT_RGBA_BLACK,
@@ -16,7 +16,7 @@ import {
   type ImageLayer,
   type ImageRect,
   type ImageRgba,
-} from "@/apps/forge/image/imageTypes";
+} from "@apps/forge/image/imageTypes";
 
 let nextLayerSeq = 1;
 

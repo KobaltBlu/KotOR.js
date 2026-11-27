@@ -1,18 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabERFEditorState } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
-import { createERFContextMenuItems } from "@/apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
-import { ERFBrowserToolbar } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserToolbar";
-import { ERFBrowserBreadcrumbs } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserBreadcrumbs";
-import { ERFBrowserListing } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserListing";
-import { ERFBrowserPreview } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserPreview";
-import { isERFFolderNode } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabERFEditorState } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { useContextMenu } from "@apps/forge/components/common/ContextMenu";
+import { createERFContextMenuItems } from "@apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
+import { ERFBrowserToolbar } from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserToolbar";
+import { ERFBrowserBreadcrumbs } from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserBreadcrumbs";
+import { ERFBrowserListing } from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserListing";
+import { ERFBrowserPreview } from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserPreview";
+import { isERFFolderNode } from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
 import "@/apps/forge/components/tabs/tab-erf-editor/tab-erf-editor.scss";
 
 export const TabERFEditor = function (props: BaseTabProps) {

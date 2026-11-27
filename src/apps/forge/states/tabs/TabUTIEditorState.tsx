@@ -1,19 +1,19 @@
 import React from "react";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@apps/forge/helpers/UTxEditorHelpers";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTIEditor } from "@apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
 import * as THREE from "three";
-import { ForgeItem, ItemPropertyEntry } from "@/apps/forge/module-editor/ForgeItem";
+import { ForgeItem, ItemPropertyEntry } from "@apps/forge/module-editor/ForgeItem";
 import {
   attachUtxModelPreview,
   bindUtxPreviewOnGameData,
   utxShouldShow3DPreview,
-} from "@/apps/forge/helpers/utxPreview3D";
+} from "@apps/forge/helpers/utxPreview3D";
 
 export type { ItemPropertyEntry };
 

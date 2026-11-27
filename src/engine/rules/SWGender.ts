@@ -1,5 +1,5 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from "@core/managers/TLKManager";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 export class SWGender {
   static genders: SWGender[] = [];

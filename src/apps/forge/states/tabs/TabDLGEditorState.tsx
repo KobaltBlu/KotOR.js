@@ -1,14 +1,14 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabDLGEditor } from "@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor";
-import { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import { prefetchDlgNodeTexts } from "@/apps/forge/dlg/dlgLocString";
-import { forgeDlgSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabDLGEditor } from "@apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor";
+import { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import { prefetchDlgNodeTexts } from "@apps/forge/dlg/dlgLocString";
+import { forgeDlgSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 /**
- * Conversation editor tab for .dlg GFF files.
+ * Conversation editor tab for.dlg GFF files.
  *
  * @file TabDLGEditorState.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>

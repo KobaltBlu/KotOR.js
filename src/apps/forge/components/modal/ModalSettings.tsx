@@ -7,16 +7,16 @@
  */
 
 import React, { KeyboardEvent, useMemo, useState } from "react";
-import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ModalSettingsState } from "@apps/forge/components/modal/ModalSettingsState";
 import {
   SettingsSearchContext,
   SETTINGS_PAGE_GROUPS,
   getSettingsPageGroup,
   getSettingsPages,
   pageMatchesQuery,
-} from "@/apps/forge/settings/settingsRegistry";
+} from "@apps/forge/settings/settingsRegistry";
 import "@/apps/forge/settings/registerForgeSettingsPages";
 
 export function ModalSettings() {

@@ -1,21 +1,21 @@
 ﻿import React, { useState } from "react";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { ResRefInput } from "@/apps/forge/components/resref-input/ResRefInput";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
-import { ForgeButton, ForgeColorField, ForgeInput, ForgeSelect, ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { isTslForgeGame } from "@/apps/forge/dlg/dlgGame";
-import { formatDlgNodeLine } from "@/apps/forge/dlg/dlgLocString";
-import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import { DLG_HELP } from "@/apps/forge/dlg/dlgInspectorHelp";
-import { DLG_DELAY_UNSET, type ForgeDLGLink, type ForgeDLGNode, type ForgeDLGScriptParams } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
+import { ResRefInput } from "@apps/forge/components/resref-input/ResRefInput";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeButton, ForgeColorField, ForgeInput, ForgeSelect, ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { isTslForgeGame } from "@apps/forge/dlg/dlgGame";
+import { formatDlgNodeLine } from "@apps/forge/dlg/dlgLocString";
+import type { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import { DLG_HELP } from "@apps/forge/dlg/dlgInspectorHelp";
+import { DLG_DELAY_UNSET, type ForgeDLGLink, type ForgeDLGNode, type ForgeDLGScriptParams } from "@apps/forge/dlg/ForgeDLGTypes";
 import {
   cameraAnimationHint,
   dialogAnimationRowIndex,
   dialogAnimationStoreValue,
-} from "@/apps/forge/helpers/twoDAIndexOptions";
-import { TabDLGEditorState } from "@/apps/forge/states/tabs/TabDLGEditorState";
+} from "@apps/forge/helpers/twoDAIndexOptions";
+import { TabDLGEditorState } from "@apps/forge/states/tabs/TabDLGEditorState";
 
 /**
  * Node and conversation inspector for the DLG editor.

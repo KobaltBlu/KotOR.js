@@ -2,7 +2,7 @@ import { describe, expect, test } from "@jest/globals";
 import {
   collectNssIncludeResrefs,
   normalizeNssIncludeResref,
-} from "@/apps/forge/helpers/nssIncludeResref";
+} from "@apps/forge/helpers/nssIncludeResref";
 
 describe("normalizeNssIncludeResref", () => {
   test("strips quotes, extension, and case", () => {

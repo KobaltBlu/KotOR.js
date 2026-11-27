@@ -1,9 +1,9 @@
 import React from "react";
-import { KotORModal } from "@/apps/game/components/modal/modal";
-import { useApp } from "@/apps/game/context/AppContext";
-import { ApplicationEnvironment } from "@/apps/game/KotOR";
-import GrantAccessModalContent from "@/apps/common/components/grantAccess/GrantAccessModalContent";
-import * as KotOR from "@/apps/game/KotOR";
+import { KotORModal } from "@apps/game/components/modal/modal";
+import { useApp } from "@apps/game/context/AppContext";
+import { ApplicationEnvironment } from "@apps/game/KotOR";
+import GrantAccessModalContent from "@apps/common/components/grantAccess/GrantAccessModalContent";
+import * as KotOR from "@apps/game/KotOR";
 
 export const ModalGrantAccess = () => {
   const appContext = useApp();

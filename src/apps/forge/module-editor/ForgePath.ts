@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@apps/forge/KotOR";
 
 /**
  * Lightweight path placeholder for module scene / future GIT path markers.
@@ -16,7 +16,7 @@ export class ForgePath extends ForgeGameObject {
   }
 
   async load(){
-    // No mesh yet — module editor opens area .pth via forge.module.openAreaPth
+    // No mesh yet — module editor opens area.pth via forge.module.openAreaPth
   }
 
   getEditorName(): string {

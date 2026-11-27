@@ -6,9 +6,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { isSelected } from "@/apps/forge/image/imageDocument";
-import { packRgba } from "@/apps/forge/image/imageIo";
-import type { ImageDocument, ImageLayer, ImageRgba } from "@/apps/forge/image/imageTypes";
+import { isSelected } from "@apps/forge/image/imageDocument";
+import { packRgba } from "@apps/forge/image/imageIo";
+import type { ImageDocument, ImageLayer, ImageRgba } from "@apps/forge/image/imageTypes";
 
 function inBounds(doc: ImageDocument, x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < doc.width && y < doc.height;

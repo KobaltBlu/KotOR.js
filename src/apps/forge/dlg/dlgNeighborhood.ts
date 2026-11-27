@@ -1,5 +1,5 @@
-import { DLG_NEIGHBOR_CAP } from "@/apps/forge/dlg/ForgeDLGTypes";
-import type { ForgeDLGLink, ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { DLG_NEIGHBOR_CAP } from "@apps/forge/dlg/ForgeDLGTypes";
+import type { ForgeDLGLink, ForgeDLGNode } from "@apps/forge/dlg/ForgeDLGTypes";
 
 export interface DLGNeighborhoodSource {
   startingLinks: ForgeDLGLink[];

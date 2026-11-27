@@ -7,12 +7,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
 import {
   createEditorCommand,
   EditorCommand,
   EditorCommandDescriptor,
-} from "@/apps/forge/module-editor/kernel/EditorCommand";
+} from "@apps/forge/module-editor/kernel/EditorCommand";
 
 export class CommandHistory extends EventListenerModel {
   private undoStack: EditorCommand[] = [];

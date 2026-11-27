@@ -1,6 +1,6 @@
 import React from "react";
-import { ModalNewProject } from "@/apps/forge/components/modal/ModalNewProject";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalNewProject } from "@apps/forge/components/modal/ModalNewProject";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
 
 export class ModalNewProjectState extends ModalState {
 

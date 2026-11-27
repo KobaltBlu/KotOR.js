@@ -1,12 +1,12 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { TabWOKEditor } from "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
-import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import { TabWOKEditor } from "@apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
+import { forgeViewportSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 export enum TabWOKEditorControlMode {
   FACE = 0,
@@ -185,7 +185,7 @@ export class TabWOKEditorState extends TabState {
   }
 
   /**
-   * `OdysseyWalkMesh.toExportBuffer()` calls `rebuild()`, which allocates a new
+   * `OdysseyWalkMesh.toExportBuffer` calls `rebuild`, which allocates a new
    * `BufferGeometry` and disposes the previous one. The editor wireframe still
    * referenced the old geometry, so it stopped updating when vertices moved.
    */
@@ -620,7 +620,8 @@ export class TabWOKEditorState extends TabState {
 
     this.vertexHelpersGroup.visible = false;
     this.edgeHelpersGroup.visible = false;
-    this.ui3DRenderer.transformControls.visible = false;
+    const tcHelper = this.ui3DRenderer.transformControls?.getHelper();
+    if(tcHelper) tcHelper.visible = false;
     this.faceHelperMesh.visible = false;
 
     switch(this.controlMode){
@@ -633,10 +634,9 @@ export class TabWOKEditorState extends TabState {
         this.selectFace(undefined);
         this.vertexHelpersGroup.visible = true;
 
-        if(!this.ui3DRenderer.transformControls.object)
-          this.ui3DRenderer.transformControls.visible = false;
-        else
-          this.ui3DRenderer.transformControls.visible = true;
+        if(tcHelper){
+          tcHelper.visible = !!this.ui3DRenderer.transformControls.object;
+        }
 
         const selectedVertex = this.wok.vertices[this.selectedVertexIndex];
         if(selectedVertex){
@@ -817,8 +817,8 @@ export class TabWOKEditorState extends TabState {
 
   /**
    * Flip winding of the selected triangle (swap b ↔ c) so the geometric normal inverts.
-   * Runs `OdysseyWalkMesh.rebuild()` so edge data, AABB tree, and exported normals stay consistent
-   * (a negate-only edit would be overwritten the next time `toExportBuffer()` runs).
+   * Runs `OdysseyWalkMesh.rebuild` so edge data, AABB tree, and exported normals stay consistent
+   * (a negate-only edit would be overwritten the next time `toExportBuffer` runs).
    */
   flipNormalOfSelectedFace(): void {
     if (!this.wok || this.selectedFaceIndex < 0) return;

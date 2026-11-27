@@ -1,8 +1,8 @@
 import React from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
-import type { BulkProjectNssCompileOutcome } from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog } from "@apps/forge/components/ui";
+import type { BulkProjectNssCompileOutcome } from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { ModalBulkNssCompileResultsState } from "@apps/forge/states/modal/ModalBulkNssCompileResultsState";
 
 export const ModalBulkNssCompileResults = (props: BaseModalProps) => {
   const modal = props.modal as ModalBulkNssCompileResultsState;

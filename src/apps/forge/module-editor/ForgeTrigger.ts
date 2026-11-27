@@ -1,11 +1,11 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@apps/forge/helpers/gitFacing";
 import {
   createVertexHandle,
   disposeVertexHandle,
   setVertexHandleSelected,
-} from "@/apps/forge/module-editor/vertexHandleVisuals";
-import * as KotOR from "@/apps/forge/KotOR";
+} from "@apps/forge/module-editor/vertexHandleVisuals";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
 
 const DEFAULT_OFFSET_Z = 0.01;
@@ -23,7 +23,7 @@ export class ForgeTrigger extends ForgeGameObject {
   ];
 
   /**
-   * Retail ZOrientation: third component of the GIT orientation unit vector
+   * ZOrientation: third component of the GIT orientation unit vector
    * (XO/YO/ZO). LoadTrigger uses Yaw of that vector to rotate geometry; typically ZO is 0.
    */
   zOrientation: number = 0;

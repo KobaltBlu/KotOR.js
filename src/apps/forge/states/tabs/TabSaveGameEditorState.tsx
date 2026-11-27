@@ -1,13 +1,13 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { TabSaveGameEditor } from "@/apps/forge/components/tabs/tab-savegame-editor/TabSaveGameEditor";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { TabSaveGameEditor } from "@apps/forge/components/tabs/tab-savegame-editor/TabSaveGameEditor";
 import {
   SaveGameDocument,
   SaveGameDocumentSnapshot,
-} from "@/apps/forge/savegame/saveGameDocument";
-import { ResourceTypes } from "@/resource/ResourceTypes";
+} from "@apps/forge/savegame/saveGameDocument";
+import { ResourceTypes } from "@core/resource/ResourceTypes";
 
 export class TabSaveGameEditorState extends TabState {
   tabName: string = "Save Game";
@@ -103,8 +103,8 @@ export class TabSaveGameEditorState extends TabState {
       return;
     }
     const [{ TabGFFEditorState }, { ForgeState }] = await Promise.all([
-      import("@/apps/forge/states/tabs/TabGFFEditorState"),
-      import("@/apps/forge/states/ForgeState"),
+      import("@apps/forge/states/tabs/TabGFFEditorState"),
+      import("@apps/forge/states/ForgeState"),
     ]);
     const editorFile = new EditorFile({
       buffer,

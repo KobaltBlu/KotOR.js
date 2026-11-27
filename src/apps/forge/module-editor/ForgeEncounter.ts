@@ -1,12 +1,12 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
 import {
   createVertexHandle,
   disposeVertexHandle,
   setVertexHandleSelected,
-} from "@/apps/forge/module-editor/vertexHandleVisuals";
-import * as KotOR from "@/apps/forge/KotOR";
+} from "@apps/forge/module-editor/vertexHandleVisuals";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
-import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
+import { CreatureListEntry } from "@apps/forge/interfaces/CreatureListEntry";
 
 const DEFAULT_OFFSET_Z = 0.01;
 const ENCOUNTER_MATERIAL = new THREE.MeshBasicMaterial({
@@ -386,7 +386,7 @@ export class ForgeEncounter extends ForgeGameObject {
     if(geometryField){
       for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
         const geometryStruct = geometryField.getChildStructs()[i];
-        // Retail uses X/Y/Z; older Forge used PointX/PointY/PointZ
+        // uses X/Y/Z; older Forge used PointX/PointY/PointZ
         const x = geometryStruct.hasField('X')
           ? geometryStruct.getFieldByLabel('X').getValue() as number
           : geometryStruct.getFieldByLabel('PointX').getValue() as number;

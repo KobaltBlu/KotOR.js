@@ -1,32 +1,32 @@
 import React, { useState, useCallback, useRef } from "react";
 import * as fs from "fs";
 import * as nodePath from "path";
-import TabManager from "@/apps/forge/components/tabs/TabManager";
-import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ForgeTitlebar } from "@/apps/forge/components/shell/ForgeTitlebar";
-import { ForgeStatusBar } from "@/apps/forge/components/shell/ForgeStatusBar";
-import { MenuTop } from "@/apps/forge/components/MenuTop";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
-import { ModalSettings } from "@/apps/forge/components/modal/ModalSettings";
-import { ModalAbout } from "@/apps/forge/components/modal/ModalAbout";
-import { CommandPalette } from "@/apps/forge/components/CommandPalette";
-import { installForgeKeybindings } from "@/apps/forge/commands/forgeKeybindings";
+import TabManager from "@apps/forge/components/tabs/TabManager";
+import { TabManagerProvider } from "@apps/forge/context/TabManagerContext";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ForgeTitlebar } from "@apps/forge/components/shell/ForgeTitlebar";
+import { ForgeStatusBar } from "@apps/forge/components/shell/ForgeStatusBar";
+import { MenuTop } from "@apps/forge/components/MenuTop";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { ModalChangeGame } from "@apps/forge/components/modal/ModalChangeGame";
+import { ModalSettings } from "@apps/forge/components/modal/ModalSettings";
+import { ModalAbout } from "@apps/forge/components/modal/ModalAbout";
+import { CommandPalette } from "@apps/forge/components/CommandPalette";
+import { installForgeKeybindings } from "@apps/forge/commands/forgeKeybindings";
 import "@/apps/forge/commands/registerForgeCommands";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { useApp } from "@/apps/forge/context/AppContext";
-import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
-import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
-import { ForgeFloatingMiniPlayer } from "@/apps/forge/components/ForgeFloatingMiniPlayer";
-import { TraskTour } from "@/apps/forge/tutorial/TraskTour";
-import forgeIcon from "@/assets/icons/icon.png";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { useApp } from "@apps/forge/context/AppContext";
+import { ModalManager } from "@apps/forge/components/modal/ModalManager";
+import { LoadingScreen } from "@apps/common/components/loadingScreen/LoadingScreen";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { ForgeFileSystem } from "@apps/forge/ForgeFileSystem";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { pathParse } from "@apps/forge/helpers/PathParse";
+import { TabQuickStartState } from "@apps/forge/states/tabs/TabQuickStartState";
+import { ForgeFloatingMiniPlayer } from "@apps/forge/components/ForgeFloatingMiniPlayer";
+import { TraskTour } from "@apps/forge/tutorial/TraskTour";
+import forgeIcon from "@assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
 
 export const App = (props: any) => {
@@ -59,8 +59,8 @@ export const App = (props: any) => {
     }, 100);
 
     // console.log('start');
-    // TabResourceExplorerState.GenerateResourceList().then( () => {
-    //   console.log('end');
+    // TabResourceExplorerState.GenerateResourceList.then(=> {
+    // console.log('end');
     // })
   };
 
@@ -220,7 +220,7 @@ export const App = (props: any) => {
 
     } else {
       // Browser: use FileSystemFileHandle via dataTransfer.items.
-      // All getAsFileSystemHandle() calls must be initiated synchronously before
+      // All getAsFileSystemHandle calls must be initiated synchronously before
       // any await, because the browser clears the DataTransfer object on the
       // first yield back to the event loop.
       const items = Array.from(e.dataTransfer.items).filter(item => item.kind === 'file');

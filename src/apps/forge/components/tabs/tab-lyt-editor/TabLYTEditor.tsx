@@ -1,22 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import MonacoEditor from "react-monaco-editor";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabLYTEditorState, LYTRoomEntry } from "@/apps/forge/states/tabs/TabLYTEditorState";
-import { ModelViewerLayerKey } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { UI3DRendererView, MenuItem } from "@/apps/forge/components/UI3DRendererView";
-import { CameraView } from "@/apps/forge/UI3DRenderer";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabLYTEditorState, LYTRoomEntry } from "@apps/forge/states/tabs/TabLYTEditorState";
+import { ModelViewerLayerKey } from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { UI3DRendererView, MenuItem } from "@apps/forge/components/UI3DRendererView";
+import { CameraView } from "@apps/forge/UI3DRenderer";
 
-import { ForgeInput } from "@/apps/forge/components/ui";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+import { ForgeInput } from "@apps/forge/components/ui";
+import { SectionContainer } from "@apps/forge/components/SectionContainer";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import {
   addForgeThemeChangeListener,
   getMonacoThemeForLanguage,
   removeForgeThemeChangeListener,
-} from "@/apps/forge/settings/forgeTheme";
+} from "@apps/forge/settings/forgeTheme";
 
 const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
   lights: 'Lights',

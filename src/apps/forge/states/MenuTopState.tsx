@@ -1,13 +1,13 @@
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { Project } from "@/apps/forge/Project";
-import { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
-import { executeCommand, getCommand, isCommandEnabled } from "@/apps/forge/commands/forgeCommands";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
-import { buildOpenRecentMenuItems } from "@/apps/forge/commands/recentMenuItems";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import * as KotOR from "@/apps/forge/KotOR";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { Project } from "@apps/forge/Project";
+import { ForgeMenuItem } from "@apps/forge/components/common/forgeMenuItem";
+import { executeCommand, getCommand, isCommandEnabled } from "@apps/forge/commands/forgeCommands";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
+import { buildOpenRecentMenuItems } from "@apps/forge/commands/recentMenuItems";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import * as KotOR from "@apps/forge/KotOR";
 
 export class MenuTopState {
 
@@ -281,7 +281,7 @@ export class MenuTopState {
     return items;
   }
 
-  /** @deprecated Use rebuild() */
+  /** @deprecated Use rebuild */
   static buildAudioMenuItems(){
     this.rebuild();
   }

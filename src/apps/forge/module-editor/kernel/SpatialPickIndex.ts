@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import type { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
 
 export interface SpatialCell {
   key: string;

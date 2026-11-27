@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AppState } from "@/apps/game/states/AppState";
-import * as KotOR from "@/apps/game/KotOR";
+import { AppState } from "@apps/game/states/AppState";
+import * as KotOR from "@apps/game/KotOR";
 
 export interface AppProviderValues {
   appState: [typeof AppState];
@@ -33,7 +33,7 @@ export const AppProvider = (props: any) => {
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
 
-  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
   const [loadingScreenMessage, setLoadingScreenMessage] = useState<string>('Loading...');
   const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
@@ -45,10 +45,6 @@ export const AppProvider = (props: any) => {
     setShowEULAModal(showEula);
     setShowGrantModal(showGrant);
     setShowClickToBeginModal(showClickToBegin && !showEula && !showGrant);
-    // Setup modals must stay clickable; the loader sits above them in z-order.
-    if(showEula || showGrant || (showClickToBegin && !showEula && !showGrant)){
-      setShowLoadingScreen(false);
-    }
   };
 
   const onAppReady = () => {
@@ -65,6 +61,15 @@ export const AppProvider = (props: any) => {
 
   const onGameLoaded = () => {
     setGameLoaded(true);
+  }
+
+  const onKeyPress = (e: KeyboardEvent) => {
+    if(e.key === '`'){
+      e.preventDefault();
+      e.stopPropagation();
+      setShowCheatConsole(!showCheatConsole);
+      return false;
+    }
   }
 
   const onLoadingScreenShow = () => {
@@ -86,28 +91,7 @@ export const AppProvider = (props: any) => {
   }
 
   useEffect(() => { 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if(e.key !== '`'){
-        return;
-      }
-
-      const activeElement = document.activeElement as HTMLElement | null;
-      const isEditableElement = !!activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.isContentEditable
-      );
-
-      if(isEditableElement && activeElement?.getAttribute('data-cheat-console-input') !== 'true'){
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-      setShowCheatConsole((currentState) => !currentState);
-    };
-
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
     AppState.addEventListener('on-ready', onAppReady);
     AppState.addEventListener('on-game-loaded', onGameLoaded);
@@ -117,7 +101,7 @@ export const AppProvider = (props: any) => {
     AppState.addEventListener('on-loader-message', onLoadingScreenMessage);
     AppState.initApp();
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keypress', onKeyPress);
       AppState.removeEventListener('on-preload', onPreload);
       AppState.removeEventListener('on-ready', onAppReady);
       AppState.removeEventListener('on-game-loaded', onGameLoaded);
@@ -127,6 +111,13 @@ export const AppProvider = (props: any) => {
       AppState.removeEventListener('on-loader-message', onLoadingScreenMessage);
     }
   }, []);
+
+  useEffect(() => { 
+    window.addEventListener('keypress', onKeyPress);
+    return () => {
+      window.removeEventListener('keypress', onKeyPress);
+    }
+  }, [gameLoaded, showCheatConsole, appReady]);
 
   const providerValue: AppProviderValues = {
     appState: [AppState],

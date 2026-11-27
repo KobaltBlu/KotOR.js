@@ -1,4 +1,4 @@
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 /**
  * Detect TSL using the webpack-external KotOR singleton when present.

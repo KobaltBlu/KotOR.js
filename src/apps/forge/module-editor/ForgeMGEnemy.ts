@@ -1,6 +1,6 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
-import { ForgeMGGunBank } from "@/apps/forge/module-editor/ForgeMGGunBank";
+import * as KotOR from "@apps/forge/KotOR";
+import { IModelListItem } from "@core/interface/module/minigame/IModelListItem";
+import { ForgeMGGunBank } from "@apps/forge/module-editor/ForgeMGGunBank";
 
 export class ForgeMGEnemy {
   // Basic properties
@@ -18,7 +18,7 @@ export class ForgeMGEnemy {
   trackName: string = '';
   trigger: number = 0;
 
-  /** Player-only fields: only re-emit if present on the loaded retail struct. */
+  /** Player-only fields: only re-emit if present on the loaded struct. */
   private hadAccelSecs = false;
   private hadCamera = false;
   private hadCameraRotate = false;

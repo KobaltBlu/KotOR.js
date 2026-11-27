@@ -1,8 +1,9 @@
 
-import * as swKotOR from "@/apps/launcher/profiles/kotor";
-import * as swKotOR2 from "@/apps/launcher/profiles/tsl";
-import * as swForge from "@/apps/launcher/profiles/forge";
-import { ConfigClient } from "@/utility/ConfigClient";
+import * as swKotOR from "@apps/launcher/profiles/kotor";
+import * as swKotOR2 from "@apps/launcher/profiles/tsl";
+import * as swForge from "@apps/launcher/profiles/forge";
+import { ConfigClient } from "@core/filesystem/ConfigClient";
+import { configClientDefaults } from "@apps/common/config/configClientDefaults";
 
 export class Launcher {
 
@@ -18,7 +19,7 @@ export class Launcher {
   static AppProfiles: any = {};
 
   static async InitProfiles(){
-    await ConfigClient.Init();
+    await ConfigClient.Init(configClientDefaults);
     Launcher.PROFILE_ID = 0;
 
     Launcher.AppProfiles = {

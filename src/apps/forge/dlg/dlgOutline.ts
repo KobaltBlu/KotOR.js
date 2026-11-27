@@ -1,6 +1,6 @@
-import { locStringIsEmpty, locStringPreview } from "@/apps/forge/dlg/dlgLocString";
-import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import type { ForgeDLGLink, ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { locStringIsEmpty, locStringPreview } from "@apps/forge/dlg/dlgLocString";
+import type { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import type { ForgeDLGLink, ForgeDLGNode } from "@apps/forge/dlg/ForgeDLGTypes";
 
 /**
  * Flatten visible outline rows from StartingList without duplicating documents.

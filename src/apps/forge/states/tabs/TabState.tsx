@@ -1,20 +1,20 @@
 import React from "react";
-import { EditorFile, EditorFileEventListenerTypes } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { EditorFile, EditorFileEventListenerTypes } from "@apps/forge/EditorFile";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { EditorTabManager } from "@apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 import * as fs from "fs";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge/ForgeFileSystem";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import { supportedFileDialogTypes, supportedFilePickerTypes } from "@apps/forge/ForgeFileSystem";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
+import * as KotOR from "@apps/forge/KotOR";
+import { TabStoreState } from "@apps/forge/interfaces/TabStoreState";
+import { pathParse } from "@apps/forge/helpers/PathParse";
+import { getSessionSettings } from "@apps/forge/settings/forgeSessionSettings";
 import {
   ForgeStatusBarItem,
   ForgeStatusBarState,
-} from "@/apps/forge/states/ForgeStatusBarState";
+} from "@apps/forge/states/ForgeStatusBarState";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -76,7 +76,7 @@ export class TabState extends EventListenerModel {
 
   /**
    * Push the current state onto the undo stack before making a change.
-   * Subclasses must override `captureUndoState()` to return the current
+   * Subclasses must override `captureUndoState` to return the current
    * snapshot. Clears the redo stack on every new change.
    */
   captureUndoSnapshot(): void {
@@ -165,7 +165,7 @@ export class TabState extends EventListenerModel {
    * Return `true` if the base class should handle Ctrl+Z / Ctrl+Y for this
    * key event. Override to return `false` when another element (e.g. Monaco
    * editor) should handle undo/redo natively for that event.
-   * Default: returns `true` only if `captureUndoState()` is overridden.
+   * Default: returns `true` only if `captureUndoState` is overridden.
    */
   protected shouldHandleUndoKeyboard(_e: KeyboardEvent): boolean {
     return this.captureUndoState() !== undefined || this.undoStack.length > 0 || this.redoStack.length > 0;

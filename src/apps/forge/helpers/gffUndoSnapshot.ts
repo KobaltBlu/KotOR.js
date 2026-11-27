@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFObject } from "@/resource/GFFObject";
+import { GFFObject } from "@core/resource/GFFObject";
 
 export function snapshotGff(gff?: GFFObject): Uint8Array | undefined {
   if (!gff) {

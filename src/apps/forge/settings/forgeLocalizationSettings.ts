@@ -6,13 +6,13 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { CExoLocString } from "@/resource/CExoLocString";
+import type { CExoLocString } from "@core/resource/CExoLocString";
 import {
   asSettingsRecord,
   createForgeSettingsBag,
   sanitizeBoolean,
   sanitizeInteger,
-} from "@/apps/forge/settings/forgeSettingsStore";
+} from "@apps/forge/settings/forgeSettingsStore";
 
 export const FORGE_LOCALIZATION_SETTINGS_KEY = "Forge.localization";
 

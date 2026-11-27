@@ -6,9 +6,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GameEngineType } from "@/enums/engine";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { ConfigClient } from "@/utility/ConfigClient";
+import { GameEngineType } from "@core/enums/engine";
+import { ApplicationProfile } from "@core/utility/ApplicationProfile";
+import { ConfigClient } from "@core/filesystem/ConfigClient";
 
 type ForgeKotORRuntime = {
   ApplicationProfile?: typeof ApplicationProfile;

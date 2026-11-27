@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
 import {
   explorerCopyRelativePath,
   explorerTargetDir,
@@ -7,8 +7,8 @@ import {
   isProtectedExplorerPath,
   joinProjectRel,
   sanitizeProjectEntryName,
-} from "@/apps/forge/helpers/projectExplorerActions";
-import { createMemoryVirtualProjectFolder } from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/helpers/projectExplorerActions";
+import { createMemoryVirtualProjectFolder } from "@apps/forge/virtual/VirtualProjectFolder";
 
 describe("sanitizeProjectEntryName", () => {
   test("rejects empty, traversal, and illegal path characters", () => {

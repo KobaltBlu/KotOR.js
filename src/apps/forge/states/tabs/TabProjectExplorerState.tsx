@@ -1,11 +1,11 @@
 import React from "react";
-import { TabProjectExplorer } from "@/apps/forge/components/tabs/tab-project-explorer/TabProjectExplorer";
-import { TabState } from "@/apps/forge/states/tabs";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { buildProjectExplorerTree } from "@/apps/forge/helpers/ProjectExplorerTree";
+import { TabProjectExplorer } from "@apps/forge/components/tabs/tab-project-explorer/TabProjectExplorer";
+import { TabState } from "@apps/forge/states/tabs";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { buildProjectExplorerTree } from "@apps/forge/helpers/ProjectExplorerTree";
 
 export class TabProjectExplorerState extends TabState {
 

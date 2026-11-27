@@ -1,8 +1,8 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { shouldBuildFromMdl } from "@/apps/forge/helpers/keyModelLoad";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import * as KotOR from "@/apps/forge/KotOR";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { shouldBuildFromMdl } from "@apps/forge/helpers/keyModelLoad";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import * as KotOR from "@apps/forge/KotOR";
+import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
 
 export class ForgeRoom extends ForgeGameObject {
 
@@ -134,7 +134,7 @@ export class ForgeRoom extends ForgeGameObject {
       });
 
       this.model = room;
-      this.model.userData.moduleObject = this;
+      this.model.userData.gameObject = this;
       this.container.add(this.model);
       this.box.setFromObject(this.container);
 

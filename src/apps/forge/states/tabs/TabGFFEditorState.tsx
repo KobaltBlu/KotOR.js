@@ -1,11 +1,11 @@
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabGFFEditor } from "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor";
-import { UTX_TEMPLATE_EXTENSIONS } from "@/apps/forge/commands/editorCommandGuards";
-import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@apps/forge/states/tabs";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabGFFEditor } from "@apps/forge/components/tabs/tab-gff-editor/TabGFFEditor";
+import { UTX_TEMPLATE_EXTENSIONS } from "@apps/forge/commands/editorCommandGuards";
+import { gffFromSnapshot, snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
 import {
   collectGffPaths,
   filterValidGffPaths,
@@ -18,8 +18,8 @@ import {
   parentGffPath,
   searchGffPaths,
   visibleGffPathsForSearch,
-} from "@/apps/forge/helpers/gffTreePath";
-import { fieldPreview } from "@/apps/forge/helpers/gffFieldValue";
+} from "@apps/forge/helpers/gffTreePath";
+import { fieldPreview } from "@apps/forge/helpers/gffFieldValue";
 import {
   clipboardToJson,
   createDefaultField,
@@ -39,8 +39,8 @@ import {
   setGffMemoryClipboard,
   structFromSerialized,
   uniqueFieldLabel,
-} from "@/apps/forge/helpers/gffJsonCodec";
-import { createUntitledModuleGffForExt } from "@/apps/forge/helpers/createUntitledModuleGff";
+} from "@apps/forge/helpers/gffJsonCodec";
+import { createUntitledModuleGffForExt } from "@apps/forge/helpers/createUntitledModuleGff";
 
 function gffSaveTypesForExt(ext?: string): FilePickerAcceptType[] {
   const key = (ext || "gff").replace(/^\./, "").toLowerCase() || "gff";

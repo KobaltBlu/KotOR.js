@@ -1,9 +1,12 @@
-import * as KotOR from "@/apps/game/KotOR";
-import { Launcher } from "@/apps/launcher/context/Launcher";
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { GameInitializer } from "@/apps/game/GameInitializer";
-import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
-import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
+import * as KotOR from "@apps/game/KotOR";
+import { Launcher } from "@apps/launcher/context/Launcher";
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import { GameInitializer } from "@apps/game/GameInitializer";
+import { applyProfileSeo } from "@apps/common/seo/applyProfileSeo";
+import { buildProfileSeo } from "@apps/common/seo/profileSeo";
+import { persistGameDirectoryHandle, restoreGameDirectoryHandlesToProfiles } from "@core/filesystem/gameDirectoryAccess";
+
+const STATS_MODE_KEY = 'kotor.statsMode';
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -20,8 +23,10 @@ export class AppState {
    */
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
-    await KotOR.ConfigClient.Init();
+    await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
     await Launcher.InitProfiles();
+    // Dedicated IDB keys survive profile merges; Forge already restores these.
+    await restoreGameDirectoryHandlesToProfiles();
     const rawKey = query.get("key");
     const gameKeys = ['kotor', 'tsl'];
     const key =
@@ -64,16 +69,14 @@ export class AppState {
     AppState.eulaAccepted = !!gameEULAConfig.accepted;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
 
+    AppState.loaderShow();
+
     console.log('gameEULAConfig', gameEULAConfig);
     console.log('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
-    // Only start loading once EULA is accepted and a game directory is available.
-    // Otherwise leave setup modals interactive (loader would cover them).
-    if(AppState.eulaAccepted && AppState.directoryLocated && !AppState.shouldDeferForAudioUnlock()){
+    if(AppState.eulaAccepted && !AppState.shouldDeferForAudioUnlock()){
       await AppState.loadGameDirectory();
-    }else{
-      AppState.loaderHide();
     }
   }
 
@@ -90,13 +93,6 @@ export class AppState {
   static needsBrowserAudioUnlock(): boolean {
     if(AppState.env !== ApplicationEnvironment.BROWSER){
       return false;
-    }
-    // Once the engine exists, its context is authoritative. A newly created
-    // probe may be suspended even after the user has unlocked the game context,
-    // causing on-preload to reopen Begin over an already initialized game.
-    const engineContext = KotOR.AudioEngine.engines[0]?.audioCtx;
-    if(engineContext){
-      return engineContext.state === 'suspended';
     }
     try {
       const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
@@ -117,8 +113,7 @@ export class AppState {
    */
   static async acceptEULA(){
     AppState.eulaAccepted = true;
-    if(!AppState.directoryLocated || AppState.shouldDeferForAudioUnlock()){
-      AppState.loaderHide();
+    if(AppState.shouldDeferForAudioUnlock()){
       AppState.processEventListener('on-preload', []);
       return;
     }
@@ -174,7 +169,6 @@ export class AppState {
       }
     }
     AppState.directoryLocated = false;
-    AppState.loaderHide();
     AppState.processEventListener('on-preload', []);
   }
 
@@ -272,6 +266,8 @@ export class AppState {
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
+    AppState.statsMode = AppState.loadStatsMode();
+    AppState.applyStatsMode();
     console.log('init complete');
     AppState.loaderHide();
   }
@@ -294,7 +290,7 @@ export class AppState {
   static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
     KotOR.ApplicationProfile.directoryHandle = handle;
     AppState.appProfile.directory_handle = handle;
-    KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
+    await persistGameDirectoryHandle(AppState.appProfile.key, handle);
     AppState.directoryLocated = true;
     if(AppState.shouldDeferForAudioUnlock()){
       AppState.processEventListener('on-preload', []);
@@ -321,7 +317,32 @@ export class AppState {
 
   static consoleCommand(command: string){
     console.log('consoleCommand', command);
-    return KotOR.GameState.CheatConsoleManager.processCommand(command);
+    KotOR.GameState.CheatConsoleManager.processCommand(command);
+  }
+
+  static loadStatsMode(): number|undefined {
+    try{
+      const v = localStorage.getItem(STATS_MODE_KEY);
+      if(v === null || v === ''){ return undefined; }
+      const n = parseInt(v, 10);
+      if(n === 0 || n === 1 || n === 2){ return n; }
+    }catch{ /* ignore */ }
+    return undefined;
+  }
+
+  static saveStatsMode(mode: number|undefined){
+    try{
+      if(mode === undefined){
+        localStorage.removeItem(STATS_MODE_KEY);
+      }else{
+        localStorage.setItem(STATS_MODE_KEY, String(mode));
+      }
+    }catch{ /* ignore */ }
+  }
+
+  static applyStatsMode(){
+    if(!KotOR.GameState.stats){ return; }
+    KotOR.GameState.stats.showPanel(AppState.statsMode as any);
   }
 
   static togglePerformanceMonitor(){
@@ -335,32 +356,20 @@ export class AppState {
       mode = undefined;
     }
     AppState.statsMode = mode;
-    KotOR.GameState.stats.showPanel(mode as any);
-    return mode;
+    AppState.saveStatsMode(mode);
+    AppState.applyStatsMode();
   }
 
   static toggleDebugger(){
-    KotOR.GameState.Debugger.open();
+    KotOR.GameState.Debugger.toggle();
   }
 
   static reloadLastSave(){
     const gameKey = KotOR.GameState.GameKey;
-    const lastSaveFolder = localStorage.getItem(`${gameKey}_last_save_folder`) || '';
     const lastSaveId = parseInt(localStorage.getItem(`${gameKey}_last_save_id`) || '-1');
-    const saveGame = KotOR.SaveGame.saves.find((save) => save.folderName == lastSaveFolder) || KotOR.SaveGame.saves[lastSaveId];
+    const saveGame = KotOR.SaveGame.saves[lastSaveId];
     if(!saveGame){ return; }
     saveGame.load();
-  }
-
-  static async exportGameSnapshot(){
-    return await KotOR.GameStateSnapshot.exportSnapshotToFile();
-  }
-
-  static async dumpGameResourcesAsJson(
-    options?: KotOR.GameResourceDumpOptions,
-    onProgress?: (progress: KotOR.GameResourceDumpProgress) => void
-  ){
-    return await KotOR.GameResourceDumper.dumpAllToSelectedDirectory(options, onProgress);
   }
 
   /**

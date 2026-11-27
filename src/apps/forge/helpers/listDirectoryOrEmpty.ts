@@ -1,5 +1,5 @@
 /**
- * List a game-relative directory, or [] when the folder is missing.
+ * List a game-relative directory, or  when the folder is missing.
  *
  * @file listDirectoryOrEmpty.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

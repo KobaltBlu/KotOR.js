@@ -7,13 +7,13 @@
  */
 
 import React, { ChangeEvent } from "react";
-import { ForgeButton, ForgeButtonGroup, ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
-import type { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
+import { ForgeButton, ForgeButtonGroup, ForgeInput, ForgeSelect } from "@apps/forge/components/ui";
+import type { TabERFEditorState } from "@apps/forge/states/tabs/TabERFEditorState";
 import type {
   ErfBrowserSortDir,
   ErfBrowserSortKey,
   ErfBrowserViewMode,
-} from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
+} from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
 
 export interface ERFBrowserToolbarProps {
   tab: TabERFEditorState;

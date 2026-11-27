@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { useAudioPlayerTransport } from "@/apps/forge/helpers/useAudioPlayerTransport";
-import { useTabStatusBar } from "@/apps/forge/helpers/useForgeStatusBarItems";
-import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { useAudioPlayerTransport } from "@apps/forge/helpers/useAudioPlayerTransport";
+import { useTabStatusBar } from "@apps/forge/helpers/useForgeStatusBarItems";
+import { TabAudioPlayerState } from "@apps/forge/states/tabs/TabAudioPlayerState";
 import {
   AudioPlayerOstStatePayload,
   AudioPlayerState,
-} from "@/apps/forge/states/AudioPlayerState";
-import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
+} from "@apps/forge/states/AudioPlayerState";
+import { ForgeAudioOstControls } from "@apps/forge/components/ForgeAudioOstControls";
 import {
   drawHyperspace,
   drawSpectrumBars,
@@ -18,9 +18,9 @@ import {
   HyperspaceVizState,
   TAB_AUDIO_VISUAL_OPTIONS,
   TabAudioVisualId,
-} from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
+} from "@apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
 import * as KotOR from "@/KotOR";
-import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { forgeAudioSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
 
