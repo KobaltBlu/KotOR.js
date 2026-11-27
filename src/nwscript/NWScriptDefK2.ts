@@ -7,6 +7,7 @@ import { BitWise } from "@/utility/BitWise";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+import { inheritK1Actions } from "@/nwscript/inheritK1Actions";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 
 /**
@@ -6268,12 +6269,4 @@ NWScriptDefK2.Actions = {
   }
 };
 
-for (let property in NWScriptDefK1.Actions) {
-  if (NWScriptDefK1.Actions.hasOwnProperty(property)) {
-    if(NWScriptDefK2.Actions[property]){
-      if(NWScriptDefK2.Actions[property].action === undefined){
-        NWScriptDefK2.Actions[property].action = NWScriptDefK1.Actions[property].action;
-      }
-    }
-  }
-}
+inheritK1Actions(NWScriptDefK1.Actions, NWScriptDefK2.Actions);
