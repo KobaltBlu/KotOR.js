@@ -320,7 +320,7 @@ export class GameMenu {
       controls = this.tGuiPanel.getActiveControls();
     }
     if(this.childMenu){
-      controls = controls.concat(controls, this.childMenu.getActiveControls());
+      controls = controls.concat(this.childMenu.getActiveControls());
     }
     return controls;
   }

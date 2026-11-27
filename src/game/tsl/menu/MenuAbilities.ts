@@ -119,7 +119,8 @@ export class MenuAbilities extends K1_MenuAbilities {
         group.push(feat);
         for (let j = 0; j < featCount; j++) {
           const chainFeat = feats[j];
-          if (chainFeat.prereqFeat1 == i || chainFeat.prereqFeat2 == i) {
+          //Chains are keyed by feat id, not by the creature's feat list index
+          if (chainFeat.prereqFeat1 == feat.id || chainFeat.prereqFeat2 == feat.id) {
             if (chainFeat.prereqFeat1 != -1 && chainFeat.prereqFeat2 != -1) {
               group[2] = chainFeat;
             } else {

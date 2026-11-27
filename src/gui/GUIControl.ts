@@ -1654,16 +1654,28 @@ export class GUIControl {
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
-      if(control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)){
+      const containsMouse = !!(control.box && control.box.containsPoint(Mouse.positionUI));
+      if(containsMouse && (control.allowClick || control.editable)){
         controls.push(control);
       }else{
         this.menu.setWidgetHoverActive(control, false);
       }
-      if(control.box && control.box.containsPoint(Mouse.positionUI)){
+
+      if(!control.widget.visible)
+        continue;
+
+      // A child's extent does not necessarily enclose its own children (e.g. the
+      // chargen +/- buttons are parented to a value button that doesn't cover
+      // them), so descend into every visible subtree instead of only the
+      // subtrees whose root contains the mouse. List boxes are the exception:
+      // their rows are only repositioned (never hidden) when scrolled out of
+      // view, so keep gating them on their own box to avoid hitting rows that
+      // lie outside the visible list area.
+      if(containsMouse || !BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIListBox)){
         controls = controls.concat( control.getActiveControls() );
       }
     }
-    
+
     return controls;
   }
 

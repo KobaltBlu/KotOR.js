@@ -5,10 +5,31 @@ import { GameMenu } from "@/gui";
 import { GameState } from "@/GameState";
 
 /**
+ * Attribute point-buy rules shared by both games:
+ * every attribute starts at 8, 30 points to spend, hard cap of 18.
+ */
+const ATTRIBUTE_MIN = 8;
+const ATTRIBUTE_MAX = 18;
+const ATTRIBUTE_POINTS = 30;
+
+/**
+ * Per-attribute control name prefix and the chargen TLK strrefs for its name
+ * and description (indexed by CharGenAttribute; identical in K1 and TSL).
+ */
+const ATTRIBUTE_ROWS: { attribute: CharGenAttribute; key: string; nameStrRef: number; descStrRef: number }[] = [
+  { attribute: CharGenAttribute.STR, key: 'STR', nameStrRef: 211, descStrRef: 222 },
+  { attribute: CharGenAttribute.DEX, key: 'DEX', nameStrRef: 212, descStrRef: 223 },
+  { attribute: CharGenAttribute.CON, key: 'CON', nameStrRef: 213, descStrRef: 224 },
+  { attribute: CharGenAttribute.WIS, key: 'WIS', nameStrRef: 214, descStrRef: 225 },
+  { attribute: CharGenAttribute.INT, key: 'INT', nameStrRef: 215, descStrRef: 226 },
+  { attribute: CharGenAttribute.CHA, key: 'CHA', nameStrRef: 216, descStrRef: 227 },
+];
+
+/**
  * CharGenAbilities class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -55,6 +76,9 @@ export class CharGenAbilities extends GameMenu {
 
   creature: ModuleCreature;
 
+  /** The attribute row currently being hovered/clicked; drives the cost/modifier/description feedback */
+  focusedAttribute: CharGenAttribute = CharGenAttribute.STR;
+
   constructor(){
     super();
     this.gui_resref = 'abchrgen';
@@ -67,14 +91,32 @@ export class CharGenAbilities extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       //this.lbl_hint = this.getControlByName('LBL_HINT');
+      this.wireControls();
+      resolve();
+    });
+  }
 
+  /**
+   * Wires the listeners shared by the K1 and TSL versions of this screen.
+   * The TSL subclass skips the K1 initializer (skipInit) and calls this itself.
+   */
+  protected wireControls(){
+    if(this.BTN_BACK){
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
+        //Discard the working copy; the next show() reloads it from the creature
         this.close();
       });
+    }
 
+    if(this.BTN_ACCEPT){
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
+
+        //Every point has to be spent before the attributes can be accepted (reone abilities.cpp, strategywiki chargen)
+        if(GameState.CharGenManager.availPoints > 0){
+          return;
+        }
 
         if(this.creature){
           this.creature.str = GameState.CharGenManager.str;
@@ -89,259 +131,306 @@ export class CharGenAbilities extends GameMenu {
 
         this.close();
       });
+    }
 
+    if(this.BTN_RECOMMENDED){
       this.BTN_RECOMMENDED.addEventListener('click', (e) => {
-        GameState.CharGenManager.availPoints = 0;
-        if(this.creature){
-          GameState.CharGenManager.str = parseInt(this.creature.classes[0].str as any);
-          GameState.CharGenManager.dex = parseInt(this.creature.classes[0].dex as any);
-          GameState.CharGenManager.con = parseInt(this.creature.classes[0].con as any);
-          GameState.CharGenManager.wis = parseInt(this.creature.classes[0].wis as any);
-          GameState.CharGenManager.int = parseInt(this.creature.classes[0].int as any);
-          GameState.CharGenManager.cha = parseInt(this.creature.classes[0].cha as any);
-        }
-
-        this.updateButtonStates();
-      });
-
-      //MINUS Buttons
-      this.STR_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.applyRecommendedAttributes();
+        this.updateButtonStates();
+        this.setFocusedAttribute(this.focusedAttribute);
+      });
+    }
 
-        if(this.creature && GameState.CharGenManager.str > this.creature.str && GameState.CharGenManager.str > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.STR);
-          GameState.CharGenManager.str -= 1;
-          GameState.CharGenManager.availPoints += cost;
-        }
-        this.updateButtonStates();
-      });
+    for(let i = 0; i < ATTRIBUTE_ROWS.length; i++){
+      this.wireAttributeRow(ATTRIBUTE_ROWS[i].attribute, ATTRIBUTE_ROWS[i].key);
+    }
+  }
 
-      this.DEX_MINUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && GameState.CharGenManager.dex > this.creature.dex && GameState.CharGenManager.dex > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.DEX);
-          GameState.CharGenManager.dex -= 1;
-          GameState.CharGenManager.availPoints += cost;
-        }
-        this.updateButtonStates();
-      });
-      
-      this.CON_MINUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && GameState.CharGenManager.con > this.creature.con && GameState.CharGenManager.con > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.CON);
-          GameState.CharGenManager.con -= 1;
-          GameState.CharGenManager.availPoints += cost;
-        }
-        this.updateButtonStates();
-      });
+  /**
+   * Wires the +/- buttons and the hover/click focus feedback for one attribute row.
+   * The +/- buttons are children of the *_POINTS_BTN, so click routing (deepest
+   * control first) still hands them the click even though the value button
+   * gets its own click listener.
+   */
+  protected wireAttributeRow(attribute: CharGenAttribute, key: string){
+    const label = this.getControlByName(`${key}_LBL`);
+    const pointsBtn = this.getControlByName(`${key}_POINTS_BTN`);
+    const minusBtn = this.getControlByName(`${key}_MINUS_BTN`);
+    const plusBtn = this.getControlByName(`${key}_PLUS_BTN`);
 
-      this.WIS_MINUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && GameState.CharGenManager.wis > this.creature.wis && GameState.CharGenManager.wis > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.WIS);
-          GameState.CharGenManager.wis -= 1;
-          GameState.CharGenManager.availPoints += cost;
-        }
-        this.updateButtonStates();
-      });
+    const focus = () => {
+      this.setFocusedAttribute(attribute);
+    };
 
-      this.INT_MINUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && GameState.CharGenManager.int > this.creature.int && GameState.CharGenManager.int > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.INT);
-          GameState.CharGenManager.int -= 1;
-          GameState.CharGenManager.availPoints += cost;
-        }
-        this.updateButtonStates();
-      });
+    if(label){
+      label.addEventListener('hover', focus);
+    }
 
-      this.CHA_MINUS_BTN.addEventListener('click', (e) => {
+    if(pointsBtn){
+      pointsBtn.addEventListener('hover', focus);
+      pointsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.creature && GameState.CharGenManager.cha > this.creature.cha && GameState.CharGenManager.cha > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.CHA);
-          GameState.CharGenManager.cha -= 1;
-          GameState.CharGenManager.availPoints += cost;
-        }
-        this.updateButtonStates();
+        focus();
       });
-      
-      //PLUS Buttons
-      this.STR_PLUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.STR) <= GameState.CharGenManager.availPoints){
-          GameState.CharGenManager.str += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.STR);
-          GameState.CharGenManager.availPoints -= cost;
-        }
-        this.updateButtonStates();
-      });
+    }
 
-      this.DEX_PLUS_BTN.addEventListener('click', (e) => {
+    if(minusBtn){
+      minusBtn.addEventListener('hover', focus);
+      minusBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.DEX) <= GameState.CharGenManager.availPoints){
-          GameState.CharGenManager.dex += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.DEX);
-          GameState.CharGenManager.availPoints -= cost;
-        }
+        this.decrementAttribute(attribute);
         this.updateButtonStates();
+        focus();
       });
+    }
 
-      this.CON_PLUS_BTN.addEventListener('click', (e) => {
+    if(plusBtn){
+      plusBtn.addEventListener('hover', focus);
+      plusBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.CON) <= GameState.CharGenManager.availPoints){
-          GameState.CharGenManager.con += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.CON);
-          GameState.CharGenManager.availPoints -= cost;
-        }
+        this.incrementAttribute(attribute);
         this.updateButtonStates();
+        focus();
       });
-
-      this.WIS_PLUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.WIS) <= GameState.CharGenManager.availPoints){
-          GameState.CharGenManager.wis += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.WIS);
-          GameState.CharGenManager.availPoints -= cost;
-        }
-        this.updateButtonStates();
-      });
-
-      this.INT_PLUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.INT) <= GameState.CharGenManager.availPoints){
-          GameState.CharGenManager.int += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.INT);
-          GameState.CharGenManager.availPoints -= cost;
-        }
-        this.updateButtonStates();
-      });
-
-      this.CHA_PLUS_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.CHA) <= GameState.CharGenManager.availPoints){
-          GameState.CharGenManager.cha += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.CHA);
-          GameState.CharGenManager.availPoints -= cost;
-        }
-        this.updateButtonStates();
-      });
-
-      resolve();
-    });
+    }
   }
 
   show(){
     super.show();
+    this.loadFromCreature();
     this.updateButtonStates();
+    this.setFocusedAttribute(this.focusedAttribute);
   }
 
   setCreature(creature: ModuleCreature){
     this.creature = creature;
   }
 
-  updateButtonStates(){
-    this.STR_POINTS_BTN.setText(GameState.CharGenManager.str);
-    this.DEX_POINTS_BTN.setText(GameState.CharGenManager.dex);
-    this.CON_POINTS_BTN.setText(GameState.CharGenManager.con);
-    this.WIS_POINTS_BTN.setText(GameState.CharGenManager.wis);
-    this.INT_POINTS_BTN.setText(GameState.CharGenManager.int);
-    this.CHA_POINTS_BTN.setText(GameState.CharGenManager.cha);
+  /**
+   * Loads the working copy (CharGenManager.str..cha / availPoints) from the
+   * creature's currently accepted attributes.
+   */
+  loadFromCreature(){
+    if(!this.creature){
+      console.warn('CharGenAbilities.loadFromCreature', 'No creature set');
+      return;
+    }
 
-    //Selected Attribute Cost
-    //this.COST_POINTS_LBL
-
-    //Selected Attribute Modifier
-    //this.LBL_ABILITY_MOD
-
-    this.STR_MINUS_BTN.show();
-    this.DEX_MINUS_BTN.show();
-    this.CON_MINUS_BTN.show();
-    this.WIS_MINUS_BTN.show();
-    this.INT_MINUS_BTN.show();
-    this.CHA_MINUS_BTN.show();
-
-    this.STR_PLUS_BTN.show();
-    this.DEX_PLUS_BTN.show();
-    this.CON_PLUS_BTN.show();
-    this.WIS_PLUS_BTN.show();
-    this.INT_PLUS_BTN.show();
-    this.CHA_PLUS_BTN.show();
-
-    if(GameState.CharGenManager.str <= 8 || this.creature.str == GameState.CharGenManager.str)
-      this.STR_MINUS_BTN.hide();
-
-    if(GameState.CharGenManager.dex <= 8 || this.creature.dex == GameState.CharGenManager.dex)
-      this.DEX_MINUS_BTN.hide();
-
-    if(GameState.CharGenManager.con <= 8 || this.creature.con == GameState.CharGenManager.con)
-      this.CON_MINUS_BTN.hide();
-
-    if(GameState.CharGenManager.wis <= 8 || this.creature.wis == GameState.CharGenManager.wis)
-      this.WIS_MINUS_BTN.hide();
-
-    if(GameState.CharGenManager.int <= 8 || this.creature.int == GameState.CharGenManager.int)
-      this.INT_MINUS_BTN.hide();
-
-    if(GameState.CharGenManager.cha <= 8 || this.creature.cha == GameState.CharGenManager.cha)
-      this.CHA_MINUS_BTN.hide();
-
-    if(this.getAttributeCost(CharGenAttribute.STR) > GameState.CharGenManager.availPoints)
-      this.STR_PLUS_BTN.hide();
-
-    if(this.getAttributeCost(CharGenAttribute.DEX) > GameState.CharGenManager.availPoints)
-      this.DEX_PLUS_BTN.hide();
-
-    if(this.getAttributeCost(CharGenAttribute.CON) > GameState.CharGenManager.availPoints)
-      this.CON_PLUS_BTN.hide();
-
-    if(this.getAttributeCost(CharGenAttribute.WIS) > GameState.CharGenManager.availPoints)
-      this.WIS_PLUS_BTN.hide();
-
-    if(this.getAttributeCost(CharGenAttribute.INT) > GameState.CharGenManager.availPoints)
-      this.INT_PLUS_BTN.hide();
-
-    if(this.getAttributeCost(CharGenAttribute.CHA) > GameState.CharGenManager.availPoints)
-      this.CHA_PLUS_BTN.hide();
-
-    this.REMAINING_SELECTIONS_LBL.setText(GameState.CharGenManager.availPoints);
+    GameState.CharGenManager.str = this.clampAttribute(this.creature.str);
+    GameState.CharGenManager.dex = this.clampAttribute(this.creature.dex);
+    GameState.CharGenManager.con = this.clampAttribute(this.creature.con);
+    GameState.CharGenManager.wis = this.clampAttribute(this.creature.wis);
+    GameState.CharGenManager.int = this.clampAttribute(this.creature.int);
+    GameState.CharGenManager.cha = this.clampAttribute(this.creature.cha);
+    this.recalculateAvailablePoints();
   }
 
-  getAttributeCost(index = 0){
-    let mod = 0;
-    switch(index){
-      case CharGenAttribute.STR:
-        mod = Math.floor((GameState.CharGenManager.str - 10)/2);
-      break;
-      case CharGenAttribute.DEX:
-        mod = Math.floor((GameState.CharGenManager.dex - 10)/2);
-      break;
-      case CharGenAttribute.CON:
-        mod = Math.floor((GameState.CharGenManager.con - 10)/2);
-      break;
-      case CharGenAttribute.WIS:
-        mod = Math.floor((GameState.CharGenManager.wis - 10)/2);
-      break;
-      case CharGenAttribute.INT:
-        mod = Math.floor((GameState.CharGenManager.int - 10)/2);
-      break;
-      case CharGenAttribute.CHA:
-        mod = Math.floor((GameState.CharGenManager.cha - 10)/2);
-      break;
+  /**
+   * Sets the working copy to the class recommended values and the remaining
+   * points to whatever those values leave over.
+   */
+  applyRecommendedAttributes(){
+    if(!this.creature || !this.creature.classes || !this.creature.classes[0]){
+      console.warn('CharGenAbilities.applyRecommendedAttributes', 'No creature/class set');
+      return;
     }
-    return Math.max(1, mod);
+
+    const creatureClass = this.creature.classes[0];
+    GameState.CharGenManager.str = this.clampAttribute(creatureClass.str);
+    GameState.CharGenManager.dex = this.clampAttribute(creatureClass.dex);
+    GameState.CharGenManager.con = this.clampAttribute(creatureClass.con);
+    GameState.CharGenManager.wis = this.clampAttribute(creatureClass.wis);
+    GameState.CharGenManager.int = this.clampAttribute(creatureClass.int);
+    GameState.CharGenManager.cha = this.clampAttribute(creatureClass.cha);
+    this.recalculateAvailablePoints();
+  }
+
+  recalculateAvailablePoints(){
+    let spent = 0;
+    for(let i = 0; i < ATTRIBUTE_ROWS.length; i++){
+      spent += this.getTotalAttributeCost(this.getAttributeValue(ATTRIBUTE_ROWS[i].attribute));
+    }
+    GameState.CharGenManager.availPoints = Math.max(0, ATTRIBUTE_POINTS - spent);
+  }
+
+  incrementAttribute(attribute: CharGenAttribute){
+    const value = this.getAttributeValue(attribute);
+    const cost = this.getIncrementCost(value);
+    if(value >= ATTRIBUTE_MAX || cost > GameState.CharGenManager.availPoints){
+      return;
+    }
+    this.setAttributeValue(attribute, value + 1);
+    GameState.CharGenManager.availPoints = Math.max(0, GameState.CharGenManager.availPoints - cost);
+  }
+
+  decrementAttribute(attribute: CharGenAttribute){
+    const value = this.getAttributeValue(attribute);
+    if(value <= ATTRIBUTE_MIN){
+      return;
+    }
+    this.setAttributeValue(attribute, value - 1);
+    //Refund the cost of the increment being undone (value-1 -> value)
+    GameState.CharGenManager.availPoints += this.getIncrementCost(value - 1);
+  }
+
+  updateButtonStates(){
+    if(!this.creature){
+      console.warn('CharGenAbilities.updateButtonStates', 'No creature set');
+      return;
+    }
+
+    for(let i = 0; i < ATTRIBUTE_ROWS.length; i++){
+      const row = ATTRIBUTE_ROWS[i];
+      const value = this.getAttributeValue(row.attribute);
+      const pointsBtn = this.getControlByName(`${row.key}_POINTS_BTN`);
+      const minusBtn = this.getControlByName(`${row.key}_MINUS_BTN`);
+      const plusBtn = this.getControlByName(`${row.key}_PLUS_BTN`);
+      const bonusLbl = this.getControlByName(`LBL_BONUS_${row.key}`);
+
+      if(pointsBtn){
+        pointsBtn.setText(value);
+      }
+
+      if(minusBtn){
+        if(value > ATTRIBUTE_MIN){
+          minusBtn.show();
+        }else{
+          minusBtn.hide();
+        }
+      }
+
+      if(plusBtn){
+        if(value < ATTRIBUTE_MAX && this.getIncrementCost(value) <= GameState.CharGenManager.availPoints){
+          plusBtn.show();
+        }else{
+          plusBtn.hide();
+        }
+      }
+
+      //TSL: per-row modifier labels
+      if(bonusLbl){
+        bonusLbl.setText(this.formatModifier(this.getAttributeModifier(value)));
+      }
+    }
+
+    if(this.REMAINING_SELECTIONS_LBL){
+      this.REMAINING_SELECTIONS_LBL.setText(GameState.CharGenManager.availPoints);
+    }
+  }
+
+  /**
+   * Updates the cost / modifier / description feedback for the hovered or clicked attribute.
+   */
+  setFocusedAttribute(attribute: CharGenAttribute){
+    const row = ATTRIBUTE_ROWS.find((r) => r.attribute === attribute) || ATTRIBUTE_ROWS[0];
+    this.focusedAttribute = row.attribute;
+    const value = this.getAttributeValue(row.attribute);
+
+    if(this.COST_POINTS_LBL){
+      this.COST_POINTS_LBL.setText(this.getIncrementCost(value));
+    }
+
+    if(this.LBL_ABILITY_MOD){
+      this.LBL_ABILITY_MOD.setText(this.formatModifier(this.getAttributeModifier(value)));
+    }
+
+    if(this.LB_DESC){
+      const description = this.getTLKString(row.descStrRef);
+      if(description){
+        this.LB_DESC.setItem(description);
+      }
+    }
+  }
+
+  getAttributeValue(attribute: CharGenAttribute): number {
+    switch(attribute){
+      case CharGenAttribute.STR: return GameState.CharGenManager.str;
+      case CharGenAttribute.DEX: return GameState.CharGenManager.dex;
+      case CharGenAttribute.CON: return GameState.CharGenManager.con;
+      case CharGenAttribute.WIS: return GameState.CharGenManager.wis;
+      case CharGenAttribute.INT: return GameState.CharGenManager.int;
+      case CharGenAttribute.CHA: return GameState.CharGenManager.cha;
+    }
+    return ATTRIBUTE_MIN;
+  }
+
+  setAttributeValue(attribute: CharGenAttribute, value: number){
+    switch(attribute){
+      case CharGenAttribute.STR: GameState.CharGenManager.str = value; break;
+      case CharGenAttribute.DEX: GameState.CharGenManager.dex = value; break;
+      case CharGenAttribute.CON: GameState.CharGenManager.con = value; break;
+      case CharGenAttribute.WIS: GameState.CharGenManager.wis = value; break;
+      case CharGenAttribute.INT: GameState.CharGenManager.int = value; break;
+      case CharGenAttribute.CHA: GameState.CharGenManager.cha = value; break;
+    }
+  }
+
+  /**
+   * Cost of raising an attribute from `value` to `value + 1`:
+   * 1 up to 14, 2 for 15 and 16, 3 for 17 and 18.
+   */
+  getIncrementCost(value: number): number {
+    const next = value + 1;
+    if(next <= 14) return 1;
+    if(next <= 16) return 2;
+    return 3;
+  }
+
+  /**
+   * Total points spent to raise an attribute from the base of 8 to `value`.
+   */
+  getTotalAttributeCost(value: number): number {
+    let total = 0;
+    for(let v = ATTRIBUTE_MIN; v < value; v++){
+      total += this.getIncrementCost(v);
+    }
+    return total;
+  }
+
+  /**
+   * Cost of the next increment for the given attribute (working copy).
+   */
+  getAttributeCost(index = 0){
+    return this.getIncrementCost(this.getAttributeValue(index));
+  }
+
+  getAttributeModifier(value: number): number {
+    return Math.floor((value - 10) / 2);
+  }
+
+  formatModifier(modifier: number): string {
+    return (modifier >= 0 ? '+' : '') + modifier;
+  }
+
+  clampAttribute(value: any): number {
+    const parsed = parseInt(value as any);
+    if(isNaN(parsed)) return ATTRIBUTE_MIN;
+    return Math.min(ATTRIBUTE_MAX, Math.max(ATTRIBUTE_MIN, parsed));
+  }
+
+  getTLKString(strRef: number): string {
+    const tlkString = GameState.TLKManager?.TLKStrings?.[strRef];
+    return tlkString ? tlkString.Value : '';
   }
 
   reset(){
-    GameState.CharGenManager.availPoints = 30;
+    GameState.CharGenManager.availPoints = ATTRIBUTE_POINTS;
+    GameState.CharGenManager.str = ATTRIBUTE_MIN;
+    GameState.CharGenManager.dex = ATTRIBUTE_MIN;
+    GameState.CharGenManager.con = ATTRIBUTE_MIN;
+    GameState.CharGenManager.wis = ATTRIBUTE_MIN;
+    GameState.CharGenManager.int = ATTRIBUTE_MIN;
+    GameState.CharGenManager.cha = ATTRIBUTE_MIN;
     if(this.creature){
-      this.creature.str = 8;
-      this.creature.dex = 8;
-      this.creature.con = 8;
-      this.creature.wis = 8;
-      this.creature.int = 8;
-      this.creature.cha = 8;
+      this.creature.str = ATTRIBUTE_MIN;
+      this.creature.dex = ATTRIBUTE_MIN;
+      this.creature.con = ATTRIBUTE_MIN;
+      this.creature.wis = ATTRIBUTE_MIN;
+      this.creature.int = ATTRIBUTE_MIN;
+      this.creature.cha = ATTRIBUTE_MIN;
     }
+    this.focusedAttribute = CharGenAttribute.STR;
   }
-  
+
 }

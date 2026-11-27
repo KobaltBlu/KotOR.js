@@ -110,50 +110,130 @@ export class CreatureClass {
     return this.spells;
   }
 
+  /**
+   * Index into the per-level class tables (cls_atk_*.2da, acbonus.2da) for
+   * this class level. Row 0 holds level 1 (reone: _attackBonuses[level-1]);
+   * an unset level (0) is treated as level 1 and the index is clamped to the
+   * table so a missing row never throws.
+   */
+  protected getLevelTableIndex(tableLength: number): number {
+    if(tableLength <= 0){
+      return -1;
+    }
+    return Math.min(Math.max(this.level, 1) - 1, tableLength - 1);
+  }
+
   getBaseAttackBonus(){
-    return this.attackBonuses[this.level].bab;
+    const idx = this.getLevelTableIndex(this.attackBonuses.length);
+    if(idx < 0){
+      return 0;
+    }
+    return this.attackBonuses[idx].bab;
   }
 
   getACBonus(){
-    return this.acbonuses[this.level];
+    //acbonus.2da row 0 = level 1 is assumed by analogy with cls_atk_*/cls_st_* (table not verified)
+    const idx = this.getLevelTableIndex(this.acbonuses.length);
+    if(idx < 0){
+      return 0;
+    }
+    return this.acbonuses[idx];
   }
 
-  isFeatAvailable( feat: any ){
-    if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
-      if(isNaN(status)){
-        return false;
-      }
-
-      if(status != 4){ //UNAVAILABLE
-        return true;
-      }
-    }
-    return false;
+  /**
+   * The feat.2da column prefix for this class: classes.2da featstable
+   * (e.g. 'SOL') lowercased to match the sol_list / sol_granted / sol_recom
+   * column names.
+   */
+  getFeatTableCode(): string {
+    return (this.featstable || '').toLowerCase();
   }
 
-  getFeatStatus( feat: any ){
-    if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
-      if(isNaN(status)){
-        return false;
-      }
-
-      return status;
+  /**
+   * Reads one of the per-class feat.2da columns (<code>_list, <code>_granted,
+   * <code>_recom) from either a TalentFeat (camelCase fields: solList,
+   * solGranted, solRecom) or a raw feat.2da row (sol_list, ...).
+   * Returns -1 when the column is blank ('****') or missing.
+   */
+  protected readFeatColumn(feat: any, suffix: 'list'|'granted'|'recom'): number {
+    const code = this.getFeatTableCode();
+    if(!feat || !code){
+      return -1;
     }
-    return -1;
+
+    //TalentFeat field (sol_list => solList)
+    let value = feat[code + suffix.charAt(0).toUpperCase() + suffix.slice(1)];
+    if(typeof value === 'undefined'){
+      //raw feat.2da row
+      value = feat[`${code}_${suffix}`];
+    }
+
+    return TwoDAObject.normalizeValue(value, 'number', -1);
   }
 
-  getFeatGrantedLevel( feat: any ){
-    if(typeof feat != 'undefined'){
-      let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
-      if(isNaN(granted)){
-        return -1;
-      }
+  /**
+   * feat.2da <code>_list: 0/1/2 = selectable by this class, 3 = granted
+   * automatically at <code>_granted class level, 4 = never available.
+   * Returns -1 when the feat has no entry for this class.
+   */
+  getFeatStatus( feat: any ): number {
+    return this.readFeatColumn(feat, 'list');
+  }
 
-      return granted;
+  /**
+   * True when the feat can ever be held by this class (<code>_list != 4).
+   */
+  isFeatAvailable( feat: any ): boolean {
+    const status = this.getFeatStatus(feat);
+    return status >= 0 && status != 4; //4 = UNAVAILABLE
+  }
+
+  /**
+   * True when the feat can be picked by this class on a level-up / chargen
+   * feat screen (<code>_list 0, 1 or 2). Granted (3) and unavailable (4)
+   * feats are never picked.
+   */
+  isFeatSelectable( feat: any ): boolean {
+    const status = this.getFeatStatus(feat);
+    return status >= 0 && status <= 2;
+  }
+
+  /**
+   * Class level at which a <code>_list == 3 feat is granted automatically
+   * (1 = at character creation); -1 when the feat is not granted.
+   */
+  getFeatGrantedLevel( feat: any ): number {
+    return this.readFeatColumn(feat, 'granted');
+  }
+
+  /**
+   * Ordering used by the Recommended button (1 = first choice); -1 when the
+   * feat is never auto-picked for this class.
+   */
+  getFeatRecommendedOrder( feat: any ): number {
+    return this.readFeatColumn(feat, 'recom');
+  }
+
+  /**
+   * True when the feat is auto-granted to this class at or below the given
+   * class level (<code>_list == 3 and 1 <= <code>_granted <= level).
+   */
+  isFeatGrantedAtLevel( feat: any, level: number = 1 ): boolean {
+    if(this.getFeatStatus(feat) != 3){
+      return false;
     }
-    return -1;
+    const granted = this.getFeatGrantedLevel(feat);
+    return granted >= 1 && granted <= level;
+  }
+
+  /**
+   * Number of regular feat picks this class gains at the given class level
+   * (featgain.2da <code>_reg; row 0 = level 1).
+   */
+  getFeatPickCount( level: number = 1 ): number {
+    const idx = Math.max(level, 1) - 1;
+    const picks = this.featGainPoints[idx];
+    return (typeof picks === 'number' && picks > 0) ? picks : 0;
   }
 
   static FromCreatureClassStruct(cls_struct: GFFStruct){

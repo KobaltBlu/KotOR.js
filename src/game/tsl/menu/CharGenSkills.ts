@@ -69,6 +69,8 @@ export class CharGenSkills extends K1_CharGenSkills {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      //The K1 initializer is skipped above, so wire the shared handlers here.
+      this.wireControls();
       resolve();
     });
   }
