@@ -45,7 +45,7 @@
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.1",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.6.2",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.6.3",
     "@types/blueimp-md5": "^2.18.2",
     "@types/bootstrap": "^5.2.10",
     "@types/escodegen": "^0.0.10",
@@ -58,13 +58,12 @@
     "@types/three": "0.186.0",
     "@types/wicg-file-system-access": "^2023.10.7",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "browserify-fs": "^1.0.0",
     "circular-dependency-plugin": "^5.2.2",
-    "copy-webpack-plugin": "^13.0.1",
+    "copy-webpack-plugin": "^14.0.0",
     "cross-env": "^10.1.0",
     "css-loader": "^7.1.2",
     "dxt-js": "^0.0.3",
-    "electron": "^41.1.1",
+    "electron": "^45.5.0",
     "esbuild": "^0.27.2",
     "esbuild-loader": "^4.4.2",
     "escodegen": "^2.1.0",
@@ -103,7 +102,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.4",
+    "webpack-dev-server": "^6.1.0",
     "webpackbar": "^7.0.0"
   },
   "dependencies": {
@@ -121,5 +120,8 @@
     "p-limit": "^7.3.0",
     "three": "0.186.0",
     "ts-jest": "^29.4.15"
+  },
+  "overrides": {
+    "brace-expansion@1": "^1.1.22"
   }
 }
