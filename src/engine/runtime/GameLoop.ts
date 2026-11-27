@@ -268,8 +268,7 @@ export class GameLoop {
     GameLoop.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.PartyManager.getCurrentPlayer());
     GameLoop.updateShadowSystems(delta, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
-    GameState.windManager.update(delta);
-    GameState.grassManager?.update(delta);
+    GameLoop.updateEnvironmentSim(delta, GameState.State == EngineState.PAUSED || modalPauses);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
@@ -297,8 +296,7 @@ export class GameLoop {
     GameLoop.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameLoop.updateShadowSystems(delta, GameState.currentCamera?.position ?? GameState.currentCameraPosition);
-    GameState.windManager.update(delta);
-    GameState.grassManager?.update(delta);
+    GameLoop.updateEnvironmentSim(delta, GameLoop.isWorldPaused());
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
@@ -322,8 +320,7 @@ export class GameLoop {
     GameLoop.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.PartyManager.getCurrentPlayer());
     GameLoop.updateShadowSystems(delta, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
-    GameState.windManager.update(delta);
-    GameState.grassManager?.update(delta);
+    GameLoop.updateEnvironmentSim(delta, GameLoop.isWorldPaused());
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
@@ -362,13 +359,27 @@ export class GameLoop {
     GameLoop.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.PartyManager.getCurrentPlayer());
     GameLoop.updateShadowSystems(delta, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
-    GameState.windManager.update(delta);
-    GameState.grassManager?.update(delta);
+    GameLoop.updateEnvironmentSim(delta, GameLoop.isWorldPaused());
     if(GameState.module?.area){
       GameState.module.area.updateRoomAnimatedLights(delta);
       GameState.module.area.updateRoomWindUniforms();
     }
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
+  }
+
+  /** Paused state used by the non-ingame loops (matches their module tickPaused gate). */
+  private static isWorldPaused(): boolean {
+    return GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length > 0;
+  }
+
+  /**
+   * Wind and grass freeze with the world while paused; grass LOD still
+   * follows the camera, which can move during pause.
+   */
+  private static updateEnvironmentSim(delta: number, paused: boolean): void {
+    const simDelta = paused ? 0 : delta;
+    GameState.windManager.update(simDelta);
+    GameState.grassManager?.update(simDelta);
   }
 
   static UpdateLegal(delta: number = 0): void {

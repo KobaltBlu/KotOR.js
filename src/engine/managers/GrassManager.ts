@@ -233,6 +233,12 @@ export class GrassManager {
     const field = this.trample;
     field.setFocus(this._camPos.x, this._camPos.y);
 
+    // Paused: keep the window on the camera but don't stamp or simulate.
+    if(!(delta > 0)){
+      field.update(0);
+      return;
+    }
+
     const area = GameState.module?.area as any;
     const bodies = new Set<TrampleBody>();
     const creatures: TrampleBody[] | undefined = area?.creatures;

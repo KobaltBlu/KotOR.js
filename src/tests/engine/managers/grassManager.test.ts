@@ -188,3 +188,22 @@ describe('GrassTrampleField', () => {
     expect(field.sample(0, 0).length()).toBe(0);
   });
 });
+
+describe('GrassManager pause', () => {
+  test('a zero-delta (paused) update freezes trample recovery and the grass clock', () => {
+    const mgr = new GrassManager();
+    (mgr as any).rooms.set({}, []);
+    mgr.trample.setFocus(0, 0);
+    for(let i = 0; i < 10; i++) mgr.trample.stamp(0, 0, 1, 0, 0, 1, 1 / 60);
+    const before = mgr.trample.sample(0.6, 0).x;
+    const clock = (mgr as any).timeUniform.value;
+
+    for(let i = 0; i < 300; i++) mgr.update(0);
+    expect(mgr.trample.sample(0.6, 0).x).toBe(before);
+    expect((mgr as any).timeUniform.value).toBe(clock);
+
+    for(let i = 0; i < 600; i++) mgr.update(1 / 60);
+    expect(mgr.trample.sample(0.6, 0).length()).toBeLessThan(0.01);
+    expect((mgr as any).timeUniform.value).toBeGreaterThan(clock);
+  });
+});
