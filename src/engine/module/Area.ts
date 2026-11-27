@@ -30,7 +30,7 @@ import { CExoLocString } from "@core/resource/CExoLocString";
 import { VISObject } from "@core/resource/VISObject";
 import { ITextureLoaderQueuedRef } from "@engine/interface/loaders/ITextureLoaderQueuedRef";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
-import { flushWorldMatrices } from "@engine/render/worldMatrix";
+import { flushWorldMatrices, commitWorldTransform } from "@engine/render/worldMatrix";
 // import { MenuManager, TwoDAManager, PartyManager, GameObjectManager } from "@engine/managers";
 import { TextureLoader } from "@engine/loaders";
 import { IAreaAudioProperties } from "@core/interface/area/IAreaAudioProperties";
@@ -1569,6 +1569,7 @@ export class Area extends GameObject {
   attachTextSprite3D(sprite: TextSprite3D){
     if(!sprite) return;
     GameState.group.effects.add(sprite.container);
+    commitWorldTransform(sprite.container);
     this.textSprites.push(sprite);
   }
 

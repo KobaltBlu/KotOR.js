@@ -14,6 +14,7 @@ import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { BitWise } from "@core/utility/BitWise";
 import { GUIControlTypeMask } from "@core/enums/gui/GUIControlTypeMask";
 import { commitGuiTransform } from "@engine/gui/guiMatrix";
+import { commitWorldTransform } from "@engine/render/worldMatrix";
 import { OdysseyObject3D } from "@engine/render/three/odyssey/OdysseyObject3D";
 import { getClientCombatMode } from "@engine/combat/combat-engagement";
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -648,6 +649,9 @@ export class CursorManager {
 				CursorManager.reticle.visible = true;
 				CursorManager.applyReticleScale(CursorManager.reticle, CursorManager.hoveredObject);
 				CursorManager.setReticle(CursorManager.getHoverReticleStyle(CursorManager.hoveredObject).material);
+				// GameState.scene does not auto-update world matrices; without this the
+				// sprite stays at the origin and is frustum-culled.
+				commitWorldTransform(CursorManager.reticle);
 			}else{
 				CursorManager.reticle.visible = false;
 			}
@@ -674,6 +678,7 @@ export class CursorManager {
 				CursorManager.reticle2.visible = true;
 				CursorManager.setReticle2(style.material);
 				CursorManager.applyReticleScale(CursorManager.reticle2, CursorManager.selectedObject, pulsePx);
+				commitWorldTransform(CursorManager.reticle2);
 			}else{
 				// Off-screen: swaps to edge arrow (InGameOverlay.updateArrow)
 				CursorManager.reticle2.visible = false;

@@ -1,3 +1,4 @@
+import { commitWorldTransform } from "@engine/render/worldMatrix";
 import * as THREE from "three";
 import type { Area } from "@engine/module/Area";
 import type { GameObject } from "@engine/module/GameObject";
@@ -123,6 +124,8 @@ export class TextSprite3D {
       this.text.material.uniforms.alphaTest.value = 0;
       this.text.material.uniformsNeedUpdate = true;
       this.buildText();
+      // The world scene does not auto-update matrices; place the new mesh.
+      commitWorldTransform(this.container);
       this.ready = true;
     });
     
