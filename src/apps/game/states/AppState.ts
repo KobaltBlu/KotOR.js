@@ -4,7 +4,7 @@ import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
 import { GameInitializer } from "@apps/game/GameInitializer";
 import { applyProfileSeo } from "@apps/common/seo/applyProfileSeo";
 import { buildProfileSeo } from "@apps/common/seo/profileSeo";
-import { persistGameDirectoryHandle, restoreGameDirectoryHandlesToProfiles } from "@core/filesystem/gameDirectoryAccess";
+import { persistGameDirectoryHandle, persistGameDirectoryPath, restoreGameDirectoryHandlesToProfiles } from "@core/filesystem/gameDirectoryAccess";
 
 const STATS_MODE_KEY = 'kotor.statsMode';
 
@@ -69,6 +69,8 @@ export class AppState {
     AppState.eulaAccepted = !!gameEULAConfig.accepted;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
 
+    // Show the profile's art behind the startup modals instead of a blank loader.
+    AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
     AppState.loaderShow();
 
     console.log('gameEULAConfig', gameEULAConfig);
@@ -149,13 +151,16 @@ export class AppState {
     GameInitializer.SetLoadingMessage('Locating Game Directory...');
   
     if(AppState.env == ApplicationEnvironment.ELECTRON){
-      if(await KotOR.GameFileSystem.exists('chitin.key')){
-        AppState.directoryLocated = true;
-        AppState.processEventListener('on-preload', []);
-        AppState.beginGame();
-        return;
+      // Nothing bound yet (first run): fall through to the grant modal quietly.
+      if(KotOR.ApplicationProfile.directory){
+        if(await KotOR.GameFileSystem.exists('chitin.key')){
+          AppState.directoryLocated = true;
+          AppState.processEventListener('on-preload', []);
+          AppState.beginGame();
+          return;
+        }
+        alert('Unable to locate chitin.key in the selected directory. Please try again.');
       }
-      alert('Unable to locate chitin.key in the selected directory. Please try again.');
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
         const validated = await AppState.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
@@ -276,42 +281,66 @@ export class AppState {
    * attachDirectoryPath
    * - Used for Electron
    */
-  static attachDirectoryPath(path: string){
-    KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory`, path);
+  static async attachDirectoryPath(path: string): Promise<boolean> {
+    // GameFileSystem reads ApplicationProfile.directory, so check the new path
+    // there before saving it.
+    const previous = KotOR.ApplicationProfile.directory;
+    KotOR.ApplicationProfile.directory = path;
+    if(!path || !(await KotOR.GameFileSystem.exists('chitin.key'))){
+      KotOR.ApplicationProfile.directory = previous;
+      alert('The selected folder does not contain chitin.key. Choose your KotOR or TSL install folder.');
+      return false;
+    }
+    persistGameDirectoryPath(AppState.appProfile.key, path);
     AppState.appProfile.directory = path;
     AppState.directoryLocated = true;
-    AppState.loadGameDirectory();
+    await AppState.loadGameDirectory();
+    return true;
   }
 
   /**
    * attachDirectoryHandle
    * - Used for Browser
    */
-  static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
+  static async attachDirectoryHandle(handle: FileSystemDirectoryHandle): Promise<boolean> {
+    // Check for chitin.key before saving, so a wrong folder is never persisted.
+    const previous = KotOR.ApplicationProfile.directoryHandle;
     KotOR.ApplicationProfile.directoryHandle = handle;
+    if(!(await KotOR.GameFileSystem.exists('chitin.key'))){
+      KotOR.ApplicationProfile.directoryHandle = previous;
+      alert('The selected folder does not contain chitin.key. Choose your KotOR or TSL install folder.');
+      return false;
+    }
     AppState.appProfile.directory_handle = handle;
     await persistGameDirectoryHandle(AppState.appProfile.key, handle);
     AppState.directoryLocated = true;
     if(AppState.shouldDeferForAudioUnlock()){
       AppState.processEventListener('on-preload', []);
-      return;
+      return true;
     }
     await AppState.loadGameDirectory();
+    return true;
   }
 
   /**
    * validateDirectoryHandle
    * - Used for Browser
+   * Queries before requesting: requestPermission needs a user gesture, so on
+   * page load it only succeeds when access is already granted.
    */
   static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
-    try{
-      if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-        return true;
-      }
-      return false;
-    }catch(e){
-      console.error(e);
-      return false;
+    return KotOR.GameFileSystem.validateDirectoryHandle(handle);
+  }
+
+  /**
+   * quit
+   * window.close() only works in Electron or in a tab opened by script, so the
+   * browser falls back to the launcher.
+   */
+  static quit(){
+    window.close();
+    if(AppState.env == ApplicationEnvironment.BROWSER){
+      window.location.href = new URL('../launcher/', window.location.href).href;
     }
   }
 

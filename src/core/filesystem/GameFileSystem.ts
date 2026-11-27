@@ -516,16 +516,27 @@ export class GameFileSystem {
   static exists(dirOrFilePath: string): Promise<boolean> {
     return new Promise<boolean>( async (resolve, reject) => {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
-          if(err){
-            console.log(dirOrFilePath);
-            console.error(err);
-            resolve(false);
-            return
-          }
+        // No directory bound yet (first run): path.join would throw inside this
+        // async executor and leave the promise pending forever.
+        if(!ApplicationProfile.directory){
+          resolve(false);
+          return;
+        }
+        try{
+          fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
+            if(err){
+              console.log(dirOrFilePath);
+              console.error(err);
+              resolve(false);
+              return
+            }
 
-          resolve(true);
-        });
+            resolve(true);
+          });
+        }catch(e){
+          console.error(e);
+          resolve(false);
+        }
       }else{
         const details = path.parse(dirOrFilePath);
         try{
@@ -837,11 +848,23 @@ export class GameFileSystem {
     }
   }
 
-  static async showRequestDirectoryDialog(){
-    let handle = await window.showDirectoryPicker({
-      id: ApplicationProfile.profile?.key,
-      mode: "readwrite"
-    });
+  /**
+   * Returns undefined when the user cancels the picker or denies access.
+   */
+  static async showRequestDirectoryDialog(): Promise<FileSystemDirectoryHandle | undefined> {
+    let handle: FileSystemDirectoryHandle;
+    try{
+      handle = await window.showDirectoryPicker({
+        id: ApplicationProfile.profile?.key,
+        mode: "readwrite"
+      });
+    }catch(e){
+      // Cancelling the picker rejects with AbortError.
+      if((e as DOMException)?.name !== 'AbortError'){
+        console.error(e);
+      }
+      return;
+    }
     if(handle){
       if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
         return handle;

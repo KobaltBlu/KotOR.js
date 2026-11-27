@@ -14,18 +14,13 @@ export const ModalGrantAccess = () => {
     KotOR.EventManager.FireEvent('grant-access.cancel');
     console.log("File System: access denied");
     alert("You must grant access to your local game directory to continue.");
-    window.close();
+    appState.quit();
   }
-  
-  const showBrowserDirectoryPicker = async () => {
-    const handle = await window.showDirectoryPicker({
-      mode: "readwrite"
-    });
-    if(!handle) return;
 
-    if (!(await appState.validateDirectoryHandle(handle))) {
-      return;
-    }
+  const showBrowserDirectoryPicker = async () => {
+    // Undefined when the user cancels the picker or denies access.
+    const handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
+    if(!handle) return;
 
     KotOR.EventManager.FireEvent('grant-access.grant');
     return handle;
@@ -35,11 +30,10 @@ export const ModalGrantAccess = () => {
     try{
       const directory = await(window as any).electron.locate_game_directory(appState.appProfile);
       if(directory){
-        appState.attachDirectoryPath(directory);
+        await appState.attachDirectoryPath(directory);
         return directory;
       }
     }catch(e){
-      appState.attachDirectoryPath('');
       console.error(e);
       alert("Unable to access your local game directory. Please try again.");
     }
@@ -59,11 +53,11 @@ export const ModalGrantAccess = () => {
     if(appState.env == ApplicationEnvironment.BROWSER){
       const handle = await showBrowserDirectoryPicker();
       if(!handle){
-        console.log("File System: access denied");
-        alert("Unable to access your local game directory. Please try again.");
+        // Cancelled or denied; leave the modal up so the user can try again.
+        console.log("File System: no directory selected");
         return;
       }
-      appState.attachDirectoryHandle(handle);
+      await appState.attachDirectoryHandle(handle);
     }
   }
 

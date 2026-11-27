@@ -9,7 +9,9 @@
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  // Startup modals (EULA, grant access, click to begin) open while the loading
+  // screen is up, so they must sit above it.
+  z-index: calc(var(--forge-z-modal, 9999) + 1);
 
   &.visible {
     display: flex;

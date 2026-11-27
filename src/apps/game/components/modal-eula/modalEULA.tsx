@@ -13,7 +13,7 @@ export const ModalEULA = () => {
   const onCancel = () => {
     KotOR.EventManager.FireEvent('eula.cancel');
     alert('You must accept the Usage Notice to play this game. We are sorry to see you go.');
-    window.close();
+    appState.quit();
   }
 
   const onOk = () => {
