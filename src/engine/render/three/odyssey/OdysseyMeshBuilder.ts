@@ -332,7 +332,10 @@ export function buildOdysseyNodeMesh(
         // MERGE GEOMETRY
         //----------------//
         // Sabers must stay as live light nodesaber meshes (trail rebuild each frame).
-        if(!isSaber && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && !odysseyNode.isAnimDummyNode && faceLen){
+        // Skins must stay SkinnedMesh: their bones animate (placeables can use
+        // character models, e.g. seated pazaak players), and a static merge
+        // would drop skinning and bake the bind pose.
+        if(!isSaber && !(mesh instanceof THREE.SkinnedMesh) && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && !odysseyNode.isAnimDummyNode && faceLen){
 
           parentNode.getWorldPosition( mesh.position );
           parentNode.getWorldQuaternion( mesh.quaternion );

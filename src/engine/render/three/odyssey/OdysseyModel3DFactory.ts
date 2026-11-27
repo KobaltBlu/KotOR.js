@@ -183,16 +183,20 @@ function finishMergeStatic(odysseyModel: OdysseyModel3D, options: IOdysseyModelL
   }
 
   //Prune all the empty nodes
-  let pruneList: any = [];
-  odysseyModel.traverseIgnore(odysseyModel.name+'a', (node: any) => {
-    if(node.NodeType == 33 && !node.children.length){
-      pruneList.push(node);
+  // Not for skinned models: skin bone slots are indices into the full node
+  // tree (depth-first), so removing empty leaves (finger/toe tips) shifts them.
+  if(!odysseyModel.skins.length){
+    let pruneList: any = [];
+    odysseyModel.traverseIgnore(odysseyModel.name+'a', (node: any) => {
+      if(node.NodeType == 33 && !node.children.length){
+        pruneList.push(node);
+      }
+    });
+    let pruneCount = pruneList.length;
+    while(pruneCount--){
+      let node = pruneList.splice(0, 1)[0];
+      node.removeFromParent();
     }
-  });
-  let pruneCount = pruneList.length;
-  while(pruneCount--){
-    let node = pruneList.splice(0, 1)[0];
-    node.removeFromParent();
   }
 
   // Hangar ships / anim-dummy props: InstancedMesh by shared mat+geo.
