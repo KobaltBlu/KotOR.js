@@ -16,6 +16,7 @@ export default {
     "Soft Shadows": "1",
     "Shadows": "1",
     "Brightness": "57",
+    "GUI Scale": "1.00",
     "EnableHardwareMouse": "1",
     "FullScreen": "0"
   },

@@ -1,6 +1,11 @@
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@engine/gui";
+import type { GFFObject } from "@core/resource/GFFObject";
+import {
+  cloneGuiControl, findGuiControl, getGuiControlExtent, getGuiControlsField, getMaxGuiControlId,
+  insertGuiMoveToAbove, setGuiControlExtent, setGuiControlId, setGuiControlTag, setGuiControlText,
+} from "@engine/gui/guiLayoutEdit";
 
 /**
  * graphics options description TLKs (ctor custom_value / OnEnterSlot).
@@ -10,6 +15,12 @@ const TLK_DESC_RESOLUTION = 0xbb5f;
 const TLK_DESC_SHADOWS = 0xbb4f;
 const TLK_DESC_GRASS = 0xbb53;
 const TLK_DESC_ADVANCED = 0xbfae;
+
+/** Code-only button (not in the .gui) that opens the GUI Options menu. */
+export const GUI_OPTIONS_BUTTON_TEXT = 'GUI Options';
+export const GUI_OPTIONS_DESC = 'Adjust the size of the in-game interface.';
+/** Vertical gap between the GUI Options button and the Advanced button. */
+const GUI_OPTIONS_BUTTON_GAP = 13;
 
 /**
  * MenuGraphics class.
@@ -32,12 +43,33 @@ export class MenuGraphics extends GameMenu {
   CB_SHADOWS: GUICheckBox;
   CB_GRASS: GUICheckBox;
   BTN_ADVANCED: GUIButton;
+  BTN_GUIOPTIONS: GUIButton;
 
   constructor(){
     super();
     this.gui_resref = 'optgraphics';
     this.background = '1600x1200back';
     this.voidFill = true;
+  }
+
+  /** Add BTN_GUIOPTIONS, styled like BTN_ADVANCED, one row above it. */
+  protected onMenuGFFLoaded(gff: GFFObject): void {
+    const advanced = findGuiControl(gff, 'BTN_ADVANCED');
+    const controls = getGuiControlsField(gff);
+    if(!advanced || !controls) return;
+
+    const button = cloneGuiControl(advanced);
+    const extent = getGuiControlExtent(advanced);
+    setGuiControlTag(button, 'BTN_GUIOPTIONS');
+    setGuiControlId(button, getMaxGuiControlId(gff) + 1);
+    setGuiControlExtent(button, { top: extent.top - extent.height - GUI_OPTIONS_BUTTON_GAP });
+    setGuiControlText(button, GUI_OPTIONS_BUTTON_TEXT);
+    controls.addChildStruct(button);
+    insertGuiMoveToAbove(gff, button, advanced);
+  }
+
+  protected setDescriptionText(text: string) {
+    this.LB_DESC?.setItem(text);
   }
 
   protected setDescription(strRef: number) {
@@ -61,6 +93,11 @@ export class MenuGraphics extends GameMenu {
 
       this.BTN_ADVANCED.addEventListener('click', (e) => {
         this.manager.MenuGraphicsAdvanced.open();
+      });
+
+      this.BTN_GUIOPTIONS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.GUIOptions.open();
       });
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
@@ -90,6 +127,7 @@ export class MenuGraphics extends GameMenu {
       this.CB_SHADOWS.addEventListener('hover', () => this.setDescription(TLK_DESC_SHADOWS));
       this.CB_GRASS.addEventListener('hover', () => this.setDescription(TLK_DESC_GRASS));
       this.BTN_ADVANCED.addEventListener('hover', () => this.setDescription(TLK_DESC_ADVANCED));
+      this.BTN_GUIOPTIONS?.addEventListener('hover', () => this.setDescriptionText(GUI_OPTIONS_DESC));
 
       resolve();
     });

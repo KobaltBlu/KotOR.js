@@ -5,6 +5,7 @@ import { GameEngineType } from "@core/enums/engine";
 import { EngineMode } from "@engine/enums/engine";
 import type { GUIControl, GameMenu } from "@engine/gui";
 import { auditGuiMatrices, flushGuiMatrices } from "@engine/gui/guiMatrix";
+import { applyGUIScale } from "@engine/gui/guiScaleSetting";
 import { ActionMenuManager } from "@engine/menu/ActionMenuManager";
 import { EngineState } from "@engine/enums/engine/EngineState";
 import { PerformanceMonitor } from "@core/utility/PerformanceMonitor";
@@ -79,6 +80,7 @@ export class MenuManager {
   static MenuGameOver: TSL.MenuGameOver;
   static MenuGraphics: KOTOR.MenuGraphics;
   static MenuGraphicsAdvanced: KOTOR.MenuGraphicsAdvanced;
+  static GUIOptions: KOTOR.GUIOptions;
   static MenuInventory: KOTOR.MenuInventory;
   static MenuJournal: KOTOR.MenuJournal;
   static MenuLevelUp: KOTOR.MenuLevelUp;
@@ -340,6 +342,7 @@ export class MenuManager {
           MenuManager.MenuGameplay,
           MenuManager.MenuGraphics,
           MenuManager.MenuGraphicsAdvanced,
+          MenuManager.GUIOptions,
           MenuManager.MenuAutoPause,
           MenuManager.MenuToolTip,
           MenuManager.MenuSound,
@@ -361,6 +364,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(KOTOR.MenuGameplay),
           MenuManager.GameMenuLoader(KOTOR.MenuGraphics),
           MenuManager.GameMenuLoader(KOTOR.MenuGraphicsAdvanced),
+          MenuManager.GameMenuLoader(KOTOR.GUIOptions),
           MenuManager.GameMenuLoader(KOTOR.MenuAutoPause),
           MenuManager.GameMenuLoader(KOTOR.MenuToolTip),
           MenuManager.GameMenuLoader(KOTOR.MenuSound),
@@ -373,7 +377,7 @@ export class MenuManager {
         ]) as [
           KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, KOTOR.MenuCredits, KOTOR.MainOptions,
           KOTOR.MenuResolutions, KOTOR.MenuSaveLoad, KOTOR.MenuSaveName, KOTOR.MenuGameplay,
-          KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
+          KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.GUIOptions, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
           KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuFeedback, KOTOR.MenuMouse,
           KOTOR.MenuKeyboardMapping, KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
         ];
@@ -391,6 +395,7 @@ export class MenuManager {
           MenuManager.MenuGameplay,
           MenuManager.MenuGraphics,
           MenuManager.MenuGraphicsAdvanced,
+          MenuManager.GUIOptions,
           MenuManager.MenuAutoPause,
           MenuManager.MenuToolTip,
           MenuManager.MenuSound,
@@ -413,6 +418,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuGameplay),
           MenuManager.GameMenuLoader(TSL.MenuGraphics),
           MenuManager.GameMenuLoader(TSL.MenuGraphicsAdvanced),
+          MenuManager.GameMenuLoader(TSL.GUIOptions),
           MenuManager.GameMenuLoader(TSL.MenuAutoPause),
           MenuManager.GameMenuLoader(TSL.MenuToolTip),
           MenuManager.GameMenuLoader(TSL.MenuSound),
@@ -425,7 +431,7 @@ export class MenuManager {
         ]) as [
           KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, TSL.MainMusic, KOTOR.MenuCredits, KOTOR.MainOptions,
           KOTOR.MenuResolutions, KOTOR.MenuSaveLoad, KOTOR.MenuSaveName, KOTOR.MenuGameplay,
-          KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
+          KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.GUIOptions, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
           KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuFeedback, KOTOR.MenuMouse,
           KOTOR.MenuKeyboardMapping, KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
         ];
@@ -724,6 +730,8 @@ export class MenuManager {
       MenuManager.MenuOptions.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuMap.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuAbilities.childMenu = GameState.MenuManager.MenuTop;
+
+      applyGUIScale();
 
       if(GameState.GameKey == GameEngineType.TSL){
         MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;

@@ -1645,8 +1645,12 @@ export class GUIControl {
     const centered = extentToCenteredPosition(this.extent, parentW, parentH);
     this.anchorOffset = new THREE.Vector2(centered.x, centered.y);
 
-    const vpW = asExtentInt(ResolutionManager.getViewportWidth());
-    const vpH = asExtentInt(ResolutionManager.getViewportHeight());
+    // Anchored offsets are in panel-local space, which the panel widget scales by
+    // menu.scale. Express the viewport in that space so each anchor corner stays
+    // pinned to the screen edge and the control scales in place around it.
+    const menuScale = this.menu?.scale || 1;
+    const vpW = asExtentInt(ResolutionManager.getViewportWidth() / menuScale);
+    const vpH = asExtentInt(ResolutionManager.getViewportHeight() / menuScale);
     const w = asExtentInt(this.extent.width);
     const h = asExtentInt(this.extent.height);
     const left = asExtentInt(this.extent.left);

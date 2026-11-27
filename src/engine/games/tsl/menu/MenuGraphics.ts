@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
 import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "@engine/gui";
-import { MenuGraphics as K1_MenuGraphics } from "@engine/games/kotor/menu/MenuGraphics";
+import { MenuGraphics as K1_MenuGraphics, GUI_OPTIONS_DESC } from "@engine/games/kotor/menu/MenuGraphics";
 
 /**
  * graphics options description TLKs (ctor custom_value / OnEnterSlot).
@@ -31,6 +31,7 @@ export class MenuGraphics extends K1_MenuGraphics {
   declare CB_SHADOWS: GUICheckBox;
   declare CB_GRASS: GUICheckBox;
   declare BTN_ADVANCED: GUIButton;
+  declare BTN_GUIOPTIONS: GUIButton;
   declare LBL_BAR1: GUILabel;
   declare LBL_BAR2: GUILabel;
   declare LBL_BAR3: GUILabel;
@@ -57,6 +58,11 @@ export class MenuGraphics extends K1_MenuGraphics {
 
       this.BTN_ADVANCED.addEventListener('click', (e) => {
         this.manager.MenuGraphicsAdvanced.open();
+      });
+
+      this.BTN_GUIOPTIONS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.GUIOptions.open();
       });
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
@@ -86,6 +92,7 @@ export class MenuGraphics extends K1_MenuGraphics {
       this.CB_SHADOWS.addEventListener('hover', () => this.setDescription(TLK_DESC_SHADOWS));
       this.CB_GRASS.addEventListener('hover', () => this.setDescription(TLK_DESC_GRASS));
       this.BTN_ADVANCED.addEventListener('hover', () => this.setDescription(TLK_DESC_ADVANCED));
+      this.BTN_GUIOPTIONS?.addEventListener('hover', () => this.setDescriptionText(GUI_OPTIONS_DESC));
 
       resolve();
     });

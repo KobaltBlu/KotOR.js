@@ -277,11 +277,21 @@ export class GameMenu {
     try{
       const buffer = await ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref);
       this.menuGFF = new GFFObject(buffer);
+      this.onMenuGFFLoaded(this.menuGFF);
       await this.buildMenu(this.menuGFF);
     }catch(e){
       console.error(e);
     };
     return this;
+  }
+
+  /**
+   * Called after the menu's .gui is parsed and before any control is built.
+   * Override to add, remove or edit control structs for layouts that only
+   * exist in code.
+   */
+  protected onMenuGFFLoaded(gff: GFFObject): void {
+    return;
   }
 
   async buildMenu(gff: GFFObject){
@@ -794,10 +804,8 @@ export class GameMenu {
     this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
     commitGuiTransform(this.tGuiPanel.widget);
 
-    for(let i = 0; i < this.tGuiPanel.children.length; i++){
-      if(this.tGuiPanel.children[i])
-        this.tGuiPanel.children[i].updateScale();
-    }
+    // Anchored positions depend on scale, so re-run layout (also refreshes bounds).
+    this.recalculatePosition();
 
   }
 

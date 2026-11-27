@@ -37,6 +37,7 @@ export { MenuGalaxyMap } from "@engine/games/tsl/menu/MenuGalaxyMap";
 export { MenuGameplay } from "@engine/games/tsl/menu/MenuGameplay";
 export { MenuGameOver } from "@engine/games/tsl/menu/MenuGameOver";
 export { MenuGraphics } from "@engine/games/tsl/menu/MenuGraphics";
+export { GUIOptions } from "@engine/games/tsl/menu/GUIOptions";
 export { MenuGraphicsAdvanced } from "@engine/games/tsl/menu/MenuGraphicsAdvanced";
 export { MenuInventory } from "@engine/games/tsl/menu/MenuInventory";
 export { MenuJournal } from "@engine/games/tsl/menu/MenuJournal";
