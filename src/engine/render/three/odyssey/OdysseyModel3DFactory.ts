@@ -9,6 +9,7 @@ import {
   initMergedDanglyWindMesh,
 } from "@engine/odyssey/DanglyWindSimulator";
 import { enableOdysseyMaterialShadowReceive } from "@engine/render/shaders/chunks/OdysseyShadow";
+import { applyOdysseyMergedShadowCasterDepthMaterial } from "@engine/render/three/odyssey/OdysseyShadowCasterMaterial";
 import { createNodeParseContext } from "@engine/render/three/odyssey/OdysseyModel3DNodeParseContext";
 import { parseOdysseyNode } from "@engine/render/three/odyssey/OdysseyModel3DNodeParser";
 import {
@@ -145,6 +146,9 @@ function finishMergeStatic(odysseyModel: OdysseyModel3D, options: IOdysseyModelL
         odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, finalMaterials);
         odysseyModel.mergedMesh.receiveShadow = true;
         odysseyModel.mergedMesh.castShadow = odysseyModel.mergedCastsShadow;
+        if(odysseyModel.mergedMesh.castShadow){
+          applyOdysseyMergedShadowCasterDepthMaterial(odysseyModel.mergedMesh);
+        }
         odysseyModel.mergedMesh.userData.odysseyMergedStatic = true;
         enableOdysseyMaterialShadowReceive(finalMaterials);
         OdysseyModel3D.registerMeshShadow(odysseyModel.mergedMesh, options);

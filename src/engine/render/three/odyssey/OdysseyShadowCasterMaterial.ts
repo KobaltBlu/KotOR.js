@@ -16,7 +16,7 @@ function createShadowDepthMaterial(skinning: boolean): THREE.MeshDepthMaterial {
   return mat;
 }
 
-/** Shared skinned depth material for Three.js shadow-map casting. */
+/** Shared depth material template for skinned shadow casters. */
 export function getOdysseySkinnedShadowDepthMaterial(): THREE.MeshDepthMaterial {
   if(!_skinnedShadowDepth){
     _skinnedShadowDepth = createShadowDepthMaterial(true);
@@ -91,7 +91,7 @@ export function shouldExcludeOdysseyShadowCasterMesh(mesh: THREE.Mesh): boolean 
   return false;
 }
 
-/** Assign custom depth materials for alpha-tested rigid shadow casters. */
+/** Assign RGBA-packed, alpha-tested depth materials to shadow casters. */
 export function applyOdysseyShadowCasterDepthMaterials(mesh: THREE.Mesh | THREE.SkinnedMesh): void {
   if(shouldExcludeOdysseyShadowCasterMesh(mesh)){
     mesh.castShadow = false;
@@ -99,19 +99,35 @@ export function applyOdysseyShadowCasterDepthMaterials(mesh: THREE.Mesh | THREE.
     mesh.customDistanceMaterial = undefined;
     return;
   }
+  // Skinned meshes need one too: Three's built-in shadow depth material uses
+  // BasicDepthPacking (8-bit 1 - z), but receivers decode RGBA-packed depth.
+  // Skinning is picked from the mesh, so the same material type works for both.
   const skinned = (mesh as THREE.SkinnedMesh).isSkinnedMesh;
-  if(skinned){
-    // Let Three.js pick a skinned MeshDepthMaterial variant from the mesh object.
-    mesh.customDepthMaterial = undefined;
-    mesh.customDistanceMaterial = undefined;
-    return;
-  }
   let depthMat = mesh.userData.odysseyShadowDepthMat as THREE.MeshDepthMaterial | undefined;
   if(!depthMat){
-    depthMat = getOdysseyRigidShadowDepthMaterial().clone();
+    depthMat = (skinned
+      ? getOdysseySkinnedShadowDepthMaterial()
+      : getOdysseyRigidShadowDepthMaterial()
+    ).clone();
     mesh.userData.odysseyShadowDepthMat = depthMat;
   }
   syncShadowCasterDepthMaterialFromSource(depthMat, mesh.material);
   mesh.customDepthMaterial = depthMat;
   mesh.customDistanceMaterial = depthMat;
+}
+
+let _mergedShadowDepth: THREE.MeshDepthMaterial | undefined;
+
+/**
+ * RGBA-packed depth for merged multi-material static meshes. One depth material
+ * covers every group, so no per-texture alpha test (matches the old default).
+ */
+export function applyOdysseyMergedShadowCasterDepthMaterial(mesh: THREE.Mesh): void {
+  if(!_mergedShadowDepth){
+    _mergedShadowDepth = createShadowDepthMaterial(false);
+    _mergedShadowDepth.alphaTest = 0;
+    _mergedShadowDepth.name = 'OdysseyMergedShadowDepth';
+  }
+  mesh.customDepthMaterial = _mergedShadowDepth;
+  mesh.customDistanceMaterial = _mergedShadowDepth;
 }

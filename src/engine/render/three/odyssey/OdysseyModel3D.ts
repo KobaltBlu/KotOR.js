@@ -372,8 +372,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
         mesh.castShadow = mesh.userData.odysseyShadowCastAuthored;
       }
       delete mesh.userData.odysseyAttachedEquipmentCaster;
-      mesh.customDepthMaterial = undefined;
-      mesh.customDistanceMaterial = undefined;
+      if(mesh.castShadow){
+        // Authored casters still need RGBA-packed depth (Three's default is basic packing).
+        OdysseyModel3D.applyShadowCasterDepthMaterial(mesh);
+      }else{
+        mesh.customDepthMaterial = undefined;
+        mesh.customDistanceMaterial = undefined;
+      }
     });
   }
 
