@@ -127,7 +127,7 @@ describe('ActionMenuManager combat feat selection', () => {
     enemy = { id: 2 };
     pc = {
       combatData: { combatState: true },
-      attackCreature: mockAttackCreature,
+      playerAttackCreature: mockAttackCreature,
       clearAllActions: mockClearAllActions,
     };
 
@@ -160,7 +160,7 @@ describe('ActionMenuManager combat feat selection', () => {
     expect(panel.getSelectedAction()?.talent).toBeInstanceOf(TalentFeat);
   });
 
-  it('queues attackCreature with the selected feat talent', () => {
+  it('queues playerAttackCreature with the selected feat talent', () => {
     ActionMenuManager.SetTarget(enemy);
     const panel = seedCombatSlot0(enemy);
     panel.selectedIndex = 0;

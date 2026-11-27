@@ -101,6 +101,18 @@ export class CombatData {
     }
   }
 
+  /**
+   * Player attack input: after the attack is queued, a target other than the
+   * current attack target becomes the attempted target. This is what lets the
+   * party leader break away from a duel partner when ordered onto a new enemy.
+   */
+  setAttemptedAttackTargetFromPlayerInput(target: GameObject): void {
+    if(!target) return;
+    if(this.lastAttackTarget !== target){
+      this.lastAttemptedAttackTarget = target;
+    }
+  }
+
   getEquippedWeaponType(){
     if(isCreature(this.object)){
       const owner: Creature = this.object as any;

@@ -97,6 +97,7 @@ import {
   resolveMasterState,
 } from '@engine/combat/combat-dueling';
 import { CombatRound } from '@engine/combat/CombatRound';
+import { CombatData } from '@engine/combat/CombatData';
 import { GameObjectType } from '@core/enums/module/GameObjectType';
 
 function makeCreature(id: number, opts: {
@@ -205,6 +206,25 @@ describe('resolveEngagedState', () => {
       target.combatData.lastAttackTarget = attacker;
       target.combatData.lastAttemptedAttackTarget = third;
       expect(resolveEngagedState(attacker, target)).toBe(false);
+    });
+
+    it('player order onto a new enemy stops the current duel partner re-engaging', () => {
+      // Leader is dueling the attacker, sticky attempted still points at it.
+      target.combatRound.roundStarted = true;
+      target.combatData.lastAttackTarget = attacker;
+      target.combatData.lastAttemptedAttackTarget = attacker;
+      expect(resolveEngagedState(attacker, target)).toBe(true);
+
+      CombatData.prototype.setAttemptedAttackTargetFromPlayerInput.call(target.combatData, third);
+      expect(target.combatData.lastAttemptedAttackTarget).toBe(third);
+      expect(resolveEngagedState(attacker, target)).toBe(false);
+    });
+
+    it('player order on the current target leaves attempted alone', () => {
+      target.combatData.lastAttackTarget = attacker;
+      target.combatData.lastAttemptedAttackTarget = undefined;
+      CombatData.prototype.setAttemptedAttackTargetFromPlayerInput.call(target.combatData, attacker);
+      expect(target.combatData.lastAttemptedAttackTarget).toBeUndefined();
     });
 
     it('keeps engaged when leader last-spell is attacker and no bad attempted', () => {

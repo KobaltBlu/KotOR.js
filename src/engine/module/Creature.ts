@@ -1887,6 +1887,13 @@ export class Creature extends GameObject {
    * Queue a normal attack (or feat attack). CutsceneAttack uses
    * {@link addCutsceneAttackActions} instead.
    */
+  /**
+   * Attack ordered by the player (action menu / clicking a hostile).
+   */
+  playerAttackCreature(target: GameObject, feat?: TalentFeat){
+    return this.combatService.playerAttackCreature(target, feat);
+  }
+
   attackCreature(target: GameObject, feat?: TalentFeat, _isCutsceneAttack = false, attackDamage = 0, attackAnimation?: number | string, attackResult?: AttackResult){
     return this.combatService.attackCreature(target, feat, _isCutsceneAttack, attackDamage, attackAnimation, attackResult);
   }
@@ -2411,7 +2418,7 @@ export class Creature extends GameObject {
     }
 
     if(this.isHostile(callee) && !this.isDead()){
-      GameState.PartyManager.getCurrentPlayer().attackCreature(this, undefined);
+      GameState.PartyManager.getCurrentPlayer().playerAttackCreature(this, undefined);
     }else if(this.isDead() && this.canLootAsCorpse(callee)){
       this.clearAllActions();
       GameState.PartyManager.getCurrentPlayer().actionUseObject(this.getLootUseTarget() as GameObject);

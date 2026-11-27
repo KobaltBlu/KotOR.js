@@ -1181,12 +1181,12 @@ export class ActionMenuManager {
     // Combat feats (Power Attack, Flurry, …) before basic Attack — 
     // SendPlayerToServerInput_Attack(targetId, featId).
     if(menuItem.talent instanceof TalentFeat){
-      pc.attackCreature(target as Creature, menuItem.talent);
+      pc.playerAttackCreature(target as Creature, menuItem.talent);
       return;
     }
 
     if(menuItem.action && menuItem.action.type == ActionType.ActionPhysicalAttacks){
-      pc.attackCreature(target as Creature, undefined);
+      pc.playerAttackCreature(target as Creature, undefined);
       return;
     }
 

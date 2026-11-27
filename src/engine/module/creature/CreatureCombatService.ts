@@ -461,6 +461,16 @@ export class CreatureCombatService {
     return resolveChoreographedState(this.host, oObject);
   }
 
+  /**
+   * Player attack input: queue the attack, then retarget the attempted
+   * attack target when the order is for a different enemy.
+   */
+  playerAttackCreature(target: GameObject, feat?: TalentFeat){
+    if(!target || target.isDead()) return;
+    this.attackCreature(target, feat);
+    this.host.combatData.setAttemptedAttackTargetFromPlayerInput(target);
+  }
+
   attackCreature(
     target: GameObject, feat?: TalentFeat, _isCutsceneAttack = false,
     attackDamage = 0, attackAnimation?: number | string, attackResult?: AttackResult
