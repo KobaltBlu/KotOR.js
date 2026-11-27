@@ -172,7 +172,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return Math.round(Math.random()* (args[0] - 1) );
+      const max = args[0] | 0;
+      if(!max) return 0;
+      const roll = Math.floor(Math.random() * 0x7fffffff) % Math.abs(max);
+      return (max < 0 ? -roll : roll) | 0;
     }
   },
   1:{
@@ -1851,7 +1854,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return (args[0] * 60.0);
+      const mph = GameState.module?.timeManager?.minutesPerHour || 1;
+      return args[0] * mph * 60.0;
     }
   },
   123:{
@@ -3187,7 +3191,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [GameObject]){
-      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0 || GameState.PartyManager.Player == args[0]) ? NW_TRUE : NW_FALSE;
+      const controlled = GameState.PartyManager.getPCIteratorList()[0];
+      return (args[0] && args[0] === controlled) ? NW_TRUE : NW_FALSE;
     }
   },
   218:{
@@ -3495,7 +3500,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return GameState.TLKManager.GetStringById( args[0] ).Value;
+      return GameState.TLKManager.GetStringById( args[0] )?.Value ?? '';
     }
   },
   240:{
