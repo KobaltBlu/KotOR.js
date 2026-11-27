@@ -13,8 +13,6 @@ import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { AudioEngine } from "@/audio/AudioEngine";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -325,16 +323,20 @@ export class DLGObject {
     return replies;
   }
 
-  async loadStuntCamera(){
+  async loadStuntCamera(isActive: () => boolean = () => true){
     try{
       console.log('loadStuntCamera', this.animatedCameraResRef);
-      if(!this.animatedCameraResRef){ return; }
+      if(!this.animatedCameraResRef || !isActive()){ return; }
 
       const model = await MDLLoader.loader.load(this.animatedCameraResRef);
-      if(!model){ return; }
+      if(!model || !isActive()){ return; }
 
       const mdl = await OdysseyModel3D.FromMDL(model);
       if(!mdl){ return; }
+      if(!isActive()){
+        mdl.dispose();
+        return;
+      }
 
       this.animatedCamera = mdl;
       this.animatedCamera.bonesInitialized = true;
@@ -343,16 +345,23 @@ export class DLGObject {
     }
   }
 
-  async loadStuntActor( actor: IDLGStuntActor ){
+  async loadStuntActor( actor: IDLGStuntActor, isActive: () => boolean = () => true ){
     return new Promise<void>( (resolve, reject) => {
+      if(!isActive()){ resolve(); return; }
       let model: any;
       if(actor.participant == 'PLAYER'){
         model = GameState.PartyManager.party[0].model;
         //Load the actor's supermodel
         MDLLoader.loader.load(actor.resref)
         .then((actorModel: OdysseyModel) => {
+          if(!isActive()){ resolve(); return; }
           OdysseyModel3D.FromMDL(actorModel)
           .then((actorSuperModel: OdysseyModel3D) => {
+            if(!isActive()){
+              actorSuperModel.dispose();
+              resolve();
+              return;
+            }
             actor.animations = actorSuperModel.odysseyAnimations;
 
             if(this.isAnimatedCutscene)
@@ -390,8 +399,14 @@ export class DLGObject {
           //Load the actor's supermodel
           MDLLoader.loader.load(actor.resref)
           .then((actorModel: OdysseyModel) => {
+            if(!isActive()){ resolve(); return; }
             OdysseyModel3D.FromMDL(actorModel)
             .then((actorSuperModel: OdysseyModel3D) => {
+              if(!isActive()){
+                actorSuperModel.dispose();
+                resolve();
+                return;
+              }
               actor.animations = actorSuperModel.odysseyAnimations;
 
               if(this.isAnimatedCutscene)
@@ -419,9 +434,10 @@ export class DLGObject {
     });
   }
 
-  async loadStuntActors(){
+  async loadStuntActors(isActive: () => boolean = () => true){
     for (var [key, actor] of this.stuntActors.entries()) {
-      await this.loadStuntActor(actor);
+      if(!isActive()){ return; }
+      await this.loadStuntActor(actor, isActive);
     };
   }
 
@@ -444,10 +460,7 @@ export class DLGObject {
    */
   async loadBackgroundMusic() {
     if (!this.ambientTrack) { return; }
-    const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
-    if(!bgm){ return; }
-    AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
-    AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.play();
+    await GameState.MusicManager.playDialogMusicTrack(this.ambientTrack, false, true);
   }
 
   async load(){

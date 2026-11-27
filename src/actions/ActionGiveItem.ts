@@ -50,10 +50,15 @@ export class ActionGiveItem extends Action {
       return ActionStatus.FAILED;
     }
 
+    const removed = this.owner.removeItem(oItem, oItem.getStackSize());
+    if(!removed){
+      return ActionStatus.FAILED;
+    }
+
     if(GameState.PartyManager.party.indexOf(oGiveTo as any) >= 0){
-      GameState.InventoryManager.addItem( oItem );
+      GameState.InventoryManager.addItem(removed);
     }else{
-      oGiveTo.addItem( oItem );
+      oGiveTo.addItem(removed);
     }
 
     return ActionStatus.COMPLETE;

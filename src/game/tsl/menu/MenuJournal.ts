@@ -11,15 +11,11 @@ enum JournalSort {
 
 /**
  * MenuJournal class.
- * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file MenuJournal.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuJournal extends K1_MenuJournal {
-
   declare LB_ITEMS: GUIListBox;
   declare LBL_TITLE: GUILabel;
   declare LBL_ITEM_DESCRIPTION: GUIListBox;
@@ -46,51 +42,59 @@ export class MenuJournal extends K1_MenuJournal {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
 
-      this.BTN_MESSAGES = this.getControlByName('BTN_MESSAGES');
+    this.BTN_MESSAGES = this.getControlByName('BTN_MESSAGES');
+    this._button_b = this.BTN_EXIT;
+    this.BTN_EXIT.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.close();
+    });
+    this.BTN_MESSAGES?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.close();
+      this.manager.MenuMessages.open();
+    });
+    this.BTN_SWAPTEXT?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.mode = this.mode == 0 ? 1 : 0;
+      this.updateList();
+      this.UpdateLabels();
+    });
 
-      this.BTN_MESSAGES.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.close()
-        this.manager.MenuMessages.open();
-      });
-      
-      this.LB_ITEMS.setProtoBuilder(GUIJournalItem);
-      this.LB_ITEMS.onSelect = (node: any) => {
-        console.log(node);
-      };
+    this.LB_ITEMS.setProtoBuilder(GUIJournalItem);
+    this.LB_ITEMS.onSelected = (entry: any) => {
+      this.selected = entry;
+      this.UpdateSelected();
+    };
+    this.LB_ITEMS.padding = 4;
 
-      this.BTN_FILTER_TIME.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.sort = JournalSort.RECIEVED;
-        this.updateList();
-      });
-
-      this.BTN_FILTER_NAME.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.sort = JournalSort.NAME;
-        this.updateList();
-      });
-
-      this.BTN_FILTER_PRIORITY.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.sort = JournalSort.PRIORITY;
-        this.updateList();
-      });
-
-      this.BTN_FILTER_PLANET.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.sort = JournalSort.PLANET;
-        this.updateList();
-      });
-
-      resolve();
+    this.BTN_FILTER_TIME?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.setSortMode(JournalSort.RECIEVED);
+    });
+    this.BTN_FILTER_NAME?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.setSortMode(JournalSort.NAME);
+    });
+    this.BTN_FILTER_PRIORITY?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.setSortMode(JournalSort.PRIORITY);
+    });
+    this.BTN_FILTER_PLANET?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.setSortMode(JournalSort.PLANET);
     });
   }
 
-  show() {
-    super.show();
+  updateFilterButtons(){
+    this.BTN_FILTER_TIME && (this.BTN_FILTER_TIME.pulsing = this.sort == JournalSort.RECIEVED);
+    this.BTN_FILTER_NAME && (this.BTN_FILTER_NAME.pulsing = this.sort == JournalSort.NAME);
+    this.BTN_FILTER_PRIORITY && (this.BTN_FILTER_PRIORITY.pulsing = this.sort == JournalSort.PRIORITY);
+    this.BTN_FILTER_PLANET && (this.BTN_FILTER_PLANET.pulsing = this.sort == JournalSort.PLANET);
   }
-  
+
+  UpdateLabels(){
+    super.UpdateLabels();
+    this.updateFilterButtons();
+  }
 }

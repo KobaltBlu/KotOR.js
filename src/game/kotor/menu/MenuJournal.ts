@@ -76,23 +76,18 @@ export class MenuJournal extends GameMenu {
         e.stopPropagation();
         switch(this.sort){
           case JournalSort.RECIEVED:
-            this.sort = JournalSort.NAME;
-            this.updateList();
+            this.setSortMode(JournalSort.NAME);
           break;
           case JournalSort.NAME:
-            this.sort = JournalSort.PRIORITY;
-            this.updateList();
+            this.setSortMode(JournalSort.PRIORITY);
           break;
           case JournalSort.PRIORITY:
-            this.sort = JournalSort.PLANET;
-            this.updateList();
+            this.setSortMode(JournalSort.PLANET);
           break;
           case JournalSort.PLANET:
-            this.sort = JournalSort.RECIEVED;
-            this.updateList();
+            this.setSortMode(JournalSort.RECIEVED);
           break;
         }
-        this.UpdateLabels();
       });
 
       this.BTN_SWAPTEXT.addEventListener('click', (e) => {
@@ -105,11 +100,37 @@ export class MenuJournal extends GameMenu {
             this.mode = JournalQuestMode.ACTIVE;
           break;
         }
+        this.updateList();
         this.UpdateLabels();
+      });
+
+      this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuQuestItem.open();
       });
 
       resolve();
     });
+  }
+
+  protected loadPersistedSortMode(){
+    const sortOrder = Number(GameState.JournalManager.SortOrder);
+    if(sortOrder >= JournalSort.RECIEVED && sortOrder <= JournalSort.PLANET){
+      this.sort = sortOrder;
+    }else{
+      this.sort = JournalSort.RECIEVED;
+    }
+  }
+
+  protected persistSortMode(){
+    GameState.JournalManager.SortOrder = this.sort;
+  }
+
+  protected setSortMode(sort: JournalSort){
+    this.sort = sort;
+    this.persistSortMode();
+    this.updateList();
+    this.UpdateLabels();
   }
 
   UpdateSelected(){
@@ -155,31 +176,57 @@ export class MenuJournal extends GameMenu {
   }
 
   UpdateLabels(){
-    this.BTN_SORT.setText(this.GetSortModeBTNLabel());
-    this.BTN_SWAPTEXT.setText(this.GetQuestModeBTNLabel());
-    this.LBL_TITLE.setText(this.GetMenuTitle());
+    this.BTN_SORT?.setText(this.GetSortModeBTNLabel());
+    this.BTN_SWAPTEXT?.setText(this.GetQuestModeBTNLabel());
+    this.LBL_TITLE?.setText(this.GetMenuTitle());
   }
 
   show() {
     super.show();
     this.manager.MenuTop.LBLH_JOU.onHoverIn();
 
+    this.loadPersistedSortMode();
+    this.LB_ITEMS.scroll = 0;
+
     this.updateList();
     this.UpdateLabels();
   }
 
   updateList(){
+    const selectedPlotId = this.selected?.plot_id?.toLocaleLowerCase?.();
+
+    this.LB_ITEMS.selectedItem = undefined;
     this.LBL_ITEM_DESCRIPTION.setItem(null);
-    this.LB_ITEMS.setItems(this.getFilteredEntries());
+
+    const entries = this.getFilteredEntries();
+    this.LB_ITEMS.setItems(entries);
+
+    const nextSelected = entries.find((entry) => {
+      return entry?.plot_id?.toLocaleLowerCase?.() == selectedPlotId;
+    }) || entries[0];
+
+    if(nextSelected){
+      this.selected = nextSelected;
+      this.LB_ITEMS.selectItem(nextSelected);
+    }else{
+      this.selected = undefined;
+      this.UpdateSelected();
+    }
   }
 
   getFilteredEntries(){
-    const entries = GameState.JournalManager.Entries.slice();
+    const entries = GameState.JournalManager.Entries.slice().filter((entry) => {
+      if(this.mode == JournalQuestMode.COMPLETED){
+        return entry.isCompleted();
+      }
+
+      return !entry.isCompleted();
+    });
 
     return entries.sort( (a, b) => {
       if(this.sort == JournalSort.NAME){
-        let nameA = a.category.name.getTLKValue().toLocaleLowerCase();
-        let nameB = b.category.name.getTLKValue().toLocaleLowerCase();
+        let nameA = a.getName().toLocaleLowerCase();
+        let nameB = b.getName().toLocaleLowerCase();
         if (nameA < nameB) {
           return -1;
         }
@@ -189,28 +236,28 @@ export class MenuJournal extends GameMenu {
         
         return 0;
       }else if(this.sort == JournalSort.RECIEVED){
-        if (a.date < b.date) {
+        if (a.getReceivedSortValue() < b.getReceivedSortValue()) {
           return -1;
         }
-        if (a.date > b.date) {
+        if (a.getReceivedSortValue() > b.getReceivedSortValue()) {
           return 1;
         }
         
         return 0;
       }else if(this.sort == JournalSort.PRIORITY){
-        if (a.category.priority < b.category.priority) {
+        if (a.getPriority() < b.getPriority()) {
           return -1;
         }
-        if (a.category.priority > b.category.priority) {
+        if (a.getPriority() > b.getPriority()) {
           return 1;
         }
         
         return 0;
       }else if(this.sort == JournalSort.PLANET){
-        if (a.category.planet_id < b.category.planet_id) {
+        if (a.getPlanetId() < b.getPlanetId()) {
           return -1;
         }
-        if (a.category.planet_id > b.category.planet_id) {
+        if (a.getPlanetId() > b.getPlanetId()) {
           return 1;
         }
         
@@ -219,6 +266,14 @@ export class MenuJournal extends GameMenu {
 
       return 0;
     });
+  }
+
+  triggerControllerDUpPress() {
+    this.LB_ITEMS.directionalNavigate('up');
+  }
+
+  triggerControllerDDownPress() {
+    this.LB_ITEMS.directionalNavigate('down');
   }
 
   triggerControllerBumperLPress() {

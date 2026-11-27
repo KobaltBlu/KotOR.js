@@ -267,6 +267,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     for(let i = 0; i < this.emitters.length; i++){
+      this.emitters[i].disable();
       if((this.emitters[i] as any).group)
         this.emitters[i].removeFromParent();
     }
@@ -567,8 +568,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     // if((GameState.debug as any).disableAnimation) return;
 
-    for(let i = 0, len = this.effects.length; i < len; i++){
-      this.effects[i].update(delta);
+    for(let i = this.effects.length - 1; i >= 0; i--){
+      const effect = this.effects[i];
+      effect?.update(delta);
     }
 
     this.animationManager.update(delta);

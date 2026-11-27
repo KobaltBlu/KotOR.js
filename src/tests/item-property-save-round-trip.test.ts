@@ -61,7 +61,13 @@ function labelsIn(source: string, pattern: RegExp): string[] {
 }
 
 const written = labelsIn(writer, /new GFFField\(\s*GFFDataType\.\w+\s*,\s*'([^']+)'/g);
-const read = labelsIn(reader, /hasField\('([^']+)'\)/g);
+// Labels are read either directly (hasField('X')) or through
+// getTemplateFieldValue(['X', 'LegacyX']), which checks each label in turn.
+const read = [
+  ...labelsIn(reader, /hasField\('([^']+)'\)/g),
+  ...[...reader.matchAll(/getTemplateFieldValue\(\[([^\]]*)\]\)/g)]
+    .flatMap((m) => [...m[1].matchAll(/'([^']+)'/g)].map((l) => l[1])),
+];
 
 describe('item property fields survive a save round trip', () => {
   test('the writer emits something', () => {

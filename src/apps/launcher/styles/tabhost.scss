@@ -1,42 +1,61 @@
-
 /* Tabs */
 
 ul.top-nav {
   list-style: none;
   position: absolute;
-  line-height: 80px;
+  inset: 0 auto 0 0;
+  display: flex;
+  align-items: center;
+  height: 92px;
+  padding: 0 24px;
   -webkit-app-region: no-drag;
+  z-index: 2;
 }
 
 li.tab-btn {
-  float: left;
-  color: rgba(255,255,255,0.75);
-  height: 80px;
+  color: var(--text-muted);
+  height: 92px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
 }
 
-li.tab-btn:hover {
-  color: white;
-  text-shadow: 0 0 25px #FFF;
-}
-
+li.tab-btn:hover,
 li.tab-btn.selected {
-  color: white;
-  text-shadow: 0 0 25px #FFF;
+  color: var(--text-bright);
 }
 
 li.tab-btn a {
-  color: white;
-  font-family: sans-serif;
-  font-size: 18pt;
+  color: inherit;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   text-decoration: none;
-  padding: 0 20px;
-  display: block;
+  padding: 0 24px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  position: relative;
 }
 
-li.tab-btn.nav-logo img {
-  height: 40px;
-  margin-top: 25px;
-  margin-left: 20px;
+li.tab-btn.selected a {
+  color: var(--accent);
+}
+
+li.tab-btn.selected a::after {
+  content: '';
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+li.tab-btn.nav-logo {
   margin-right: 20px;
 }
 
@@ -55,12 +74,38 @@ li.tab-btn.profiles-drawer-toggle {
   }
 }
 
+li.tab-btn.nav-logo img {
+  height: 52px;
+  margin: 0;
+  display: block;
+}
+
+li.tab-btn.discord-toggle {
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+li.tab-btn.discord-toggle i {
+  font-size: 28px;
+  color: #5865f2;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+li.tab-btn.discord-toggle i.active {
+  color: var(--accent);
+}
+
+li.tab-btn.discord-toggle:hover i {
+  transform: scale(1.06);
+}
+
 .tab-host {
   position: absolute;
-  top: 80px;
+  top: 92px;
   left: 0;
   right: 0;
-  bottom:0;
+  bottom: 0;
+  z-index: 2;
 }
 
 .discord_widget_open .tab-host {
@@ -70,10 +115,7 @@ li.tab-btn.profiles-drawer-toggle {
 .tab-host .tab {
   display: none;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom:0;
+  inset: 0;
 }
 
 .tab-host .tab.selected {
@@ -117,6 +159,7 @@ li.tab-btn.profiles-drawer-toggle {
   }
 
   li.tab-btn a {
+    height: 56px;
     font-size: 14px;
     padding: 0 10px;
     white-space: nowrap;

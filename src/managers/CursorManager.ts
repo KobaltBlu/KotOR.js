@@ -17,11 +17,11 @@ import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
  * Responsibilities:
  * - Loads and manages cursor/reticle sprite materials
  * - Updates cursor appearance based on UI hover, object hover, and selection
- * - Performs lightweight ray tests against point proxies to find hovered objects
+ * - Performs precise mesh ray tests with point-proxy fallbacks to find hovered objects
  * - Exposes helpers to sync reticle sprites with world positions
  *
  * Performance notes:
- * - Uses a pooled `THREE.Points` with dynamic attributes to raycast against interactables
+ * - Reuses a pooled mesh candidate list and a fallback `THREE.Points` proxy cloud for interactable hit-testing
  * - Avoids unnecessary material swaps; reticle setters guard redundant assignments
  *
  * @file CursorManager.ts
@@ -48,6 +48,8 @@ export class CursorManager {
 	static selected: THREE.Object3D;
 	/** Game module object currently selected */
 	static selectedObject: ModuleObject;
+	/** Temporary interaction target previewed while hovering another object's reticle hotspot */
+	static interactionPreviewObject: ModuleObject;
 	/** Three.js node for the currently hovered object (reticle anchor) */
 	static hovered: THREE.Object3D;
 	/** Game module object currently hovered */
@@ -75,6 +77,14 @@ export class CursorManager {
 	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
 	/** Debug sphere mesh (optional visualization) */
 	static sphere: THREE.Mesh;
+	/** Scratch list of visible mesh candidates used for precise hover picking */
+	static raycastMeshes: THREE.Object3D[] = [];
+	/** Scratch candidate set used to map mesh hits back to interactable module objects */
+	static pickCandidates: Set<ModuleObject> = new Set();
+	/** Scratch world position for hover proxy calculations */
+	static proxyWorldPosition = new THREE.Vector3();
+	/** Scratch projected position for reticle hotspot hover calculations */
+	static projectedScreenPosition = new THREE.Vector3();
 	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
@@ -204,6 +214,9 @@ export class CursorManager {
 		if(CursorManager.selectedObject == object){
 			CursorManager.selectedObject = undefined;
 		}
+		if(CursorManager.interactionPreviewObject == object){
+			CursorManager.interactionPreviewObject = undefined;
+		}
 		if(CursorManager.hoveredObject == object){
 			CursorManager.hoveredObject = undefined;
 		}
@@ -246,6 +259,7 @@ export class CursorManager {
 	 * @param object The module object to mark as selected
 	 */
 	public static setReticleSelectedObject( object: ModuleObject ){
+		CursorManager.interactionPreviewObject = undefined;
 		GameState.getCurrentPlayer().lookAt(object);
 		if(object){
 			CursorManager.selected = object.getReticleNode();
@@ -430,19 +444,29 @@ export class CursorManager {
 			}
 		}
 
+		CursorManager.interactionPreviewObject = undefined;
+
 		if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
 			if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
 				if(GameState.scene_cursor_holder.visible){
-					const moduleObject = CursorManager.onMouseHitInteractive();
-					// console.log('moduleObject', moduleObject);
+					const interactionPreviewObject = CursorManager.getInteractiveReticleHoverTarget();
+					CursorManager.interactionPreviewObject = interactionPreviewObject;
+					const moduleObject = interactionPreviewObject || CursorManager.onMouseHitInteractive();
 					if(moduleObject){
 						CursorManager.setReticleHoveredObject(moduleObject);
+					}else{
+						CursorManager.hoveredObject = undefined;
+						CursorManager.hovered = undefined;
 					}
 				}else{
 					if(!CursorManager.selectedObject){
 						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
-						// CursorManager.setReticleSelectedObject(closest);
-						CursorManager.setReticleHoveredObject(closest);
+						if(closest){
+							CursorManager.setReticleHoveredObject(closest);
+						}else{
+							CursorManager.hoveredObject = undefined;
+							CursorManager.hovered = undefined;
+						}
 					}
 				}
 			}
@@ -491,13 +515,102 @@ export class CursorManager {
 	static pointThreshold = 1;
 	/** Line of sight z offset for the point cloud */
 	static pointLOSOffset = 1;
+	/** Screen-space radius used when hovering another object's reticle hotspot */
+	static interactionPreviewRadius = 24;
+
+	public static getInteractionTargetObject(): ModuleObject | undefined {
+		return CursorManager.interactionPreviewObject || CursorManager.selectedObject;
+	}
+
+	private static collectInteractivePickMeshes(root: THREE.Object3D, meshes: THREE.Object3D[]): void {
+		root.traverse((child) => {
+			if(!child.visible || child.userData?.ignoreMousePicking){
+				return;
+			}
+
+			if(child instanceof THREE.Mesh){
+				meshes.push(child);
+			}
+		});
+	}
+
+	private static getCandidateModuleObjectFromPickedObject(object: THREE.Object3D | null | undefined, candidates: Set<ModuleObject>): ModuleObject | undefined {
+		let current = object;
+		while(current){
+			const moduleObject = current.userData?.moduleObject as ModuleObject | undefined;
+			if(moduleObject && candidates.has(moduleObject)){
+				return moduleObject;
+			}
+			current = current.parent;
+		}
+		return undefined;
+	}
+
+	private static getInteractiveProxyWorldPosition(object: ModuleObject, target: THREE.Vector3): THREE.Vector3 {
+		const reticleNode = object.getReticleNode();
+		if(reticleNode instanceof THREE.Object3D){
+			return reticleNode.getWorldPosition(target);
+		}
+
+		target.copy(object.position);
+		target.z += CursorManager.pointLOSOffset;
+		return target;
+	}
+
+	private static getInteractiveReticleHoverTarget(): ModuleObject | undefined {
+		if(!CursorManager.selectedObject){
+			return undefined;
+		}
+
+		const objects = GameState.ModuleObjectManager.playerHoverableObjects;
+		const objCount = objects.length;
+		if(!objCount){
+			return undefined;
+		}
+
+		const widthHalf = GameState.ResolutionManager.getViewportWidth() / 2;
+		const heightHalf = GameState.ResolutionManager.getViewportHeight() / 2;
+		const radiusSquared = CursorManager.interactionPreviewRadius * CursorManager.interactionPreviewRadius;
+
+		let closestObject: ModuleObject | undefined;
+		let closestDistanceSquared = Infinity;
+
+		for(let i = 0; i < objCount; i++){
+			const obj = objects[i];
+			if(!obj || obj == CursorManager.selectedObject || !obj.isUseable()){
+				continue;
+			}
+
+			CursorManager.getInteractiveProxyWorldPosition(obj, CursorManager.projectedScreenPosition);
+			CursorManager.projectedScreenPosition.project(GameState.currentCamera);
+
+			if(CursorManager.projectedScreenPosition.z < -1 || CursorManager.projectedScreenPosition.z > 1){
+				continue;
+			}
+
+			const screenX = CursorManager.projectedScreenPosition.x * widthHalf + widthHalf;
+			const screenY = -(CursorManager.projectedScreenPosition.y * heightHalf) + heightHalf;
+			const dx = screenX - Mouse.positionViewport.x;
+			const dy = screenY - Mouse.positionViewport.y;
+			const distanceSquared = dx * dx + dy * dy;
+
+			if(distanceSquared <= radiusSquared && distanceSquared < closestDistanceSquared){
+				closestObject = obj;
+				closestDistanceSquared = distanceSquared;
+			}
+		}
+
+		return closestObject;
+	}
 
 	/**
-	 * Performs a ray test against interactable objects using a point cloud proxy.
+	 * Performs a ray test against interactable objects using a mesh-first strategy
+	 * with point proxy fallbacks.
 	 *
-	 * Builds a `THREE.Points` geometry positioned above each interactable target
-	 * and raycasts against it to determine the closest hovered object while
-	 * respecting `GameState.maxSelectableDistance`.
+	 * The primary pass raycasts against visible meshes from nearby hoverable
+	 * objects so selection feels tight and matches the rendered object. If that
+	 * finds nothing, a fallback `THREE.Points` proxy cloud is used so traps or
+	 * other non-mesh anchors remain hoverable.
 	 *
 	 * @returns The hovered `ModuleObject`, or `undefined` if none hit
 	 */
@@ -505,16 +618,45 @@ export class CursorManager {
 		
 		const objects = GameState.ModuleObjectManager.playerHoverableObjects;
 		const objCount = objects.length;
+		if(!objCount){
+			return undefined;
+		}
+
+		const farCache = CursorManager.raycaster.far;
+		CursorManager.raycaster.far = GameState.maxSelectableDistance;
+		CursorManager.raycaster.setFromCamera(Mouse.position, GameState.currentCamera);
+
+		CursorManager.raycastMeshes.length = 0;
+		CursorManager.pickCandidates.clear();
+
+		for(let i = 0; i < objCount; i++){
+			const obj = objects[i];
+			CursorManager.pickCandidates.add(obj);
+
+			if(obj.model instanceof THREE.Object3D){
+				CursorManager.collectInteractivePickMeshes(obj.model, CursorManager.raycastMeshes);
+			}
+		}
+
+		if(CursorManager.raycastMeshes.length){
+			const meshIntersects = CursorManager.raycaster.intersectObjects(CursorManager.raycastMeshes, false);
+			for(let i = 0; i < meshIntersects.length; i++){
+				const moduleObject = CursorManager.getCandidateModuleObjectFromPickedObject(meshIntersects[i].object, CursorManager.pickCandidates);
+				if(moduleObject){
+					CursorManager.pickCandidates.clear();
+					CursorManager.raycaster.far = farCache;
+					return moduleObject;
+				}
+			}
+		}
 		
 		const points: number[] = [];
 		const sizes: number[] = [];
-
-		// Line of sight offset for the point cloud
-		const losZ = CursorManager.pointLOSOffset;
 		
 		for(let i = 0; i < objCount; i++){
 			const obj = objects[i];
-			points.push(obj.position.x, obj.position.y, obj.position.z + losZ);
+			const point = CursorManager.getInteractiveProxyWorldPosition(obj, CursorManager.proxyWorldPosition);
+			points.push(point.x, point.y, point.z);
 			sizes.push(CursorManager.pointSize);
 		}
 
@@ -526,25 +668,24 @@ export class CursorManager {
 			const positionAttribute = CursorManager.pointGeomerty.attributes.position as THREE.BufferAttribute;
 			const sizeAttribute = CursorManager.pointGeomerty.attributes.size as THREE.BufferAttribute;
 			for(let i = 0; i < objCount; i++){
-				positionAttribute.setX(i*3, objects[i].position.x);
-				positionAttribute.setY(i*3, objects[i].position.y);
-				positionAttribute.setZ(i*3, objects[i].position.z + losZ);
+				const point = CursorManager.getInteractiveProxyWorldPosition(objects[i], CursorManager.proxyWorldPosition);
+				positionAttribute.setXYZ(i, point.x, point.y, point.z);
 				sizeAttribute.setX(i, CursorManager.pointSize);
 			}
+			positionAttribute.needsUpdate = true;
+			sizeAttribute.needsUpdate = true;
 		}
 
 		CursorManager.pointGeomerty.computeBoundingBox();
 		CursorManager.pointGeomerty.computeBoundingSphere();
 		
-		const farCache = CursorManager.raycaster.far;
 		const pThresholdCache = CursorManager.raycaster.params.Points.threshold;
-		CursorManager.raycaster.far = GameState.maxSelectableDistance;
 		CursorManager.raycaster.params.Points.threshold = CursorManager.pointThreshold;
-		CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
 		const intersectsT = CursorManager.raycaster.intersectObject( CursorManager.testPoints, false );
 		const intersect = intersectsT[0];
 		CursorManager.raycaster.params.Points.threshold = pThresholdCache;
 		CursorManager.raycaster.far = farCache;
+		CursorManager.pickCandidates.clear();
 		if(intersect && intersect.object == CursorManager.testPoints){
 			return objects[intersect.index];
 		}

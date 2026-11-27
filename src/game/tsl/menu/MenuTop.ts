@@ -216,6 +216,17 @@ export class MenuTop extends K1_MenuTop {
 
   TogglePartyMember(nth = 0, bVisible = false) {
     const character = GameState.PartyManager.party[nth];
+    if(nth === 0 && (!bVisible || !character)){
+      for(const name of ['LBL_CMBTEFCTRED1', 'LBL_CMBTEFCTINC1', 'LBL_DEBILATATED1', 'LBL_DISABLE1', 'LBL_LEVELUP1', 'LBL_BACK1', 'LBL_CHAR1', 'PB_FORCE1', 'PB_VIT1']){
+        this.getControlByName(name)?.hide();
+      }
+      this.LBL_CHARNAME.setText('');
+      this.LBL_TOP_CLASS1.hide();
+      this.LBL_TOP_CLASS1LEVEL?.hide();
+      this.LBL_TOP_CLASS2?.hide();
+      this.LBL_TOP_CLASS2LEVEL?.hide();
+      return;
+    }
     switch (nth) {
       case 0:
         this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1)).hide();
@@ -274,7 +285,7 @@ export class MenuTop extends K1_MenuTop {
 
   CloseAllOtherMenus() {
     let currentMenu = this.manager.GetCurrentMenu();
-    if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuFeedback || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuPartySelection || currentMenu == this.manager.MenuEquipment) {
+    if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuQuestItem || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuFeedback || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuPartySelection || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }
   }

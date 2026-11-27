@@ -58,6 +58,8 @@ import { ThresholdController } from "@/odyssey/controllers/ThresholdController";
 import { VelocityController } from "@/odyssey/controllers/VelocityController";
 import { XSizeController } from "@/odyssey/controllers/XSizeController";
 import { YSizeController } from "@/odyssey/controllers/YSizeController";
+import { ShadowRadiusController } from "@/odyssey/controllers/ShadowRadiusController";
+import { VerticalDisplacementController } from "@/odyssey/controllers/VerticalDisplacementController";
 
 /**
  * OdysseyControllerFactory class.
@@ -99,6 +101,10 @@ export class OdysseyControllerFactory {
           return new ColorController(controller);
         case OdysseyModelControllerType.Radius:
           return new RadiusController(controller);
+        case OdysseyModelControllerType.ShadowRadius:
+          return new ShadowRadiusController(controller);
+        case OdysseyModelControllerType.VerticalDisplacement:
+          return new VerticalDisplacementController(controller);
         case OdysseyModelControllerType.Multiplier:
           return new MultiplierController(controller);
       }

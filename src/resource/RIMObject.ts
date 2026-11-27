@@ -178,7 +178,7 @@ export class RIMObject {
     try {
       if(this.inMemory && this.buffer instanceof Uint8Array){
         const buffer = new Uint8Array(resource.size);
-        buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+        buffer.set(this.buffer.slice(resource.offset, resource.offset + resource.size));
         return buffer;
       }else{
         const fd = await this.getFileDescription();
@@ -236,7 +236,7 @@ export class RIMObject {
     }
     
     if(this.inMemory){
-      const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+      const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{

@@ -1,5 +1,7 @@
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { MenuQuestItem as K1_MenuQuestItem } from "@/game/kotor/KOTOR";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { ModuleItem } from "@/module";
+import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
 
 /**
  * MenuQuestItem class.
@@ -28,6 +30,21 @@ export class MenuQuestItem extends K1_MenuQuestItem {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this._button_b = this.BTN_BACK;
+
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+        this.selected = item;
+        this.UpdateSelected();
+      };
+
+      this.LB_ITEMS.padding = 5;
+      this.LB_ITEMS.offset.x = 0;
       resolve();
     });
   }

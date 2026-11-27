@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld(
     },
     showOpenDialog: (...args: any[]) => {
       return new Promise((resolve, reject) => {
-        ipcRenderer.invoke('open-file-dialog', args).then((response) => {
+        ipcRenderer.invoke('open-file-dialog', ...args).then((response) => {
           resolve(response);
         }).catch((e) => {
           reject(e);

@@ -10,8 +10,6 @@ import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { AudioEngine } from "@/audio/AudioEngine";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import * as THREE from "three";
 import { CameraMode } from "@/enums/dialog/CameraMode";
@@ -50,6 +48,7 @@ export class CutsceneManager {
   static audioEmitter: AudioEmitter;
 
   static paused: boolean = false;
+  static conversationSessionId: number = 0;
 
   static cameraState: ICameraState = {
     mode: CameraMode.DIALOG,
@@ -60,6 +59,21 @@ export class CutsceneManager {
     currentCameraAnimationElapsed: 0,
     listener: {} as ICameraParticipant,
     speaker: {} as ICameraParticipant,
+  }
+
+  static resetCameraState() {
+    this.cameraState.mode = CameraMode.DIALOG;
+    this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER;
+    this.cameraState.cameraID = -1;
+    this.cameraState.cameraAnimation = -1;
+    this.cameraState.currentCameraAnimation = undefined;
+    this.cameraState.currentCameraAnimationElapsed = 0;
+    this.cameraState.listener = {} as ICameraParticipant;
+    this.cameraState.speaker = {} as ICameraParticipant;
+  }
+
+  static isConversationSessionActive(sessionId: number, dialog: DLGObject) {
+    return this.active && this.conversationSessionId === sessionId && this.dialog === dialog;
   }
 
   static getCurrentListener(): ModuleObject {
@@ -76,16 +90,28 @@ export class CutsceneManager {
     return this.owner;
   }
 
+  static processReply(reply: DLGNode) {
+    if (!reply) {
+      return;
+    }
+
+    reply.initProperties();
+    reply.updateJournal();
+    reply.runScripts();
+  }
+
   static startConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
     console.log('CutsceneManager.startConversation', dialog, owner, listener);
+    const sessionId = ++this.conversationSessionId;
     this.active = true;
-    this.cameraState.currentCameraAnimation = undefined;
+    this.resetCameraState();
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
     this.ended = false;
     this.currentEntry = null;
     this.state = ConversationState.INVALID;
+    GameState.currentCamera = GameState.camera;
     if (owner.isPlayer && !listener.isPlayer) {
       this.listener = owner;
       this.owner = listener;
@@ -105,6 +131,7 @@ export class CutsceneManager {
 
     if (!(dialog instanceof DLGObject)) {
       this.endConversation();
+      return;
     }
 
     this.conversation_name = dialog.resref;
@@ -128,12 +155,15 @@ export class CutsceneManager {
       this.cutsceneMode = CutsceneMode.BARK;
       this.startingEntry.initProperties();
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
+      this.startingEntry.updateJournal();
       this.startingEntry.runScripts();
+      if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
       const reply = this.dialog.getReplyByIndex(this.startingEntry.replies[0]?.index);
       if (reply) {
-        reply.runScripts();
+        this.processReply(reply);
       }
-      this.endConversation();
+      if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
+      this.endConversation(false, false);
       return;
     }
     
@@ -155,21 +185,24 @@ export class CutsceneManager {
 
     GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
     Promise.all([
-      this.dialog.loadStuntCamera(),
-      this.dialog.loadStuntActors(),
-      this.dialog.loadBackgroundMusic()
+      dialog.loadStuntCamera(() => this.isConversationSessionActive(sessionId, dialog)),
+      dialog.loadStuntActors(() => this.isConversationSessionActive(sessionId, dialog)),
+      dialog.loadBackgroundMusic()
     ]).then(() => {
-      switch (this.dialog.getConversationType()) {
+      if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
+      switch (dialog.getConversationType()) {
         case DLGConversationType.COMPUTER:
-          console.log('CutsceneManager.startConversation: Computer');
           GameState.MenuManager.InGameComputer.open();
           break;
         default:
-          console.log('CutsceneManager.startConversation: Conversation');
           GameState.MenuManager.InGameDialog.open();
           break;
       }
       this.showEntry(this.startingEntry);
+    }).catch((error) => {
+      if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
+      console.error('CutsceneManager.startConversation: resource loading failed', error);
+      this.endConversation(true);
     });
   }
 
@@ -200,8 +233,7 @@ export class CutsceneManager {
     if(this.currentEntry.checkList.isSkipped){ return; }
     if(this.currentEntry.repliesShown){ return; }
     this.currentEntry.checkList.isSkipped = true;
-    this.audioEmitter.stop();
-    this.currentEntry.resetLIP();
+    this.currentEntry.cancelVoiceOver(this.audioEmitter);
     this.showReplies(this.currentEntry);
   }
 
@@ -210,6 +242,12 @@ export class CutsceneManager {
    * @param entry - The entry to show
    */
   static showEntry(entry: DLGNode) {
+    if(!entry || !this.active || !this.dialog){ return; }
+    const sessionId = this.conversationSessionId;
+    const dialog = this.dialog;
+    if(this.currentEntry && this.currentEntry !== entry){
+      this.currentEntry.cancelVoiceOver(this.audioEmitter);
+    }
     this.currentEntry = entry;
     this.currentEntry.repliesShown = false;
     entry.initProperties();
@@ -268,6 +306,8 @@ export class CutsceneManager {
 
     //scripts
     entry.runScripts();
+    // A node script may end this conversation or start a different one.
+    if(!this.isConversationSessionActive(sessionId, dialog) || this.currentEntry !== entry){ return; }
 
     //replies
     const replies = this.dialog.getAvailableReplies(entry);
@@ -279,6 +319,9 @@ export class CutsceneManager {
 
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       if(entry.isContinueDialog() && !isComputerCameraEntry){
+        // Auto-continued computer nodes are not a user click; explicitly enter
+        // the choice state before using the duplicate-click guarded handler.
+        this.state = ConversationState.WAITING_FOR_PC_CHOICE;
         this.onReplySelect(replies[0]);
       }else{
         GameState.MenuManager.InGameComputer.setReplies(replies);
@@ -315,13 +358,25 @@ export class CutsceneManager {
       this.endConversation();
       return;
     }
+
+    if(this.state != ConversationState.WAITING_FOR_PC_CHOICE){
+      console.warn('CutsceneManager.onReplySelect: Not in waiting for pc choice state');
+      return;
+    }
+
+    this.state = ConversationState.LISTENING_TO_SPEAKER;
+    this.currentReplies = [];
+    this.isListening = true;
+
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }else{
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }
-    reply.updateJournal();
-    reply.runScripts();
+    const sessionId = this.conversationSessionId;
+    const dialog = this.dialog;
+    this.processReply(reply);
+    if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
     const entry = this.getNextEntry(reply.entries);
     if(entry){
       this.showEntry(entry);
@@ -335,7 +390,10 @@ export class CutsceneManager {
    * @param entry - The entry to show the replies for
    */
   static showReplies(entry: DLGNode) {
+    const sessionId = this.conversationSessionId;
+    const dialog = this.dialog;
     this.state = ConversationState.WAITING_FOR_PC_CHOICE;
+    entry.cancelVoiceOver(this.audioEmitter);
     this.currentEntry = undefined;
     this.isListening = false;
     if (GameState.Mode != EngineMode.DIALOG)
@@ -358,14 +416,16 @@ export class CutsceneManager {
         console.warn('CutsceneManager.showReplies: No replies found');
       }
 
-      reply?.runScripts();
+      this.processReply(reply);
+      if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
       this.endConversation();
       return;
     }
 
     //Continue Dialog
     if (isContinueDialog) {
-      reply?.runScripts();
+      this.processReply(reply);
+      if(!this.isConversationSessionActive(sessionId, dialog)){ return; }
       const nextEntry = this.getNextEntry(reply.entries);
       if(nextEntry){
         this.showEntry(nextEntry);
@@ -412,17 +472,23 @@ export class CutsceneManager {
    * End the conversation
    * @param aborted - Whether the conversation was aborted
    */
-  static endConversation(aborted = false) {
+  static endConversation(aborted = false, stopAudio = true) {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
+    const endingMode = this.cutsceneMode;
+    const endingDialog = this.dialog;
+    const sessionId = ++this.conversationSessionId;
     this.active = false;
     if (this.paused) {
       this.ended = true;
     }
+    if (this.currentEntry) {
+      this.currentEntry.cancelVoiceOver(stopAudio ? this.audioEmitter : undefined);
+    } else if (stopAudio && !wasBark) {
+      this.audioEmitter?.stop();
+    }
     if(!wasBark){
-      this.audioEmitter.stop();
       if(this.dialog?.getConversationType() == DLGConversationType.COMPUTER){
         GameState.MenuManager.InGameComputer.close();
-        // GameState.MenuManager.InGameComputerCam.close();
         GameState.MenuManager.InGameComputerCam.hide();
       }else{
         GameState.MenuManager.InGameDialog.close();
@@ -430,32 +496,41 @@ export class CutsceneManager {
     }
     GameState.currentCamera = GameState.camera;
     this.state = ConversationState.INVALID;
+    this.currentEntry = undefined;
+    this.currentReplies = [];
+    this.lastSpokenString = '';
+    this.resetCameraState();
 
-    if(this.dialog){
-      if (this.dialog.animatedCamera instanceof OdysseyModel3D)
-        this.dialog.animatedCamera.animationManager.currentAnimation = undefined;
-      console.log('CutsceneManager.endConversation: onEndConversation', this.dialog.scripts.onEndConversation);
+    if(endingDialog){
+      if (endingDialog.animatedCamera instanceof OdysseyModel3D)
+        endingDialog.animatedCamera.animationManager.currentAnimation = undefined;
+      console.log('CutsceneManager.endConversation: onEndConversation', endingDialog.scripts.onEndConversation);
       if (!aborted) {
-        if(this.dialog.scripts.onEndConversation){
-          this.dialog.scripts.onEndConversation.run(this.owner, 0);
+        if(endingDialog.scripts.onEndConversation){
+          endingDialog.scripts.onEndConversation.run(this.owner, 0);
         }
       }else{
-        console.log('CutsceneManager.endConversation: onEndConversationAbort', this.dialog.scripts.onEndConversationAbort);
-        if(this.dialog.scripts.onEndConversationAbort){
-          this.dialog.scripts.onEndConversationAbort.run(this.owner, 0);
+        console.log('CutsceneManager.endConversation: onEndConversationAbort', endingDialog.scripts.onEndConversationAbort);
+        if(endingDialog.scripts.onEndConversationAbort){
+          endingDialog.scripts.onEndConversationAbort.run(this.owner, 0);
         }
       }
-      this.dialog.releaseStuntActors();
-      if(this.cutsceneMode == CutsceneMode.ANIMATED){
+      if(this.dialog === endingDialog && this.conversationSessionId === sessionId){
+        endingDialog.releaseStuntActors();
+      }
+      if(this.dialog === endingDialog && this.conversationSessionId === sessionId && endingMode == CutsceneMode.ANIMATED){
         GameState.FadeOverlayManager.FadeInFromCutscene();
       }
+    }
+
+    if(this.dialog !== endingDialog || this.conversationSessionId !== sessionId){
+      return;
     }
 
     this.dialog = undefined;
     this.cutsceneMode = CutsceneMode.DIALOG;
     GameState.VideoEffectManager.SetVideoEffect(-1);
-    AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.stop();
-
+    GameState.MusicManager.stopDialogMusic(true);
     if(wasBark){
       GameState.RestoreEnginePlayMode();
     }
@@ -734,28 +809,36 @@ export class CutsceneManager {
    * @param nFOV - The field of view to set
    */
   static setAnimatedCamera(nCamera: number, nFOV: number = -1) {
-    const animationState = this.dialog.animatedCamera.animationManager.createAnimationState();
-    if(nCamera == -1){
-      this.currentEntry.checkList.cameraAnimationComplete = true;
-      this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
-      console.warn(`No animation found for camera [${nCamera}] falling back to dialog camera`);
-      this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
-      return;
-    }
-
-    if (!(this.dialog.animatedCamera instanceof OdysseyModel3D)) {
+    const cameraModel = this.dialog?.animatedCamera;
+    if (!(cameraModel instanceof OdysseyModel3D)) {
+      if(this.currentEntry){
+        this.currentEntry.checkList.cameraAnimationComplete = true;
+      }
       console.warn(`No animated camera model found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
 
+    const animationState = cameraModel.animationManager.createAnimationState();
+    if(nCamera == -1){
+      if(this.currentEntry){
+        this.currentEntry.checkList.cameraAnimationComplete = true;
+      }
+      cameraModel.animationManager.currentAnimationState = animationState;
+      console.warn(`No animation found for camera [${nCamera}] falling back to dialog camera`);
+      this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
+      return;
+    }
+
     const animationName = this.getCUTAnimationName(nCamera);
-    const animation = this.dialog.animatedCamera.odysseyAnimationMap.get(animationName.toLowerCase().trim());
+    const animation = cameraModel.odysseyAnimationMap.get(animationName.toLowerCase().trim());
     this.cameraState.currentCameraAnimation = animation;
     this.cameraState.currentCameraAnimationElapsed = 0;
-    this.dialog.animatedCamera.animationManager.currentAnimation = animation;
-    this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
-    this.currentEntry.checkList.cameraAnimationComplete = !this.cameraState.currentCameraAnimation;
+    cameraModel.animationManager.currentAnimation = animation;
+    cameraModel.animationManager.currentAnimationState = animationState;
+    if(this.currentEntry){
+      this.currentEntry.checkList.cameraAnimationComplete = !this.cameraState.currentCameraAnimation;
+    }
     this.cameraState.mode = CameraMode.ANIMATED;
     GameState.currentCamera = GameState.camera_animated;
     if (nFOV != -1) {
@@ -774,7 +857,7 @@ export class CutsceneManager {
    * @param delta - The delta time
    */
   static update(delta: number = 0) {
-    if (!this.dialog)
+    if (!this.active || !this.dialog)
       return;
 
     this.dialog.stuntActors.forEach( async (actor) => {
@@ -802,7 +885,7 @@ export class CutsceneManager {
    * @param delta - The delta time
    */
   static updateCamera(delta: number = 0) {
-    if (!this.dialog || this.cutsceneMode == CutsceneMode.BARK) return;
+    if (!this.active || !this.dialog || this.cutsceneMode == CutsceneMode.BARK) return;
 
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.show();
@@ -817,6 +900,9 @@ export class CutsceneManager {
     }
 
     if (this.cameraState.mode == CameraMode.PLACEABLE) {
+      if (!this.currentEntry) {
+        return;
+      }
       this.setPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);
       if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
         GameState.MenuManager.InGameComputer.hide();
@@ -832,9 +918,35 @@ export class CutsceneManager {
       if(!listener.participant || !speaker.participant){
         return;
       }
+
+      if(listener.participant.destroyed || speaker.participant.destroyed){
+        return;
+      }
+
+      if(!listener.participant.position || !speaker.participant.position){
+        return;
+      }
       
-      const listenerNeedsUpdate = (!listener.position || (listener.position.x != listener.participant.position.x && listener.position.y != listener.participant.position.y && listener.position.z != listener.participant.position.z));
-      const speakerNeedsUpdate = (!speaker.position || (speaker.position.x != speaker.participant.position.x && speaker.position.y != speaker.participant.position.y && speaker.position.z != speaker.participant.position.z));
+      const listenerNeedsUpdate = (
+        !listener.position ||
+        !listener.rotation ||
+        listener.position.x != listener.participant.position.x ||
+        listener.position.y != listener.participant.position.y ||
+        listener.position.z != listener.participant.position.z ||
+        listener.rotation.x != listener.participant.rotation.x ||
+        listener.rotation.y != listener.participant.rotation.y ||
+        listener.rotation.z != listener.participant.rotation.z
+      );
+      const speakerNeedsUpdate = (
+        !speaker.position ||
+        !speaker.rotation ||
+        speaker.position.x != speaker.participant.position.x ||
+        speaker.position.y != speaker.participant.position.y ||
+        speaker.position.z != speaker.participant.position.z ||
+        speaker.rotation.x != speaker.participant.rotation.x ||
+        speaker.rotation.y != speaker.participant.rotation.y ||
+        speaker.rotation.z != speaker.participant.rotation.z
+      );
       
       if(!listenerNeedsUpdate && !speakerNeedsUpdate){
         return;
@@ -918,7 +1030,9 @@ export class CutsceneManager {
     }
 
     if(!manager.currentAnimation){
-      this.currentEntry.checkList.cameraAnimationComplete = true;
+      if(this.currentEntry){
+        this.currentEntry.checkList.cameraAnimationComplete = true;
+      }
       return;
     }
     GameState.currentCamera = GameState.camera_animated;
@@ -927,7 +1041,7 @@ export class CutsceneManager {
     cameraModel.camerahook.getWorldPosition(GameState.camera_animated.position);
     GameState.camera_animated.quaternion.copy(cameraModel.camerahook.quaternion);
     GameState.camera_animated.updateProjectionMatrix();
-    if(!manager.currentAnimation){
+    if(!manager.currentAnimation && this.currentEntry){
       this.currentEntry.checkList.cameraAnimationComplete = true;
     }
   }
@@ -1097,22 +1211,22 @@ export class CutsceneManager {
     const closeUpDistance = 1.2; // Fixed distance for consistent close-up framing
     const heightOffset = 0; // No height adjustment needed for head-on shot
     
-    // Position camera for head-on close-up speaker shot
-    // Camera positioned directly in front of the speaker based on their rotation
-    const speakerRotation = (speaker.rotation.z + HALF_PI) + SINGLE_SHOT_ANGLE_OFFSET;
+    // Position camera for head-on close-up listener/player shot
+    // Camera positioned directly in front of the listener based on their rotation
+    const listenerRotation = (listener.rotation.z + HALF_PI) + SINGLE_SHOT_ANGLE_OFFSET;
     
-    // Calculate camera position based on speaker's facing direction
-    const cameraX = speakerCameraPosition.x + Math.cos(speakerRotation) * closeUpDistance;
-    const cameraY = speakerCameraPosition.y + Math.sin(speakerRotation) * closeUpDistance;
-    const cameraZ = speakerCameraPosition.z + heightOffset;
+    // Calculate camera position based on listener's facing direction
+    const cameraX = listenerCameraPosition.x + Math.cos(listenerRotation) * closeUpDistance;
+    const cameraY = listenerCameraPosition.y + Math.sin(listenerRotation) * closeUpDistance;
+    const cameraZ = listenerCameraPosition.z + heightOffset;
     
-    // Calculate final camera position - direct frontal shot based on speaker's rotation
+    // Calculate final camera position - direct frontal shot based on listener's rotation
     const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
     
-    // Calculate lookAt target - at speaker's eye level for proper framing
-    const lookAtTarget = speakerCameraPosition.clone().add(new THREE.Vector3(0, 0, 0.1)); // Lower lookAt target
+    // Calculate lookAt target - at listener's eye level for proper framing
+    const lookAtTarget = listenerCameraPosition.clone().add(new THREE.Vector3(0, 0, 0.1)); // Lower lookAt target
     
-    // Set camera position and look at the speaker
+    // Set camera position and look at the listener
     GameState.camera_dialog.position.copy(cameraPosition);
     GameState.camera_dialog.lookAt(lookAtTarget);
   }

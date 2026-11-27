@@ -29,6 +29,7 @@ import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
 import { AudioEngine } from "@/audio";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
+import { RuntimeFaultManager } from "@/utility/RuntimeFaultManager";
 import { IAmbientSource } from "@/interface/area/IAmbientSource";
 import { IGrassProperties } from "@/interface/area/IGrassProperties";
 import { SpellCastInstance } from "@/combat/SpellCastInstance";
@@ -55,8 +56,8 @@ import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 import { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
 import type { Module } from "@/module/Module";
 import { IVISRoom } from "@/interface/module/IVISRoom";
-import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { WeatherCondition } from "@/enums/module/WeatherCondition";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -343,59 +344,120 @@ export class ModuleArea extends ModuleObject {
   }
 
   dispose(){
-    this.areaMap.dispose();
+    this.areaMap?.dispose();
 
-    //clear area room objects
-    while (this.rooms.length){
-      this.rooms[0].destroy();
+    this.destroyObjectList(this.rooms, 'rooms');
+    this.destroyObjectList(this.areaOfEffects, 'areaOfEffects');
+    this.destroyObjectList(this.creatures, 'creatures');
+    this.destroyObjectList(this.items, 'items');
+    this.destroyObjectList(this.placeables, 'placeables');
+    this.destroyObjectList(this.doors, 'doors');
+    this.destroyObjectList(this.triggers, 'triggers');
+    this.destroyObjectList(this.waypoints, 'waypoints');
+    this.destroyObjectList(this.sounds, 'sounds');
+    this.destroyObjectList(this.encounters, 'encounters');
+    this.destroyObjectList(this.stores, 'stores');
+
+    const spellInstances = this.spellInstances.splice(0, this.spellInstances.length);
+    for(let i = 0; i < spellInstances.length; i++){
+      try{
+        spellInstances[i]?.dispose();
+      }catch(error){
+        console.error(`ModuleArea.dispose: Failed to dispose spellInstances[${i}]`, error);
+      }
     }
 
-    //clear area areaOfEffect objects
-    while (this.areaOfEffects.length){
-      this.areaOfEffects[0].destroy();
+    const textSprites = this.textSprites.splice(0, this.textSprites.length);
+    for(let i = 0; i < textSprites.length; i++){
+      try{
+        textSprites[i]?.dispose();
+      }catch(error){
+        console.error(`ModuleArea.dispose: Failed to dispose textSprites[${i}]`, error);
+      }
     }
 
-    //clear area creature objects
-    while (this.creatures.length){
-      this.creatures[0].destroy();
+    const partyMembers = GameState.PartyManager.party.splice(0, GameState.PartyManager.party.length);
+    for(let i = 0; i < partyMembers.length; i++){
+      try{
+        partyMembers[i]?.destroy();
+      }catch(error){
+        console.error(`ModuleArea.dispose: Failed to destroy party[${i}]`, error);
+      }
     }
 
-    //clear area item objects
-    while (this.items.length){
-      this.items[0].destroy();
-    }
-
-    //clear area placeable objects
-    while (this.placeables.length){
-      this.placeables[0].destroy();
-    }
-
-    //clear area door objects
-    while (this.doors.length){
-      this.doors[0].destroy();
-    }
-
-    //clear area trigger objects
-    while (this.triggers.length){
-      this.triggers[0].destroy();
-    }
-
-    //clear area waypoint objects
-    while (this.waypoints.length){
-      this.waypoints[0].destroy();
-    }
-
-    //clear area sound objects
-    while (this.sounds.length){
-      this.sounds[0].destroy();
-    }
-
-    while (GameState.PartyManager.party.length){
-      const pm = GameState.PartyManager.party.shift();
-      pm.destroy();
+    try{
+      this.path?.dispose();
+    }catch(error){
+      console.error('ModuleArea.dispose: Failed to dispose path', error);
     }
 
     this.weather.destroy();
+  }
+
+  private destroyObjectList(objects: ModuleObject[] = [], label = 'objects'){
+    const snapshot = objects.splice(0, objects.length);
+    for(let i = 0; i < snapshot.length; i++){
+      const object = snapshot[i];
+      if(!object){ continue; }
+      try{
+        object.destroy();
+      }catch(error){
+        console.error(`ModuleArea.dispose: Failed to destroy ${label}[${i}]`, error);
+      }
+    }
+  }
+
+  private getObjectFaultKey(phase: string, object?: ModuleObject): string {
+    const objectType = object?.constructor?.name || 'UnknownObject';
+    const objectId = object?.id ?? 'unknown-id';
+    let tag = '';
+    try{
+      tag = object?.getTag?.() || '';
+    }catch(_error){}
+    return `ModuleArea.${phase}:${objectType}:${objectId}:${tag}`;
+  }
+
+  private getObjectFaultContext(phase: string, object?: ModuleObject){
+    let tag = '';
+    try{
+      tag = object?.getTag?.() || '';
+    }catch(_error){}
+
+    return {
+      phase,
+      module: this.module?.filename,
+      area: this.name,
+      objectId: object?.id,
+      objectTag: tag,
+      objectType: object?.constructor?.name,
+      mode: GameState.Mode,
+    };
+  }
+
+  private runObjectUpdate(phase: string, object: ModuleObject, fn: () => void){
+    if(!object){ return; }
+
+    RuntimeFaultManager.run<void>(
+      this.getObjectFaultKey(phase, object),
+      fn,
+      {
+        fallback: undefined,
+        suppressAfterFailures: 3,
+        cooldownMs: 5000,
+        logThrottleMs: 2000,
+        context: () => this.getObjectFaultContext(phase, object),
+        onTrip: () => {
+          try{
+            object.clearAllActions?.();
+          }catch(error){
+            console.error('ModuleArea.runObjectUpdate: failed to clear actions for faulting object', {
+              context: this.getObjectFaultContext(phase, object),
+              error,
+            });
+          }
+        }
+      }
+    );
   }
 
   update(delta: number = 0){
@@ -407,45 +469,70 @@ export class ModuleArea extends ModuleObject {
     let placeableCount = this.placeables.length;
     let doorCount = this.doors.length;
     let partyCount = GameState.PartyManager.party.length;
+    const worldDeltaScale = GameState.CheatConsoleManager ? GameState.CheatConsoleManager.getWorldDeltaScale() : 1;
+    const worldDelta = delta * worldDeltaScale;
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
-      this.triggers[i].update(delta);
+      const trigger = this.triggers[i];
+      this.runObjectUpdate('update.trigger', trigger, () => {
+        trigger?.update(worldDelta);
+      });
     }
 
     //update encounters
     for(let i = 0; i < encounterCount; i++){
-      this.encounters[i].update(delta);
+      const encounter = this.encounters[i];
+      this.runObjectUpdate('update.encounter', encounter, () => {
+        encounter?.update(worldDelta);
+      });
     }
     
     //update aoe
     for(let i = 0; i < aoeCount; i++){
-      this.areaOfEffects[i].update(delta);
+      const areaOfEffect = this.areaOfEffects[i];
+      this.runObjectUpdate('update.aoe', areaOfEffect, () => {
+        areaOfEffect?.update(worldDelta);
+      });
     }
 
     //update party
     for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].update(delta);
+      const partyMember = GameState.PartyManager.party[i];
+      this.runObjectUpdate('update.party', partyMember, () => {
+        partyMember?.update(delta);
+      });
     }
     
     //update creatures
     for(let i = 0; i < creatureCount; i++){
-      this.creatures[i].update(delta);
+      const creature = this.creatures[i];
+      this.runObjectUpdate('update.creature', creature, () => {
+        creature?.update(worldDelta);
+      });
     }
     
     //update placeables
     for(let i = 0; i < placeableCount; i++){
-      this.placeables[i].update(delta);
+      const placeable = this.placeables[i];
+      this.runObjectUpdate('update.placeable', placeable, () => {
+        placeable?.update(worldDelta);
+      });
     }
     
     //update doors
     for(let i = 0; i < doorCount; i++){
-      this.doors[i].update(delta);
+      const door = this.doors[i];
+      this.runObjectUpdate('update.door', door, () => {
+        door?.update(worldDelta);
+      });
     }
 
     //unset party controlled
     for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].controlled = false;
+      if(GameState.PartyManager.party[i]){
+        GameState.PartyManager.party[i].controlled = false;
+      }
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
@@ -454,12 +541,15 @@ export class ModuleArea extends ModuleObject {
 
     //update rooms
     for(let i = 0; i < roomCount; i++){
-      this.rooms[i].update(delta);
+      const room = this.rooms[i];
+      this.runObjectUpdate('update.room', room, () => {
+        room?.update(worldDelta);
+      });
       // this.rooms[i].hide();
     }
 
     for(let i = 0, spellCount = this.spellInstances.length; i < spellCount; i++){
-      this.spellInstances[i].update(delta);
+      this.spellInstances[i].update(worldDelta);
     }
 
     let spellIndex = this.spellInstances.length;
@@ -500,10 +590,10 @@ export class ModuleArea extends ModuleObject {
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
 
-    this.weather.update(delta);
+    this.weather.update(worldDelta);
 
     if(this.path){
-      this.path.update(delta);
+      this.path.update(worldDelta);
     }
 
     this.updateMusic(delta);
@@ -521,37 +611,58 @@ export class ModuleArea extends ModuleObject {
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
-      this.triggers[i].updatePaused(delta);
+      const trigger = this.triggers[i];
+      this.runObjectUpdate('updatePaused.trigger', trigger, () => {
+        trigger?.updatePaused(delta);
+      });
     }
 
     //update encounters
     for(let i = 0; i < encounterCount; i++){
-      this.encounters[i].updatePaused(delta);
+      const encounter = this.encounters[i];
+      this.runObjectUpdate('updatePaused.encounter', encounter, () => {
+        encounter?.updatePaused(delta);
+      });
     }
 
     //update aoe
     for(let i = 0; i < aoeCount; i++){
-      this.areaOfEffects[i].updatePaused(delta);
+      const areaOfEffect = this.areaOfEffects[i];
+      this.runObjectUpdate('updatePaused.aoe', areaOfEffect, () => {
+        areaOfEffect?.updatePaused(delta);
+      });
     }
 
     //update party
     for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].updatePaused(delta);
+      const partyMember = GameState.PartyManager.party[i];
+      this.runObjectUpdate('updatePaused.party', partyMember, () => {
+        partyMember?.updatePaused(delta);
+      });
     }
     
     //update creatures
     for(let i = 0; i < creatureCount; i++){
-      this.creatures[i].updatePaused(delta);
+      const creature = this.creatures[i];
+      this.runObjectUpdate('updatePaused.creature', creature, () => {
+        creature?.updatePaused(delta);
+      });
     }
     
     //update placeables
     for(let i = 0; i < placeableCount; i++){
-      this.placeables[i].updatePaused(delta);
+      const placeable = this.placeables[i];
+      this.runObjectUpdate('updatePaused.placeable', placeable, () => {
+        placeable?.updatePaused(delta);
+      });
     }
     
     //update doors
     for(let i = 0; i < doorCount; i++){
-      this.doors[i].updatePaused(delta);
+      const door = this.doors[i];
+      this.runObjectUpdate('updatePaused.door', door, () => {
+        door?.updatePaused(delta);
+      });
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
@@ -632,35 +743,22 @@ export class ModuleArea extends ModuleObject {
   }
 
   updateMusic(delta: number = 0){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    const oPC = GameState.getCurrentPlayer();
-    if(oPC.excitedDuration > 0 && audioEngine.bgmMode == BackgroundMusicMode.AREA && audioEngine.battleMusicLoaded){
-      audioEngine.bgmMode = BackgroundMusicMode.BATTLE;
-      audioEngine.areaMusicDayAudioEmitter.stop();
-      audioEngine.battleMusicAudioEmitter.play(true);
-    }else if(oPC.excitedDuration <= 0 && audioEngine.bgmMode == BackgroundMusicMode.BATTLE && audioEngine.battleMusicLoaded){
-      audioEngine.bgmMode = audioEngine.battleStingerLoaded ? BackgroundMusicMode.BATTLE_STINGER : BackgroundMusicMode.AREA;
-      audioEngine.battleMusicAudioEmitter.stop();
-    }
+    GameState.MusicManager.UpdateAreaMusicState(GameState.getCurrentPlayer());
   }
 
   musicBackgroundPlay(){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.areaMusicDayAudioEmitter.play();
+    GameState.MusicManager.playAreaMusic(false);
   }
 
   musicBackgroundStop(){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.areaMusicDayAudioEmitter.stop();
+    GameState.MusicManager.stopAreaMusic();
   }
 
   musicBackgroundSetDelay(delay: number){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.bgmLoopTime = delay;
+    GameState.MusicManager.setAreaMusicDelay(delay);
   }
 
   async musicBackgroundDaySet(index: number){
-    const audioEngine = AudioEngine.GetAudioEngine();
     //Load the background music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
     const bgMusic = ambientmusic2DA.rows[index];
@@ -668,8 +766,7 @@ export class ModuleArea extends ModuleObject {
     try{
       if(bgMusic.resource != '****'){
         console.log('Loading Background Music', bgMusic.resource);
-        const data = await AudioLoader.LoadMusic(bgMusic.resource);
-        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, bgMusic.resource);
+        await GameState.MusicManager.setAreaDayTrack(bgMusic.resource);
       }
     }catch(e){
       console.log('Background Music not found', bgMusic);
@@ -678,7 +775,6 @@ export class ModuleArea extends ModuleObject {
   }
 
   async musicBackgroundNightSet(index: number){
-    const audioEngine = AudioEngine.GetAudioEngine();
     //Load the battle music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
     const bgMusic = ambientmusic2DA.rows[index];
@@ -686,8 +782,7 @@ export class ModuleArea extends ModuleObject {
     try{
       if(bgMusic.resource != '****'){
         console.log('Loading Background Music', bgMusic.resource);
-        const data = await AudioLoader.LoadMusic(bgMusic.resource);
-        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data.buffer as ArrayBuffer, bgMusic.resource);
+        await GameState.MusicManager.setAreaNightTrack(bgMusic.resource);
       }
     }catch(e){
       console.log('Background Music not found', bgMusic);
@@ -696,17 +791,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   musicBattlePlay(){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.battleMusicAudioEmitter.play();
+    GameState.MusicManager.playBattleMusic(false);
   }
 
   musicBattleStop(){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.battleMusicAudioEmitter.stop();
+    GameState.MusicManager.stopBattleMusic();
   }
 
   async musicBattleSet(index: number){
-    const audioEngine = AudioEngine.GetAudioEngine();
     //Load the battle music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
     const battleMusic = ambientmusic2DA.rows[index];
@@ -714,15 +806,13 @@ export class ModuleArea extends ModuleObject {
     try{
       if(battleMusic.resource != '****'){
         console.log('Loading Battle Music', battleMusic.resource);
-        const data = await AudioLoader.LoadMusic(battleMusic.resource);
-        audioEngine.setAudioBuffer('BATTLE', data.buffer as ArrayBuffer, battleMusic.resource);
+        await GameState.MusicManager.setBattleTrack(battleMusic.resource);
       }
       //Load the battle stinger
       try{
         if(battleMusic.stinger1 != '****'){
           console.log('Loading Battle Stinger', battleMusic.stinger1);
-          const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
-          audioEngine.setAudioBuffer('BATTLE_STINGER', data.buffer as ArrayBuffer, battleMusic.stinger1);
+          await GameState.MusicManager.setBattleStinger(battleMusic.stinger1);
         }
       }catch(e){
         console.log('Battle Stinger not found', battleMusic.stinger1);
@@ -1060,6 +1150,7 @@ export class ModuleArea extends ModuleObject {
     const creatures = this.git.getFieldByLabel('Creature List');
     const doors = this.git.getFieldByLabel('Door List');
     const encounters = this.git.getFieldByLabel('Encounter List');
+    const items = this.git.getFieldByLabel('List');
     const placeables = this.git.getFieldByLabel('Placeable List');
     const sounds = this.git.getFieldByLabel('SoundList');
     const stores = this.git.getFieldByLabel('StoreList');
@@ -1081,7 +1172,40 @@ export class ModuleArea extends ModuleObject {
     this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
     this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
     this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
+
+    if(areaProps.getChildStructs()[0].hasField('RestrictMode')){
+      this.restrictMode = this.git.getFieldByLabel('RestrictMode', areaPropsField).getValue();
+    }else{
+      this.restrictMode = 0;
+    }
+
+    if(areaProps.getChildStructs()[0].hasField('StealthXPCurrent')){
+      this.stealthXP = this.git.getFieldByLabel('StealthXPCurrent', areaPropsField).getValue();
+    }else{
+      this.stealthXP = 0;
+    }
+
+    if(areaProps.getChildStructs()[0].hasField('StealthXPLoss')){
+      this.stealthXPLoss = this.git.getFieldByLabel('StealthXPLoss', areaPropsField).getValue();
+    }
+
+    if(areaProps.getChildStructs()[0].hasField('StealthXPMax')){
+      this.stealthXPMax = this.git.getFieldByLabel('StealthXPMax', areaPropsField).getValue();
+    }
+
+    if(areaProps.getChildStructs()[0].hasField('SunFogColor')){
+      this.sun.fogColor = this.git.getFieldByLabel('SunFogColor', areaPropsField).getValue();
+      if(this.fog){
+        this.fog.color.setHex(this.sun.fogColor);
+      }
+    }
+
+    if(areaProps.getChildStructs()[0].hasField('Unescapable')){
+      this.unescapable = !!this.git.getFieldByLabel('Unescapable', areaPropsField).getValue();
+    }
+
     AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
+    GameState.MusicManager.setAreaMusicDelay(this.audio.music.delay);
 
     //Cameras
     if(cameras){
@@ -1121,6 +1245,14 @@ export class ModuleArea extends ModuleObject {
       for(let i = 0; i < encounters.childStructs.length; i++){
         const strt = encounters.childStructs[i];
         this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
+      }
+    }
+
+    //Items
+    if(items){
+      for(let i = 0; i < items.childStructs.length; i++){
+        const strt = items.childStructs[i];
+        this.attachObject( new ModuleItem(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -1185,18 +1317,44 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
+    this.weather.currentWeather = WeatherCondition.CLEAR;
+    this.weather.started = false;
+
+    if(this.git.RootNode.hasField('CurrentWeather')){
+      const currentWeather = this.git.RootNode.getFieldByLabel('CurrentWeather').getValue();
+      if(typeof currentWeather === 'number' && currentWeather >= WeatherCondition.CLEAR && currentWeather <= WeatherCondition.LIGHTNING){
+        this.weather.currentWeather = currentWeather;
+      }
+    }
+
+    if(this.git.RootNode.hasField('WeatherStarted')){
+      this.weather.started = !!this.git.RootNode.getFieldByLabel('WeatherStarted').getValue();
+    }
+
     if(!(this.transWP instanceof GFFObject)){
       this.transWP = null;
     }
 
     if(this.git.RootNode.hasField('SWVarTable')){
       console.log("SWVarTable", this.git);
-      let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      let swVarTableStruct = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.hasField('BitArray')){
+          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.hasField('ByteArray')){
+          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
     }
@@ -1373,6 +1531,8 @@ export class ModuleArea extends ModuleObject {
 
       try { await this.loadPlaceables(); } catch(e){ console.error(e); }
 
+      try { await this.loadItems(); } catch(e){ console.error(e); }
+
       GameState.MenuManager.LoadScreen.setProgress(20);
 
       try { await this.loadWaypoints(); } catch(e){ console.error(e); }
@@ -1419,7 +1579,10 @@ export class ModuleArea extends ModuleObject {
 
       GameState.MenuManager.LoadScreen.setProgress(100);
 
-      FollowerCamera.facing = Utility.NormalizeRadian(GameState.PartyManager.party[0].getFacing() - Math.PI/2);
+      const activeLeader = GameState.getCurrentPlayer();
+      if(activeLeader){
+        FollowerCamera.facing = Utility.NormalizeRadian(activeLeader.getFacing() - Math.PI/2);
+      }
 
       try { await this.weather.load(); } catch(e){ console.error(e); }
 
@@ -1485,6 +1648,11 @@ export class ModuleArea extends ModuleObject {
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       if(this.creatures.indexOf(object as ModuleCreature) >= 0) return;
       this.creatures.push(object as ModuleCreature);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleItem)){
+      if(this.items.indexOf(object as ModuleItem) >= 0) return;
+      this.items.push(object as ModuleItem);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
@@ -1601,30 +1769,35 @@ export class ModuleArea extends ModuleObject {
   async loadPlayer(): Promise<void> {
     console.log('Loading Player', GameState.PartyManager.Player)
     try{
-      if(GameState.PartyManager.Player instanceof ModuleCreature){
-        GameState.PartyManager.Player.npcId = -1;
+      if(GameState.PartyManager.Player instanceof ModuleCreature && !GameState.PartyManager.Player.destroyed){
+        const player = GameState.PartyManager.Player;
+        player.npcId = -1;
 
         if(!this.miniGame){
-          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.currentLeader) ] = GameState.currentLeader;
-          GameState.group.party.add( GameState.PartyManager.Player.container );
+          const playerSlot = GameState.PartyManager.GetCreatureStartingPartyIndex(player);
+          GameState.PartyManager.party[playerSlot] = player;
+          GameState.group.party.add( player.container );
         }
 
         //Reset the players actions between modules
-        GameState.PartyManager.Player.clearAllActions();
-        GameState.PartyManager.Player.force = 0;
-        GameState.PartyManager.Player.collisionManager.groundFace = undefined;
-        GameState.PartyManager.Player.collisionManager.lastGroundFace = undefined;
-        GameState.PartyManager.Player.load();
+        player.clearAllActions();
+        player.force = 0;
+        player.collisionManager.groundFace = undefined;
+        player.collisionManager.lastGroundFace = undefined;
+        player.load();
         try{
-          const model = await GameState.PartyManager.Player.loadModel();
-          GameState.PartyManager.Player.model = model;
-          GameState.PartyManager.Player.model.hasCollision = true;
+          const model = await player.loadModel();
+          player.model = model;
+          if(player.model){
+            player.model.userData.moduleObject = player;
+            player.model.hasCollision = true;
+          }
           //let spawnLoc = this.getSpawnLocation();
-          let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
-          GameState.PartyManager.Player.position.copy(spawnLoc.position);
-          GameState.PartyManager.Player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+          let spawnLoc = GameState.PartyManager.GetSpawnLocation(player);
+          player.position.copy(spawnLoc.position);
+          player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
-          GameState.PartyManager.Player.getCurrentRoom();
+          player.getCurrentRoom();
           // GameState.PartyManager.Player.computeBoundingBox(true);
         }catch(e){
           console.error(e);
@@ -1638,7 +1811,8 @@ export class ModuleArea extends ModuleObject {
         GameState.PartyManager.Player = player;
       
         if(!this.miniGame){
-          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+          const playerSlot = GameState.PartyManager.GetCreatureStartingPartyIndex(player);
+          GameState.PartyManager.party[playerSlot] = player;
           GameState.group.party.add( player.container );
         }
 
@@ -1672,6 +1846,9 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
       await GameState.PartyManager.LoadPartyMember(i);
     }
+    GameState.PartyManager.party = GameState.PartyManager.party.filter((member) => member instanceof ModuleCreature);
+    GameState.PartyManager.RebuildPortraitOrder();
+    GameState.currentLeader = GameState.PartyManager.party[0];
   }
 
   /**
@@ -1833,6 +2010,17 @@ export class ModuleArea extends ModuleObject {
       plc.getCurrentRoom();
       plc.position.set(plc.getX(), plc.getY(), plc.getZ());
       plc.computeBoundingBox();
+    }
+  }
+
+  /**
+   * Load the area's items
+   */
+  async loadItems(): Promise<void> {
+    console.log('Loading Items');
+    for(let i = 0; i < this.items.length; i++){
+      const item = this.items[i];
+      item.load();
     }
   }
 
@@ -2016,7 +2204,6 @@ export class ModuleArea extends ModuleObject {
    * Load the area's background music
    */
   async loadAreaMusic(): Promise<void> {
-    const audioEngine = AudioEngine.GetAudioEngine();
     await this.musicBackgroundDaySet(this.audio.music.day);
     await this.musicBackgroundNightSet(this.audio.music.night);
     await this.musicBattleSet(this.audio.music.battle);
@@ -2230,16 +2417,16 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.music.delay);
     struct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.music.night);
 
-    struct.addField( new GFFField(GFFDataType.BYTE, 'RestrictMode') ).setValue(this.restrictMode ? 1 : 0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(0);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'RestrictMode') ).setValue(this.restrictMode || 0);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(this.stealthXP);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(this.stealthXPLoss);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(this.stealthXPMax);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(this.sun.fogColor);
     
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.unescapable);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.unescapable ? 1 : 0);
     return struct;
   }
 
@@ -2276,7 +2463,7 @@ export class ModuleArea extends ModuleObject {
       creatureList.addChildStruct( this.creatures[i].save().RootNode );
     }
 
-    git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CurrentWeather') ).setValue(this.weather.currentWeather);
+    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CurrentWeather') ).setValue(this.weather.currentWeather);
 
     const doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );
     for(let i = 0; i < this.doors.length; i++){
@@ -2290,6 +2477,9 @@ export class ModuleArea extends ModuleObject {
 
     //Area Items List
     const list = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'List') );
+    for(let i = 0; i < this.items.length; i++){
+      list.addChildStruct( this.items[i].save() );
+    }
 
     const placeableList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Placeable List') );
     for(let i = 0; i < this.placeables.length; i++){

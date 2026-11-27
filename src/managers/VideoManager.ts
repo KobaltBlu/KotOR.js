@@ -330,11 +330,17 @@ export class VideoManager {
    * @param delta - Time delta in seconds (unused; BIK uses wall clock / audio clock)
    */
   static update(delta: number): void {
-    if (!this.bikObject || !this.isPlaying) return;
-    const bik = this.bikObject;
-    bik.update(delta);
-    if (!this.isPlaying) return;
-    const frame = bik.getCurrentFrame();
+    const bikObject = this.bikObject;
+    if (!bikObject || !this.isPlaying) return;
+
+    bikObject.update(delta);
+
+    // BIKObject.update() can complete playback synchronously and trigger
+    // VideoManager.cleanup(), which disposes and nulls out `bikObject`.
+    // Re-check the current playback state before touching the frame again.
+    if (!this.isPlaying || this.bikObject !== bikObject) return;
+
+    const frame = bikObject.getCurrentFrame();
     if (frame) {
       VideoManager.updateVideoTextures(frame);
     }

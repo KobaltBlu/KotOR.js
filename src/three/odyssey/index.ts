@@ -1,5 +1,6 @@
 export * from "@/three/odyssey/OdysseyObject3D";
 export * from "@/three/odyssey/OdysseyModel3D";
+export * from "@/three/odyssey/OdysseyLightsaberEffect";
 export * from "@/three/odyssey/OdysseyLight3D";
 export * from "@/three/odyssey/OdysseyEmitter3D";
 export * from "@/three/odyssey/OdysseyTexture";

@@ -5,6 +5,7 @@ import { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 
 /**
  * ActionForceFollowObject class.
@@ -36,17 +37,17 @@ export class ActionForceFollowObject extends Action {
 
     const run = true;
 
-    const action = new GameState.ActionFactory.ActionMoveToPoint();
-    action.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-    action.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-    action.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-    action.setParameter(3, ActionParameterType.DWORD, this.target.area);
-    action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
-    action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
-    action.setParameter(6, ActionParameterType.FLOAT, fDistance);
-    action.setParameter(7, ActionParameterType.INT, 0);
-    action.setParameter(8, ActionParameterType.FLOAT, 30.0);
-    this.owner.actionQueue.addFront(action);
+    enqueueMoveToPoint(this.owner, {
+      x: this.target.position.x,
+      y: this.target.position.y,
+      z: this.target.position.z,
+      area: this.target.area,
+      target: 0xFFFFFFFF,
+      run,
+      range: fDistance,
+      timeout: 30.0,
+      groupId: this.groupId,
+    });
 
     return ActionStatus.FAILED;
   }

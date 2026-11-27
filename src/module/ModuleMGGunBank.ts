@@ -23,6 +23,7 @@ export class ModuleMGGunBank extends ModuleObject {
   bullets: ModuleMGGunBullet[];
   owner: ModuleObject;
   isPlayer: boolean = false;
+  fireTimer: number = 0;
   proto_bullet: any;
   fire_sound: any;
   bulletTemplate: any;
@@ -49,13 +50,13 @@ export class ModuleMGGunBank extends ModuleObject {
 
   update(delta = 0){
     //Update the gun timer
-    if(this.proto_bullet.fire_timer > 0){
-      this.proto_bullet.fire_timer -= 1 * delta;
-      if(this.proto_bullet.fire_timer < 0){
-        this.proto_bullet.fire_timer = 0;
+    if(this.fireTimer > 0){
+      this.fireTimer -= 1 * delta;
+      if(this.fireTimer < 0){
+        this.fireTimer = 0;
       }
     }else{
-      this.proto_bullet.fire_timer = 0;
+      this.fireTimer = 0;
     }
 
     if(this.model) this.model.update(delta);
@@ -79,11 +80,15 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   fire(){
-    if(!this.proto_bullet.fire_timer){
-      this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;
+    if(!this.proto_bullet || !this.bulletTemplate || !this.bullet_hook){
+      return;
+    }
 
-      if(this.fire_sound){
-        GameState.guiAudioEmitter.playSoundFireAndForget(this.fire_sound);
+    if(!this.fireTimer){
+      this.fireTimer = this.proto_bullet.rate_of_fire || 0;
+
+      if(this.fireSound){
+        GameState.guiAudioEmitter.playSoundFireAndForget(this.fireSound);
       }
 
       if(this.model instanceof OdysseyModel3D){
@@ -131,11 +136,25 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   initProperties(){
+    this.bankID = 0;
+    this.fireTimer = 0;
+    this.fireSound = '';
+    this.fire_sound = '';
+    this.gunModel = '';
+    this.horizSpread = 0;
+    this.inaccuracy = 0;
+    this.sensingRadius = 0;
+    this.vertSpread = 0;
+    this.bulletTemplate = undefined;
+    this.proto_bullet = undefined;
+
     if(this.template.RootNode.hasField('BankID'))
       this.bankID = this.template.getFieldByLabel('BankID').getValue()
 
     if(this.template.RootNode.hasField('Fire_Sound'))
       this.fireSound = this.template.getFieldByLabel('Fire_Sound').getValue()
+
+    this.fire_sound = this.fireSound;
 
     if(this.template.RootNode.hasField('Gun_Model'))
       this.gunModel = this.template.getFieldByLabel('Gun_Model').getValue()
@@ -151,10 +170,17 @@ export class ModuleMGGunBank extends ModuleObject {
 
     if(this.template.RootNode.hasField('Vert_Spread'))
       this.vertSpread = this.template.getFieldByLabel('Vert_Spread').getValue()
-      
-    this.bulletTemplate = GFFObject.FromStruct(this.template.RootNode.getFieldByLabel('Bullet').getChildStructs()[0]);
-    this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
-    this.proto_bullet.initProperties();
+
+    if(this.template.RootNode.hasField('Bullet')){
+      const bulletStruct = this.template.RootNode.getFieldByLabel('Bullet').getChildStructs()[0];
+      if(bulletStruct){
+        this.bulletTemplate = GFFObject.FromStruct(bulletStruct);
+        this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
+        this.proto_bullet.initProperties();
+      }
+    }
+
+    this.initialized = true;
 
   }
 

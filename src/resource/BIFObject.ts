@@ -74,7 +74,38 @@ export class BIFObject {
   }
 
   readFromMemory(){
-    //TODO
+    if(this.buffer.byteLength < BIF_HEADER_SIZE){
+      throw new RangeError('BIF header is truncated');
+    }
+    // BinaryReader addresses its ArrayBuffer from zero; copy subarray inputs.
+    this.reader = new BinaryReader(new Uint8Array(this.buffer));
+
+    this.fileType = this.reader.readChars(4);
+    this.fileVersion = this.reader.readChars(4);
+    this.variableResourceCount = this.reader.readUInt32();
+    this.fixedResourceCount = this.reader.readUInt32();
+    this.variableTableOffset = this.reader.readUInt32();
+
+    this.variableTableRowSize = 16;
+    this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
+
+    if(this.variableTableOffset < BIF_HEADER_SIZE || this.variableTableOffset + this.variableTableSize > this.buffer.byteLength){
+      this.reader.dispose();
+      throw new RangeError('BIF variable resource table is outside the archive');
+    }
+
+    this.reader.seek(this.variableTableOffset);
+    this.resources = [];
+    for(let i = 0; i < this.variableResourceCount; i++){
+      this.resources[i] = {
+        Id: this.reader.readUInt32(),
+        offset: this.reader.readUInt32(),
+        size: this.reader.readUInt32(),
+        resType: this.reader.readUInt32()
+      } as IBIFResource;
+    }
+
+    this.reader.dispose();
   }
 
   async readFromDisk(){
@@ -151,17 +182,26 @@ export class BIFObject {
   }
 
   #fd: any;
+  #opening: Promise<any> | undefined;
 
   async getFileDescription(): Promise<any> {
-    if(this.#fd) return this.#fd;
-    this.#fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r');
-    return this.#fd;
+    if(this.#fd != null) return this.#fd;
+    if(!this.#opening){
+      this.#opening = GameFileSystem.open(this.resourceDiskInfo.path, 'r')
+        .then((fd: any) => this.#fd = fd)
+        .finally(() => this.#opening = undefined);
+    }
+    return this.#opening;
   }
 
   async dispose(): Promise<void> {
-    if(this.#fd){
-      await GameFileSystem.close(this.#fd);
+    if(this.#opening){
+      await this.#opening;
+    }
+    if(this.#fd != null){
+      const fd = this.#fd;
       this.#fd = undefined;
+      await GameFileSystem.close(fd);
     }
   }
 
@@ -169,6 +209,13 @@ export class BIFObject {
     if(!res || !res.size){ return new Uint8Array(0); }
 
     try{
+      if(this.inMemory){
+        if(!Number.isSafeInteger(res.offset) || !Number.isSafeInteger(res.size) || res.offset < 0 || res.size < 0 || res.offset + res.size > this.buffer.byteLength){
+          throw new RangeError('BIF resource is outside the archive');
+        }
+        return new Uint8Array(this.buffer.slice(res.offset, res.offset + res.size));
+      }
+
       const fd = await this.getFileDescription();
       const buffer = new Uint8Array(res.size);
       await GameFileSystem.read(fd, buffer, 0, buffer.length, res.offset);

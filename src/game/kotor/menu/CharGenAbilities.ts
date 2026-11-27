@@ -125,6 +125,7 @@ export class CharGenAbilities extends GameMenu {
           this.creature.wis = GameState.CharGenManager.wis;
           this.creature.int = GameState.CharGenManager.int;
           this.creature.cha = GameState.CharGenManager.cha;
+          GameState.CharGenManager.applyDerivedStats(this.creature as any);
         }
 
         this.manager.CharGenMain.updateAttributes();

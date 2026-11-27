@@ -96,30 +96,42 @@ export class ActionParameter {
       return undefined;
     }
 
-    const type = struct.getFieldByLabel('Type').getValue();
+    const typeField = struct.getFieldByLabel('Type');
+    if(!typeField){
+      console.warn('ActionParameter.FromStruct: Missing Type field', struct);
+      return undefined;
+    }
+
+    const type = typeField.getValue();
     let value = undefined;
     switch(type){
       case ActionParameterType.INT:
       case ActionParameterType.FLOAT:
       case ActionParameterType.DWORD:
       case ActionParameterType.STRING:
-        value = struct.getFieldByLabel('Value').getValue();
+        value = struct.getFieldByLabel('Value')?.getValue();
       break;
       case ActionParameterType.SCRIPT_SITUATION:
-        let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
+        let scriptParamStructs = struct.getFieldByLabel('Value')?.getChildStructs()?.[0];
+        if(!scriptParamStructs){
+          console.warn('ActionParameter.FromStruct: Missing script situation Value struct', struct);
+          return undefined;
+        }
         let script = new GameState.NWScript();
-        script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
+        script.name = scriptParamStructs.getFieldByLabel('Name')?.getValue();
         script.init(
-          scriptParamStructs.getFieldByLabel('Code').getVoid(),
-          scriptParamStructs.getFieldByLabel('CodeSize').getValue()
+          scriptParamStructs.getFieldByLabel('Code')?.getVoid(),
+          scriptParamStructs.getFieldByLabel('CodeSize')?.getValue()
         );
     
         let scriptInstance = script.newInstance();
         scriptInstance.isStoreState = true;
-        scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
+        scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr')?.getValue();
     
-        let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
-        scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
+        let stackStruct = scriptParamStructs.getFieldByLabel('Stack')?.getChildStructs()?.[0];
+        if(stackStruct){
+          scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
+        }
 
         value = scriptInstance;
       break;
@@ -131,6 +143,7 @@ export class ActionParameter {
 
   toStruct(){
     const struct = new GFFStruct(1);
+    struct.addField(new GFFField(GFFDataType.INT, 'Type', this.type));
     switch(this.type){
       case ActionParameterType.INT:
         struct.addField(new GFFField(GFFDataType.INT, 'Value', this.value));

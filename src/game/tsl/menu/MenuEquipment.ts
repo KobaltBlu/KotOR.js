@@ -272,20 +272,22 @@ export class MenuEquipment extends K1_MenuEquipment {
 
       this.BTN_EQUIP.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selectedItem instanceof ModuleItem || this.selectedItem instanceof GUIItemNone){
+        const selectedItem = this.selectedItem as ModuleItem | GUIItemNone;
+        if(selectedItem instanceof ModuleItem || selectedItem instanceof GUIItemNone){
           const currentPC = GameState.PartyManager.party[this.currentNPCIndex];
-          if(this.selectedItem instanceof GUIItemNone){
+          if(!currentPC) return;
+          if(selectedItem instanceof GUIItemNone){
             currentPC.unequipSlot(this.slot);
           }else{
-            currentPC.equipItem(this.slot, this.selectedItem).then(() => {
-              this.updateSlotIcons();
+            currentPC.equipItem(this.slot, selectedItem).then(() => {
+              this.updateCharacterStats();
             });
           }
           this.slot = null;
           this.equipmentSelectionActive = false;
           this.updateSelected(undefined as any);
           this.updateSlotIcons();
-          this.updateList();
+          this.updateCharacterStats();
         }
       });
 
@@ -319,8 +321,8 @@ export class MenuEquipment extends K1_MenuEquipment {
 
           if(right_1) right_1.destroy();
 
-          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1).then(() => { this.updateSlotIcons(true); });
-          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2).then(() => { this.updateSlotIcons(true); });
+          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1).then(() => { this.updateCharacterStats(); });
+          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2).then(() => { this.updateCharacterStats(); });
 
           const left_1 = currentPC.equipment.LEFTHAND;
           const left_2 = currentPC.equipment.LEFTHAND2;
@@ -329,9 +331,10 @@ export class MenuEquipment extends K1_MenuEquipment {
 
           if(left_1) left_1.destroy();
 
-          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1).then(() => { this.updateSlotIcons(true); });
-          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2).then(() => { this.updateSlotIcons(true); });
+          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1).then(() => { this.updateCharacterStats(); });
+          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2).then(() => { this.updateCharacterStats(); });
           this.updateSlotIcons(true);
+          this.updateCharacterStats();
         }
       });
 

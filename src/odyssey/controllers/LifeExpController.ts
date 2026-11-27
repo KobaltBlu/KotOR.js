@@ -23,13 +23,13 @@ export class LifeExpController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.lifeExp = Math.ceil(data.value);
+      manager.modelNode.emitter.lifeExp = data.value;
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.lifeExp = Math.ceil(OdysseyController.lerp1(last, next, fl));
+      manager.modelNode.emitter.lifeExp = OdysseyController.lerp1(last, next, fl);
     }
   }
 

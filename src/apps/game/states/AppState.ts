@@ -91,6 +91,13 @@ export class AppState {
     if(AppState.env !== ApplicationEnvironment.BROWSER){
       return false;
     }
+    // Once the engine exists, its context is authoritative. A newly created
+    // probe may be suspended even after the user has unlocked the game context,
+    // causing on-preload to reopen Begin over an already initialized game.
+    const engineContext = KotOR.AudioEngine.engines[0]?.audioCtx;
+    if(engineContext){
+      return engineContext.state === 'suspended';
+    }
     try {
       const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
       if(!AudioContextCtor){
@@ -314,7 +321,7 @@ export class AppState {
 
   static consoleCommand(command: string){
     console.log('consoleCommand', command);
-    KotOR.GameState.CheatConsoleManager.processCommand(command);
+    return KotOR.GameState.CheatConsoleManager.processCommand(command);
   }
 
   static togglePerformanceMonitor(){
@@ -329,6 +336,7 @@ export class AppState {
     }
     AppState.statsMode = mode;
     KotOR.GameState.stats.showPanel(mode as any);
+    return mode;
   }
 
   static toggleDebugger(){
@@ -337,10 +345,22 @@ export class AppState {
 
   static reloadLastSave(){
     const gameKey = KotOR.GameState.GameKey;
+    const lastSaveFolder = localStorage.getItem(`${gameKey}_last_save_folder`) || '';
     const lastSaveId = parseInt(localStorage.getItem(`${gameKey}_last_save_id`) || '-1');
-    const saveGame = KotOR.SaveGame.saves[lastSaveId];
+    const saveGame = KotOR.SaveGame.saves.find((save) => save.folderName == lastSaveFolder) || KotOR.SaveGame.saves[lastSaveId];
     if(!saveGame){ return; }
     saveGame.load();
+  }
+
+  static async exportGameSnapshot(){
+    return await KotOR.GameStateSnapshot.exportSnapshotToFile();
+  }
+
+  static async dumpGameResourcesAsJson(
+    options?: KotOR.GameResourceDumpOptions,
+    onProgress?: (progress: KotOR.GameResourceDumpProgress) => void
+  ){
+    return await KotOR.GameResourceDumper.dumpAllToSelectedDirectory(options, onProgress);
   }
 
   /**

@@ -10,7 +10,11 @@ export const OdysseyShader: OdysseyShader = {
   uniforms: {
     //Saturation/Modulation
     'tDiffuse': { value: null },
+    'tPreviousFrame': { value: null },
+    'resolution': new THREE.Uniform( new THREE.Vector2(1, 1) ),
     'saturation': { value: 1.0 },
+    'blurStrength': { value: 0.0 },
+    'blurDirection': new THREE.Uniform( new THREE.Vector2(0, 0) ),
     'modulation': new THREE.Uniform( new THREE.Vector3(1, 1, 1) ),
 
     //FilmPass
@@ -36,8 +40,12 @@ export const OdysseyShader: OdysseyShader = {
     #include <common>
 
     uniform sampler2D tDiffuse;
+    uniform sampler2D tPreviousFrame;
     varying vec2 vUv;
+    uniform vec2 resolution;
     uniform float saturation;
+    uniform float blurStrength;
+    uniform vec2 blurDirection;
     uniform vec3 modulation;
 
 		// control parameter
@@ -79,6 +87,29 @@ export const OdysseyShader: OdysseyShader = {
         // convert to grayscale if desired
         if( grayscale ) {
           cResult = vec3( cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11 );
+        }
+      }
+
+      float blurAmount = clamp( blurStrength, 0.0, 1.0 );
+      if( blurAmount > 0.0 ){
+        vec2 centeredUv = ( vUv - vec2( 0.5 ) ) * 2.0;
+        float edgeDistance = length( centeredUv );
+        float edgeMask = smoothstep( 0.18, 0.95, edgeDistance );
+        float edgeBoost = min( edgeMask * 2.0, 1.0 );
+
+        vec3 previousFrame = texture2D( tPreviousFrame, vUv ).rgb;
+        float historyMix = blurAmount * 0.45 * edgeBoost;
+        cResult = mix( cResult, previousFrame, historyMix );
+
+        vec2 smearDir = blurDirection * blurAmount * ( 0.4 + edgeBoost * 0.6 );
+        if( dot( smearDir, smearDir ) > 0.0 ){
+          vec3 smeared = cResult * 0.34;
+          smeared += texture2D( tDiffuse, vUv + smearDir * 0.5 ).rgb * 0.22;
+          smeared += texture2D( tDiffuse, vUv + smearDir * 1.0 ).rgb * 0.18;
+          smeared += texture2D( tDiffuse, vUv + smearDir * 1.5 ).rgb * 0.14;
+          smeared += texture2D( tDiffuse, vUv - smearDir * 0.5 ).rgb * 0.07;
+          smeared += texture2D( tDiffuse, vUv - smearDir * 1.0 ).rgb * 0.05;
+          cResult = mix( cResult, smeared, clamp( blurAmount * 0.95 * edgeBoost, 0.0, 1.0 ) );
         }
       }
 

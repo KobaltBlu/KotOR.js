@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BaseItem } from "@/engine/BaseItem";
@@ -22,6 +23,7 @@ import { ItemProperty } from "@/engine/ItemProperty";
 import { GameState } from "@/GameState";
 import { ActionParameterType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
 import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
+import { OdysseyLightsaberEffect } from "@/three/odyssey";
 
 /**
 * ModuleItem class.
@@ -36,6 +38,7 @@ import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 * @memberof KotOR
 */
 export class ModuleItem extends ModuleObject {
+  static qolLightsaberEnabled: boolean = false;
   equippedRes: any;
   baseItemId: number;
   baseItem: BaseItem;
@@ -71,6 +74,8 @@ export class ModuleItem extends ModuleObject {
   upgradeSlot4: number = -1;
   upgradeSlot5: number = -1;
   weaponSound: SWWeaponSound;
+  poweredState: boolean = false;
+  private modelLoadRequestId: number = 0;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -101,6 +106,7 @@ export class ModuleItem extends ModuleObject {
     this.textureVariation = 1;
     this.palleteID = 0;
     this.loaded = false;
+    this.stackSize = 1;
     this.properties = [];
     this.upgradeItems = {};
     this.placedInWorld = false;
@@ -111,22 +117,33 @@ export class ModuleItem extends ModuleObject {
   }
 
   clone(): ModuleItem {
-    const nItem = new ModuleItem(this.template);
-    nItem.initProperties();
-    if(nItem.template){
-      nItem.template.getFieldByLabel('StackSize')?.setValue(1);
-    }
-    nItem.stackSize = 1;
+    // Clone current state, not the shared blueprint or a stale stack count.
+    const state = GFFObject.FromStruct(this.save());
+    state.FileType = 'UTI ';
+    const template = new GFFObject(state.getExportBuffer());
+    template.RootNode.removeFieldByLabel('ObjectId');
+    template.RootNode.removeFieldByLabel('ID');
+    template.getFieldByLabel('StackSize')?.setValue(1);
+    const nItem = new ModuleItem(template);
+    nItem.setStackSize(1);
     return nItem;
   }
 
   update(delta = 0){
+    this.updateQolLightsaberEffects(delta);
+
     if(this.model instanceof OdysseyModel3D)
       this.model.update(delta);
   }
 
   getDescription(){
-    return this.descIdentified;
+    const description = [this.descIdentified, this.description].find((value) => {
+      return typeof value === 'string' && value.trim().length > 0;
+    });
+
+    return typeof description === 'string'
+      ? description.replace(/\0[\s\S]*$/g,'').trim()
+      : '';
   }
 
   getBaseItemId(): number {
@@ -223,15 +240,32 @@ export class ModuleItem extends ModuleObject {
   }
 
   getStackSize(){
-    return this.stackSize;
+    const stackSize = Math.floor(Number(this.stackSize));
+    return Number.isFinite(stackSize) && stackSize >= 1 ? Math.min(65535, stackSize) : 1;
   }
 
   setStackSize(value: number){
-    return this.stackSize = value;
+    const stackSize = Math.floor(Number(value));
+    this.stackSize = Number.isFinite(stackSize) && stackSize >= 1 ? Math.min(65535, stackSize) : 1;
+    return this.stackSize;
   }
 
   getLocalizedName(){
-    return this.localizedName.getValue().replace(/\0[\s\S]*$/g,'');
+    const localizedName = this.localizedName?.getValue?.();
+    if(typeof localizedName === 'string' && localizedName.length > 0){
+      return localizedName.replace(/\0[\s\S]*$/g,'').trim();
+    }
+
+    const fallback = [
+      this.getTag(),
+      this.getTemplateResRef(),
+      this.getInventoryRes(),
+      this.getEquippedRes()
+    ].find((value) => typeof value === 'string' && value.trim().length > 0);
+
+    return typeof fallback === 'string'
+      ? fallback.replace(/\0[\s\S]*$/g,'').trim()
+      : '';
   }
 
   getPalleteID(){
@@ -240,6 +274,99 @@ export class ModuleItem extends ModuleObject {
 
   getTag(){
     return this.tag;
+  }
+
+  getByteSaveValue(value: any, defaultValue = 0){
+    const numericValue = Number(value);
+    if(Number.isFinite(numericValue)){
+      return numericValue < 0 ? 255 : numericValue;
+    }
+    return defaultValue;
+  }
+
+  normalizeByteSentinelValue(value: any){
+    const numericValue = Number(value);
+    if(Number.isFinite(numericValue) && numericValue == 255){
+      return -1;
+    }
+    return value;
+  }
+
+  normalizeStackIdentityValue(value: any){
+    if(value === null || typeof value === 'undefined'){
+      return '';
+    }
+
+    if(typeof value === 'string'){
+      return value.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+    }
+
+    return `${value}`;
+  }
+
+  getPropertyStackIdentity(){
+    return this.properties.map((property) => {
+      return [
+        this.normalizeStackIdentityValue(property.propertyName),
+        this.normalizeStackIdentityValue(property.subType),
+        this.normalizeStackIdentityValue(property.costTable),
+        this.normalizeStackIdentityValue(property.costValue),
+        this.normalizeStackIdentityValue(property.param1),
+        this.normalizeStackIdentityValue(property.param1Value),
+        this.normalizeStackIdentityValue(property.chanceAppear),
+        this.normalizeStackIdentityValue(property.usesPerDay),
+        this.normalizeStackIdentityValue(property.useable),
+        this.normalizeStackIdentityValue(property.upgradeType)
+      ].join(':');
+    }).join('|');
+  }
+
+  getStackIdentityKey(){
+    return [
+      this.normalizeStackIdentityValue(this.getBaseItemId()),
+      this.normalizeStackIdentityValue(this.getTemplateResRef()),
+      this.normalizeStackIdentityValue(this.getInventoryRes()),
+      this.normalizeStackIdentityValue(this.getEquippedRes()),
+      this.normalizeStackIdentityValue(this.getTag()),
+      this.normalizeStackIdentityValue(this.cost),
+      this.normalizeStackIdentityValue(this.addCost),
+      this.normalizeStackIdentityValue(this.getModelVariation()),
+      this.normalizeStackIdentityValue(this.getTextureVariation()),
+      this.normalizeStackIdentityValue(this.getPalleteID()),
+      this.normalizeStackIdentityValue(this.identified),
+      this.normalizeStackIdentityValue(this.stolen),
+      this.normalizeStackIdentityValue(this.plot),
+      this.normalizeStackIdentityValue(this.dropable),
+      this.normalizeStackIdentityValue(this.pickpocketable),
+      this.normalizeStackIdentityValue(this.nonEquippable),
+      this.normalizeStackIdentityValue(this.newItem),
+      this.normalizeStackIdentityValue(this.infinite),
+      this.normalizeStackIdentityValue(this.charges),
+      this.normalizeStackIdentityValue(this.maxCharges),
+      this.normalizeStackIdentityValue(this.upgrades),
+      this.normalizeStackIdentityValue(this.upgradeLevel),
+      this.normalizeStackIdentityValue(this.upgradeSlot0),
+      this.normalizeStackIdentityValue(this.upgradeSlot1),
+      this.normalizeStackIdentityValue(this.upgradeSlot2),
+      this.normalizeStackIdentityValue(this.upgradeSlot3),
+      this.normalizeStackIdentityValue(this.upgradeSlot4),
+      this.normalizeStackIdentityValue(this.upgradeSlot5),
+      this.getPropertyStackIdentity()
+    ].join('||');
+  }
+
+  canStackWith(item?: ModuleItem): boolean {
+    if(!(item instanceof ModuleItem)){
+      return false;
+    }
+
+    const thisStacking = Number(this.baseItem?.stacking || 1);
+    const itemStacking = Number(item.baseItem?.stacking || 1);
+    if(thisStacking <= 1 || itemStacking <= 1){
+      return false;
+    }
+
+    return this.getStackIdentityKey() == item.getStackIdentityKey();
   }
 
   getACBonus(){
@@ -264,9 +391,15 @@ export class ModuleItem extends ModuleObject {
     let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItemProperty.AttackBonus)){
+      if(!property.isUseable()){
+        continue;
+      }
+
+      if(
+        property.is(ModuleItemProperty.AttackBonus) ||
+        property.is(ModuleItemProperty.Enhancement)
+      ){
         bonus += property.getValue();
-        break;
       }
     }
 
@@ -301,6 +434,35 @@ export class ModuleItem extends ModuleObject {
       }
     }
 
+    return bonus;
+  }
+
+  getAttackPenalty(): number {
+    let penalty = 0;
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      const property = this.properties[i];
+      if(!property.isUseable()){
+        continue;
+      }
+
+      if(
+        property.is(ModuleItemProperty.AttackPenalty) ||
+        property.is(ModuleItemProperty.ToHitPenalty)
+      ){
+        penalty += property.getValue();
+      }
+    }
+    return penalty;
+  }
+
+  getEnhancementBonus(): number {
+    let bonus = 0;
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      const property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItemProperty.Enhancement)){
+        bonus += property.getValue();
+      }
+    }
     return bonus;
   }
 
@@ -339,13 +501,14 @@ export class ModuleItem extends ModuleObject {
   }
 
   getDamageBonus(): number {
+    let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
-        return property.getValue();
+        bonus += property.getValue();
       }
     }
-    return 0;
+    return bonus;
   }
 
   getDamageBonusType(): number {
@@ -494,45 +657,78 @@ export class ModuleItem extends ModuleObject {
   }
 
   load(){
-    if(!this.loaded && this.getEquippedRes()){
+    if(!this.loaded && this.getTemplateResRef()){
+      const stackSize = this.getStackSize();
+      //Load template and merge fields
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.merge(gff);
+        this.initProperties();
+        this.setStackSize(stackSize);
+        this.loaded = true;
+        return true;
+      }else{
+        console.error('Failed to load ModuleItem template');
+        if(this.template instanceof GFFObject){
+          this.initProperties();
+          this.setStackSize(stackSize);
+          this.loaded = true;
+        }
+        return false;
+      }
+    }else if(!this.loaded && this.getEquippedRes()){
+      const stackSize = this.getStackSize();
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
+        this.setStackSize(stackSize);
+        this.loaded = true;
         return true;
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
+          this.setStackSize(stackSize);
+          this.loaded = true;
         }
         return false;
       }
     }else if(!this.loaded && this.getInventoryRes()){
+      const stackSize = this.getStackSize();
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getInventoryRes());
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
+        this.setStackSize(stackSize);
+        this.loaded = true;
         return true;
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
+          this.setStackSize(stackSize);
+          this.loaded = true;
         }
         return false;
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
+      this.loaded = true;
       // this.loadScripts();
       return true;
     }
   }
 
   async loadModel(): Promise<OdysseyModel3D> {
+    if(this.destroyed || this.destroying) return this.model;
+    const loadRequestId = ++this.modelLoadRequestId;
     if(!this.baseItem){ 
       this.model = new OdysseyModel3D;
       return this.model;
@@ -558,10 +754,21 @@ export class ModuleItem extends ModuleObject {
         //castShadow: false,
         //receiveShadow: false
       });
+      if(this.destroyed || loadRequestId !== this.modelLoadRequestId){
+        model.dispose();
+        return this.model;
+      }
+      if(this.model && this.model !== model){
+        this.model.removeFromParent();
+        this.model.dispose();
+      }
       this.model = model;
+      this.setPowered(this.poweredState);
       return this.model;
     }catch(e){
-      this.model = new OdysseyModel3D;
+      if(!this.destroyed && loadRequestId === this.modelLoadRequestId){
+        this.model = new OdysseyModel3D;
+      }
       return this.model;
     }
   }
@@ -572,12 +779,137 @@ export class ModuleItem extends ModuleObject {
     return name + value;
   }
 
+  protected isLightsaberWeapon(): boolean {
+    return this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10;
+  }
+
+  protected getQolLightsaberColor(): THREE.Color {
+    const searchTerms = [
+      this.getTemplateResRef?.(),
+      this.getInventoryRes(),
+      this.getEquippedRes(),
+    ];
+
+    if(this.model instanceof OdysseyModel3D){
+      for(const material of this.model.materials){
+        if(!(material instanceof THREE.ShaderMaterial)){
+          continue;
+        }
+
+        const hasSaberDefine = !!material.defines && Object.prototype.hasOwnProperty.call(material.defines, 'SABER');
+        if(!hasSaberDefine){
+          continue;
+        }
+
+        searchTerms.push(
+          `${material.userData?.map || ''}`,
+          `${material.uniforms?.map?.value?.name || ''}`
+        );
+      }
+    }
+
+    const searchText = searchTerms.join(' ').toLowerCase();
+
+    if(searchText.includes('red') || searchText.includes('crimson')) return new THREE.Color(1.0, 0.2, 0.1);
+    if(searchText.includes('green') || searchText.includes('viridian')) return new THREE.Color(0.25, 1.0, 0.35);
+    if(searchText.includes('yellow') || searchText.includes('amber')) return new THREE.Color(1.0, 0.85, 0.2);
+    if(searchText.includes('purple') || searchText.includes('violet')) return new THREE.Color(0.72, 0.4, 1.0);
+    if(searchText.includes('orange')) return new THREE.Color(1.0, 0.55, 0.15);
+    if(searchText.includes('cyan') || searchText.includes('teal')) return new THREE.Color(0.3, 0.9, 1.0);
+    if(searchText.includes('silver') || searchText.includes('white')) return new THREE.Color(0.9, 0.95, 1.0);
+
+    return new THREE.Color(0.35, 0.65, 1.0);
+  }
+
+  protected getQolLightsaberMeshes(): THREE.Mesh[] {
+    const meshes: THREE.Mesh[] = [];
+    if(!(this.model instanceof OdysseyModel3D)){
+      return meshes;
+    }
+
+    this.model.traverse((child) => {
+      if(!(child instanceof THREE.Mesh)){
+        return;
+      }
+
+      const nodeType = child.userData?.odysseyModelNode?.nodeType;
+      if(typeof nodeType === 'number' && (nodeType & 0x0800) === 0x0800){
+        meshes.push(child);
+      }
+    });
+
+    return meshes;
+  }
+
+  protected getQolLightsaberEffects(): OdysseyLightsaberEffect[] {
+    if(!(this.model instanceof OdysseyModel3D)){
+      return [];
+    }
+
+    if(!Array.isArray(this.model.userData.qolLightsaberEffects)){
+      this.model.userData.qolLightsaberEffects = [];
+    }
+
+    return this.model.userData.qolLightsaberEffects as OdysseyLightsaberEffect[];
+  }
+
+  protected ensureQolLightsaberEffects(color: THREE.Color): OdysseyLightsaberEffect[] {
+    const effects = this.getQolLightsaberEffects();
+    const saberMeshes = this.getQolLightsaberMeshes();
+
+    for(const saberMesh of saberMeshes){
+      let effect = saberMesh.userData.qolLightsaberEffect as OdysseyLightsaberEffect | undefined;
+      if(!(effect instanceof OdysseyLightsaberEffect)){
+        effect = OdysseyLightsaberEffect.FromSaberMesh(saberMesh, color);
+        effect.name = `${saberMesh.name || 'lightsaber'}_qol_effect`;
+        saberMesh.parent?.add(effect);
+        saberMesh.userData.qolLightsaberEffect = effect;
+        effects.push(effect);
+      }
+
+      effect.setColor(color);
+    }
+
+    return effects;
+  }
+
+  protected updateQolLightsaberEffects(delta: number = 0): void {
+    if(!(this.model instanceof OdysseyModel3D) || !this.isLightsaberWeapon()){
+      return;
+    }
+
+    const qolEnabled = ModuleItem.qolLightsaberEnabled;
+    const glowColor = this.getQolLightsaberColor();
+
+    const saberMeshes = this.getQolLightsaberMeshes();
+    const effects = qolEnabled ? this.ensureQolLightsaberEffects(glowColor) : this.getQolLightsaberEffects();
+    const active = qolEnabled && this.poweredState;
+    const opacity = Number.isFinite(this.model.opacity) ? this.model.opacity : 1;
+
+    for(const saberMesh of saberMeshes){
+      saberMesh.visible = !qolEnabled;
+    }
+
+    for(const effect of effects){
+      effect.setColor(glowColor);
+      effect.setOpacity(opacity);
+      effect.setPowered(active);
+      effect.visible = qolEnabled;
+      effect.update(delta);
+    }
+  }
+
   /**
    * Set the weapon powered state and update the powered animation
    * @param powered - Whether the weapon should be powered
    */
   setPowered(powered: boolean){
-    const currentAnimL = this.model.animationManager.currentAnimation || this.model.odysseyAnimationMap.get('off');
+    this.poweredState = !!powered;
+    if(!(this.model instanceof OdysseyModel3D)){ return; }
+
+    this.updateQolLightsaberEffects();
+
+    const currentAnimL = this.model.animationManager.currentAnimation || this.model.odysseyAnimationMap.get('off') || this.model.odysseyAnimationMap.get('powered');
     if(!currentAnimL){ return; }
 
     //power up
@@ -737,31 +1069,31 @@ export class ModuleItem extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('UpgradeLevel')){
-      this.upgradeLevel = this.template.getFieldByLabel('UpgradeLevel').getValue();
+      this.upgradeLevel = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeLevel').getValue());
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot0')){
-      this.upgradeSlot0 = this.template.getFieldByLabel('UpgradeSlot0').getValue();
+      this.upgradeSlot0 = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeSlot0').getValue());
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot1')){
-      this.upgradeSlot1 = this.template.getFieldByLabel('UpgradeSlot1').getValue();
+      this.upgradeSlot1 = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeSlot1').getValue());
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot2')){
-      this.upgradeSlot2 = this.template.getFieldByLabel('UpgradeSlot2').getValue();
+      this.upgradeSlot2 = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeSlot2').getValue());
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot3')){
-      this.upgradeSlot3 = this.template.getFieldByLabel('UpgradeSlot3').getValue();
+      this.upgradeSlot3 = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeSlot3').getValue());
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot4')){
-      this.upgradeSlot4 = this.template.getFieldByLabel('UpgradeSlot4').getValue();
+      this.upgradeSlot4 = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeSlot4').getValue());
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot5')){
-      this.upgradeSlot5 = this.template.getFieldByLabel('UpgradeSlot5').getValue();
+      this.upgradeSlot5 = this.normalizeByteSentinelValue(this.template.getFieldByLabel('UpgradeSlot5').getValue());
     }
 
     if(this.template.RootNode.hasField('XPosition'))
@@ -812,7 +1144,8 @@ export class ModuleItem extends ModuleObject {
     if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
       GameState.InventoryManager.removeItem(this);
     }else{
-      //oCreature.inventory.push(this);
+      const index = oCreature.inventory.indexOf(this);
+      if(index >= 0) oCreature.inventory.splice(index, 1);
     }
     this.setPossessor(oCreature);
   }
@@ -822,13 +1155,17 @@ export class ModuleItem extends ModuleObject {
     oCreature.removeEffectsByCreator(this);
     if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
       GameState.InventoryManager.addItem(this);
-    }else{
-      //oCreature.inventory.push(this);
+    }else if(!oCreature.inventory.includes(this)){
+      oCreature.addItem(this);
     }
     this.setPossessor(undefined);
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
+    ++this.modelLoadRequestId;
     super.destroy();
     if(this.placedInWorld){
       if(this.area) this.area.detachObject(this);
@@ -840,6 +1177,15 @@ export class ModuleItem extends ModuleObject {
 
     if(this.id >= 0)
       itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
+
+    if(this.getTemplateResRef())
+      itemStruct.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.getTemplateResRef());
+
+    if(this.getEquippedRes())
+      itemStruct.addField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).setValue(this.getEquippedRes());
+
+    if(this.getInventoryRes())
+      itemStruct.addField( new GFFField(GFFDataType.RESREF, 'InventoryRes') ).setValue(this.getInventoryRes());
     
     itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
     itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
@@ -847,14 +1193,24 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(this.template.getFieldByLabel('Description')?.getCExoLocString());
     itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).setValue(this.template.getFieldByLabel('DescIdentified')?.getCExoLocString());
     itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.template.getFieldByLabel('LocalizedName')?.getCExoLocString());
-    itemStruct.addField( new GFFField(GFFDataType.WORD, 'StackSize') ).setValue(this.stackSize);
+    itemStruct.addField( new GFFField(GFFDataType.WORD, 'StackSize') ).setValue(this.getStackSize());
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Stolen') ).setValue(this.stolen);
     itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).setValue(this.upgrades);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeLevel') ).setValue(this.getByteSaveValue(this.upgradeLevel));
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot0') ).setValue(this.getByteSaveValue(this.upgradeSlot0));
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot1') ).setValue(this.getByteSaveValue(this.upgradeSlot1));
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot2') ).setValue(this.getByteSaveValue(this.upgradeSlot2));
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot3') ).setValue(this.getByteSaveValue(this.upgradeSlot3));
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot4') ).setValue(this.getByteSaveValue(this.upgradeSlot4));
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot5') ).setValue(this.getByteSaveValue(this.upgradeSlot5));
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.dropable);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(1);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(this.getByteSaveValue(this.pickpocketable, 1));
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.getTextureVariation());
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'PaletteID') ).setValue(this.getByteSaveValue(this.getPalleteID()));
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Charges') ).setValue(this.charges);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).setValue(this.maxCharges);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Infinite') ).setValue(this.getByteSaveValue(this.infinite));
     itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Cost') ).setValue(this.cost);
     itemStruct.addField( new GFFField(GFFDataType.DWORD, 'AddCost') ).setValue(this.addCost);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
@@ -864,15 +1220,15 @@ export class ModuleItem extends ModuleObject {
       propertiesList.addChildStruct( this.properties[i].save() );
     }
 
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position?.x || 0);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position?.y || 0);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position?.z || 0);
     itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.xOrientation);
     itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.yOrientation);
     itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.zOrientation);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NonEquippable') ).setValue(this.nonEquippable);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NewItem') ).setValue(this.newItem);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(0);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(this.getByteSaveValue(this.deleting));
 
     return itemStruct;
   }

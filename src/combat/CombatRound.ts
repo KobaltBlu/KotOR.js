@@ -244,7 +244,7 @@ export class CombatRound {
     this.deflectArrow = true;
     this.action = undefined;
     this.timer = 0;
-    for(let i = 0; i < 5; i++){
+    for(let i = 0; i < this.attackList.length; i++){
       this.attackList[i].reset();
     }
     this.owner.onCombatRoundEnd();
@@ -365,10 +365,10 @@ export class CombatRound {
    * @param combatAction - The combat action to calculate the attack damage for
    */
   calculateAttackDamage(creature: ModuleCreature, combatAction: CombatRoundAction){
-    if(!combatAction || combatAction.resultsCalculated)
+    if(!creature || !combatAction?.target || combatAction.resultsCalculated)
       return;
 
-      creature.weaponPowered(true);
+    creature.weaponPowered(true);
 
     combatAction.resultsCalculated = true;
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
@@ -429,7 +429,7 @@ export class CombatRound {
 
     this.calculateRoundAnimations(creature, combatAction);
 
-    let attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
+    let attackAnimation = creature.model?.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
     let attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
 
     if(combatAction.isCutsceneAttack){
@@ -444,7 +444,7 @@ export class CombatRound {
           attack.attackWeapon = creature.equipment.RIGHTHAND;
           attack.attackResult = combatAction.attackResult
           attack.damageList[DamageType.BASE].damageValue = combatAction.attackDamage;
-          attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
+          attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature, attackDamageDelay);
         }
       }
     }else{
@@ -459,7 +459,7 @@ export class CombatRound {
           attack.attackResult == AttackResult.CRITICAL_HIT ||
           attack.attackResult == AttackResult.AUTOMATIC_HIT
         ){
-          attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
+          attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature, attackDamageDelay);
           TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
         }else if(attack.attackResult == AttackResult.MISS){
           TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL, 1500);
@@ -475,8 +475,15 @@ export class CombatRound {
    * @param weapon - The weapon to calculate the attack roll for
    * @returns The attack roll
    */
-  calculateAttackRoll(creature: ModuleCreature, weapon: ModuleItem){
-    return Dice.roll(1, DiceType.d20, creature.getBaseAttackBonus() + (weapon?.getAttackBonus() || 0));
+  calculateAttackRoll(creature: ModuleCreature, weapon: ModuleItem | undefined = undefined){
+    const naturalRoll = Dice.roll(1, DiceType.d20);
+    const modifier = creature.getAttackModifier(weapon);
+
+    return {
+      naturalRoll,
+      modifier,
+      totalRoll: naturalRoll + modifier,
+    };
   }
 
   /**
@@ -487,7 +494,7 @@ export class CombatRound {
    */
   isCritical(attackRoll: number, weapon: ModuleItem | undefined = undefined): boolean {
     if(!weapon) return attackRoll == 20;
-    return (attackRoll > weapon.getCriticalThreatRangeMin() && attackRoll <= 20);
+    return (attackRoll > weapon.getCriticalThreatRangeMin() && attackRoll <= weapon.getCriticalThreatRangeMax());
   }
 
   /**
@@ -567,22 +574,32 @@ export class CombatRound {
   calculateWeaponAttack(creature: ModuleCreature, weapon: ModuleItem | undefined = undefined, weaponSlot: ModuleCreatureArmorSlot, combatAction: CombatRoundAction) {
     //Roll to hit
     let attackRoll = this.calculateAttackRoll(creature, weapon);
+    let totalRoll = attackRoll.totalRoll;
     const isDualWielding = this.isDualWielding(creature);
     const isMainHand = weapon && weaponSlot == ModuleCreatureArmorSlot.RIGHTHAND;
     const isOffHand = weapon && weaponSlot == ModuleCreatureArmorSlot.LEFTHAND;
     if(isDualWielding && (isMainHand || isOffHand)){
       const penalty = this.calculateTwoWeaponPenalty(creature, weaponSlot);
-      attackRoll -= penalty;
+      totalRoll -= penalty;
     }
-    const isCritical = this.isCritical(attackRoll, weapon);
+    const isNaturalOne = attackRoll.naturalRoll == 1;
+    const isNaturalTwenty = attackRoll.naturalRoll == 20;
+    const isCritical = this.isCritical(attackRoll.naturalRoll, weapon);
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
-    const attack = this.attackList[this.currentAttack];
-    if(hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC()){
-      combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+    const hasOnePunchAutoHit = !!(GameState.CheatConsoleManager && GameState.CheatConsoleManager.shouldApplyOnePunch(creature, combatAction.target));
+    const attack = this.attackList[this.currentAttack] ?? (this.attackList[this.currentAttack] = new CombatAttackData());
+    attack.reset();
+    const didHit = hasOnePunchAutoHit || hasAssuredHit || (!isNaturalOne && (isNaturalTwenty || totalRoll >= combatAction.target.getAC()));
+    if(didHit){
+      combatAction.attackResult = (hasOnePunchAutoHit || hasAssuredHit)
+        ? AttackResult.AUTOMATIC_HIT
+        : isCritical
+          ? AttackResult.CRITICAL_HIT
+          : AttackResult.HIT_SUCCESSFUL;
       attack.reactObject = combatAction.target;
       attack.attackWeapon = weapon;
       attack.attackResult = combatAction.attackResult;
-      attack.calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
+      attack.calculateDamage(creature, !(hasOnePunchAutoHit || hasAssuredHit) && isCritical, combatAction.feat);
     }else{
       combatAction.attackResult = AttackResult.MISS;
       attack.reactObject = combatAction.target;
@@ -626,7 +643,7 @@ export class CombatRound {
         creature.animationState.index = ModuleCreatureAnimState.ATTACK;
       }
 
-      if(combatAction.target){
+      if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
         const target: ModuleCreature = combatAction.target as any;
         switch(combatAction.attackResult){
           case AttackResult.HIT_SUCCESSFUL:
@@ -704,7 +721,7 @@ export class CombatRound {
    * @returns True if the attacks include a killing blow, false otherwise
    */
   attacksIncludeKillingBlow(){
-    for(let i = 0; i < 5; i++){
+    for(let i = 0; i < this.attackList.length; i++){
       if(this.attackList[i].killingBlow) return true;
     }
     return false;

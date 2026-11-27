@@ -19,6 +19,10 @@ export class OdysseyShaderPass extends Pass {
   uniforms: { [uniform: string]: THREE.IUniform<any>; };
   material: THREE.ShaderMaterial;
   fsQuad: FullScreenQuad;
+  historyRenderTarget: THREE.WebGLRenderTarget;
+  historyCopyMaterial: THREE.ShaderMaterial;
+  historyCopyQuad: FullScreenQuad;
+  historyReady: boolean;
 
 	constructor() {
 
@@ -35,12 +39,58 @@ export class OdysseyShaderPass extends Pass {
 		} );
 
 		this.fsQuad = new FullScreenQuad( this.material );
+		this.historyRenderTarget = new THREE.WebGLRenderTarget( 1, 1, {
+			minFilter: THREE.LinearFilter,
+			magFilter: THREE.LinearFilter,
+			format: THREE.RGBAFormat,
+			depthBuffer: false,
+			stencilBuffer: false,
+		} );
+		this.historyRenderTarget.texture.generateMipmaps = false;
+		this.historyCopyMaterial = new THREE.ShaderMaterial( {
+			uniforms: {
+				tDiffuse: { value: null },
+			},
+			vertexShader: /* glsl */ `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+				}
+			`,
+			fragmentShader: /* glsl */ `
+				uniform sampler2D tDiffuse;
+				varying vec2 vUv;
+				void main() {
+					gl_FragColor = texture2D( tDiffuse, vUv );
+				}
+			`,
+		} );
+		this.historyCopyQuad = new FullScreenQuad( this.historyCopyMaterial );
+		this.historyReady = false;
 
+	}
+
+	ensureHistoryTargetSize( width: number, height: number ) {
+		const safeWidth = Math.max( 1, width | 0 );
+		const safeHeight = Math.max( 1, height | 0 );
+		if ( this.historyRenderTarget.width !== safeWidth || this.historyRenderTarget.height !== safeHeight ) {
+			this.historyRenderTarget.setSize( safeWidth, safeHeight );
+			this.historyReady = false;
+		}
+	}
+
+	resetHistory() {
+		this.historyReady = false;
 	}
 
 	render( renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget, deltaTime: number /*, maskActive */ ) {
 
+		this.ensureHistoryTargetSize( readBuffer.width || 1, readBuffer.height || 1 );
+
 		this.uniforms[ 'tDiffuse' ].value = readBuffer.texture;
+		this.uniforms[ 'tPreviousFrame' ].value = this.historyReady ? this.historyRenderTarget.texture : readBuffer.texture;
+		this.uniforms[ 'resolution' ].value.set( readBuffer.width || 1, readBuffer.height || 1 );
 		this.uniforms[ 'time' ].value += deltaTime;
 		this.fsQuad.material = this.material;
 
@@ -56,6 +106,12 @@ export class OdysseyShaderPass extends Pass {
 			if ( this.clear ) renderer.clear( renderer.autoClearColor, renderer.autoClearDepth, renderer.autoClearStencil );
 			this.fsQuad.render( renderer );
 
+			this.historyCopyMaterial.uniforms[ 'tDiffuse' ].value = writeBuffer.texture;
+			renderer.setRenderTarget( this.historyRenderTarget );
+			renderer.clear( renderer.autoClearColor, renderer.autoClearDepth, renderer.autoClearStencil );
+			this.historyCopyQuad.render( renderer );
+			this.historyReady = true;
+
 		}
 
 	}
@@ -63,8 +119,11 @@ export class OdysseyShaderPass extends Pass {
 	dispose() {
 
 		this.material.dispose();
+		this.historyCopyMaterial.dispose();
+		this.historyRenderTarget.dispose();
 
 		this.fsQuad.dispose();
+		this.historyCopyQuad.dispose();
 
 	}
 }

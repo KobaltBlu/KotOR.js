@@ -1,20 +1,22 @@
-import { GameState } from "@/GameState";
+import { ModuleCreatureArmorSlot } from "@/enums";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { ModuleItem, ModuleStore } from "@/module";
+import { ModuleItem } from "@/module";
 import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
+
+enum StoreFilter {
+  ALL = -1,
+  WEAPONS = 1,
+  ARMOR = 2,
+  MISC = 3,
+}
 
 /**
  * MenuStore class.
- * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file MenuStore.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuStore extends K1_MenuStore {
-
   declare LBL_BAR5: GUILabel;
   declare LB_INVITEMS: GUIListBox;
   declare LB_DESCRIPTION: GUIListBox;
@@ -41,6 +43,8 @@ export class MenuStore extends K1_MenuStore {
   declare BTN_ARMOR: GUIButton;
   declare BTN_MISC: GUIButton;
 
+  filter: StoreFilter = StoreFilter.ALL;
+
   constructor(){
     super();
     this.gui_resref = 'store_p';
@@ -49,120 +53,77 @@ export class MenuStore extends K1_MenuStore {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    await super.menuControlInitializer(skipInit);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.BTN_Cancel.addEventListener('click', (e) => {
+    const filterButtons: [GUIButton, StoreFilter][] = [
+      [this.BTN_ALL, StoreFilter.ALL],
+      [this.BTN_WEAPONS, StoreFilter.WEAPONS],
+      [this.BTN_ARMOR, StoreFilter.ARMOR],
+      [this.BTN_MISC, StoreFilter.MISC],
+    ];
+    for(const [button, filter] of filterButtons){
+      button.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.close();
+        this.filter = filter;
+        this.refreshView();
       });
-
-      this.BTN_Examine.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.sellMode = !this.sellMode;
-        this.show();
-      });
-
-      this.BTN_Accept.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(!this.sellMode){
-          if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
-            let item = this.LB_SHOPITEMS.selectedItem.node;
-            //Buy Mode
-            let price = this.getItemBuyPrice(item);
-            if(GameState.PartyManager.Gold >= price){
-              GameState.PartyManager.AddGold(-price);
-              this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
-              GameState.InventoryManager.addItem(item.template, true);
-              if(!item.isInfinite()){
-                item.setStackSize(item.getStackSize() - 1);
-
-                if(item.getStackSize() <= 0){
-                  //Remove this item from the store if there are no more of them in stock
-                  let idx = this.storeObject.getInventory().indexOf(item);
-                  if(idx >= 0){
-                    this.storeObject.getInventory().splice(idx, 1);
-                    this.LB_SHOPITEMS.removeItemByIndex(idx);
-                  }
-                }
-
-              }
-            }
-          }else{
-            //You do not have enough credits message here
-          }
-
-        }else{
-          //Sell Mode
-          this.LBL_CREDITS_VALUE.setText((GameState.PartyManager.Gold || 0).toString());
-        }
-      });
-      resolve();
-    });
+    }
   }
 
-  getItemSellPrice(item: ModuleItem) {
-    return item.cost + item.cost * this.storeObject.getMarkUp();
+  protected isWeaponItem(item?: ModuleItem): boolean {
+    if(!(item instanceof ModuleItem) || !item.baseItem) return false;
+    return (
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTHAND) == ModuleCreatureArmorSlot.LEFTHAND ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTHAND) == ModuleCreatureArmorSlot.RIGHTHAND
+    );
   }
 
-  getItemBuyPrice(item: ModuleItem) {
-    return item.cost + item.cost * this.storeObject.getMarkDown();
+  protected isArmorItem(item?: ModuleItem): boolean {
+    if(!(item instanceof ModuleItem) || !item.baseItem) return false;
+    return (
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMOR) == ModuleCreatureArmorSlot.ARMOR ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.HEAD) == ModuleCreatureArmorSlot.HEAD ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMS) == ModuleCreatureArmorSlot.ARMS ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.BELT) == ModuleCreatureArmorSlot.BELT ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.IMPLANT) == ModuleCreatureArmorSlot.IMPLANT ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTARMBAND) == ModuleCreatureArmorSlot.LEFTARMBAND ||
+      (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTARMBAND) == ModuleCreatureArmorSlot.RIGHTARMBAND
+    );
   }
 
-  open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
-    // this.storeObject = storeObject;
-    // this.creature = creature;
-    // this.bonusMarkUp = bonusMarkUp;
-    // this.bonusMarkDown = bonusMarkDown;
-    super.open();
+  protected matchesFilter(item?: ModuleItem): boolean {
+    if(!item || this.filter == StoreFilter.ALL) return true;
+    switch(this.filter){
+      case StoreFilter.WEAPONS: return this.isWeaponItem(item);
+      case StoreFilter.ARMOR: return this.isArmorItem(item);
+      case StoreFilter.MISC: return !this.isWeaponItem(item) && !this.isArmorItem(item);
+      default: return true;
+    }
+  }
+
+  protected isStoreItemVisible(item: ModuleItem): boolean {
+    return super.isStoreItemVisible(item) && this.matchesFilter(item);
+  }
+
+  protected isCustomerItemVisible(item: ModuleItem): boolean {
+    return super.isCustomerItemVisible(item) && this.matchesFilter(item);
+  }
+
+  protected updateSelectedItemDetails(item?: ModuleItem){
+    super.updateSelectedItemDetails(item);
+    this.LBL_ONHAND_VALUE.setText(item instanceof ModuleItem ? this.getCustomerItemCount(item).toString() : '');
+  }
+
+  protected updateFilterButtons(){
+    this.BTN_ALL.pulsing = this.filter == StoreFilter.ALL;
+    this.BTN_WEAPONS.pulsing = this.filter == StoreFilter.WEAPONS;
+    this.BTN_ARMOR.pulsing = this.filter == StoreFilter.ARMOR;
+    this.BTN_MISC.pulsing = this.filter == StoreFilter.MISC;
   }
 
   show() {
+    this.filter = StoreFilter.ALL;
     super.show();
-    if (this.storeObject instanceof ModuleStore) {
-      this.LB_DESCRIPTION.setItem(null);
-      this.LB_DESCRIPTION.hide();
-      this.LB_INVITEMS.hide();
-      this.LB_SHOPITEMS.hide();
-      if (this.sellMode) {
-        this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41937).Value);
-        this.LBL_COST.setText(GameState.TLKManager.GetStringById(41945).Value);
-        this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
-        this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
-        const inv = GameState.InventoryManager.getSellableInventory();
-        this.LB_INVITEMS.setItems(inv, {
-          getItemOptions: (item: any) => ({
-            onClick: () => {
-              this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
-              this.LB_DESCRIPTION.setItem(item.getDescription());
-              this.LB_DESCRIPTION.show();
-            }
-          }),
-          selectIndex: 0,
-        } as any);
-        this.LB_INVITEMS.show();
-      } else {
-        this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41938).Value);
-        this.LBL_COST.setText(GameState.TLKManager.GetStringById(41943).Value);
-        this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
-        this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
-        const inv = this.storeObject.getInventory();
-        this.LB_SHOPITEMS.setItems(inv, {
-          getItemOptions: (item: any) => ({
-            onClick: () => {
-              this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
-              this.LB_DESCRIPTION.setItem(item.getDescription());
-              this.LB_DESCRIPTION.show();
-            }
-          }),
-          selectIndex: 0,
-        } as any);
-        this.LB_SHOPITEMS.show();
-      }
-      this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
-    } else {
-      this.close();
-    }
+    this.updateFilterButtons();
   }
-  
 }

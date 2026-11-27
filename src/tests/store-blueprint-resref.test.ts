@@ -44,7 +44,8 @@ describe('ModuleStore blueprint resolution', () => {
 
   test('guards on the same value it looks up', () => {
     const body = loadBody(read('module/ModuleStore.ts'));
-    expect(body).toContain('const blueprint = this.getResRef();');
+    // ResRef is the authored field; TemplateResRef is only a fallback for odd templates.
+    expect(body).toContain('const blueprint = this.getResRef() || this.getTemplateResRef();');
     expect(body).toContain('if(blueprint){');
   });
 

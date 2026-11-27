@@ -11,6 +11,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import { runActionCreatureAvoidance } from "@/actions/helpers/CreatureAvoidance";
 
 /**
  * ActionMoveToPoint class.
@@ -25,6 +26,7 @@ export class ActionMoveToPoint extends Action {
 
   target_position: THREE.Vector3 = new THREE.Vector3();
   real_target_position: THREE.Vector3 = new THREE.Vector3();
+  last_path_target_position: THREE.Vector3 = new THREE.Vector3();
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -67,18 +69,37 @@ export class ActionMoveToPoint extends Action {
         return ActionStatus.FAILED;
       }
 
-      const distanceRT = Utility.Distance2D(this.owner.position, this.target_position);
+      if(this.computedPath?.realtime){
+        const movedDistance = Utility.Distance2D(this.real_target_position, this.last_path_target_position);
+        if(movedDistance > Math.max(0.5, range * 0.5)){
+          this.setComputedPath(undefined);
+        }
+      }
+
+      const distanceRT = Utility.Distance2D(this.owner.position, this.real_target_position);
       if( distanceRT <= range ){
+        this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+        this.owner.force = 0;
+        this.owner.speed = 0;
+        this.setComputedPath(undefined);
         return ActionStatus.COMPLETE;
       }
     }
 
     if(!this.computedPath){
-      this.target_position.copy(this.owner.area.getNearestWalkablePoint(this.target_position, this.owner.getHitDistance()));
+      this.target_position.copy(this.resolveTargetPosition(range));
+      this.last_path_target_position.copy(this.real_target_position);
       this.calculatePath();
     }
 
-    // this.computedPath = this.owner.getComputedPath();
+    // Keep the occupancy-adjusted destination across frames instead of
+    // replacing it with the original (possibly occupied) requested point.
+    if(this.computedPath?.destination){
+      this.target_position.copy(this.computedPath.destination.vector);
+    }
+    if(!this.computedPath){
+      return ActionStatus.FAILED;
+    }
 
     const distance = Utility.Distance2D(this.owner.position, this.target_position);
     if(distance > (this.computedPath.points.length > 1 ? 0.5 : range)){
@@ -98,9 +119,8 @@ export class ActionMoveToPoint extends Action {
           this.owner.forceVector.x = Math.cos(atan);
           this.owner.forceVector.y = Math.sin(atan);
     
-          this.runCreatureAvoidance(delta, this.target_position, this.target);
-
           this.owner.forceVector.negate();
+          runActionCreatureAvoidance(this, delta, this.target_position, this.target);
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
           // this.owner.walk = !run;
           this.owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
@@ -117,7 +137,7 @@ export class ActionMoveToPoint extends Action {
         this.computedPath.timer -= 10*delta;
       }
 
-      const timeout = this.getParameter<number>(8) - delta;
+      const timeout = (this.getParameter<number>(8) ?? 30.0) - delta;
       if(timeout <= 0){
         const fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
         fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
@@ -131,7 +151,7 @@ export class ActionMoveToPoint extends Action {
         this.owner.actionQueue.addFront(fallback_action);
         return ActionStatus.FAILED;
       }
-      this.setParameter(8, timeout);
+      this.setParameter(8, ActionParameterType.FLOAT, timeout);
 
       return ActionStatus.IN_PROGRESS;
     }else{
@@ -144,6 +164,84 @@ export class ActionMoveToPoint extends Action {
 
     this.setComputedPath(undefined);
     return ActionStatus.FAILED;
+  }
+
+  resolveTargetPosition(range: number): THREE.Vector3 {
+    const resolved = this.real_target_position.clone();
+
+    if(this.target && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+      const direction = this.owner.position.clone().sub(this.target.position);
+      if(direction.lengthSq() > 0.0001){
+        direction.normalize();
+        const desiredRange = Math.max(0.5, range * 0.9);
+        resolved.copy(this.target.position).add(direction.multiplyScalar(desiredRange));
+      }
+    }
+
+    return this.findOpenDestination(resolved, range);
+  }
+
+  findOpenDestination(baseTarget: THREE.Vector3, range: number): THREE.Vector3 {
+    const ownerHitDistance = this.owner.getHitDistance();
+    const occupancyRadius = Math.max(0.75, ownerHitDistance * 1.5);
+    const sampleRadius = Math.max(occupancyRadius, Math.min(2.0, Math.max(0.75, range)));
+
+    const candidates: THREE.Vector3[] = [baseTarget.clone()];
+    for(let i = 0; i < 8; i++){
+      const angle = (i / 8) * Math.PI * 2;
+      candidates.push(
+        baseTarget.clone().add(new THREE.Vector3(
+          Math.cos(angle) * sampleRadius,
+          Math.sin(angle) * sampleRadius,
+          0,
+        ))
+      );
+    }
+
+    let bestCandidate = this.owner.area.getNearestWalkablePoint(baseTarget, ownerHitDistance);
+    let bestScore = -Infinity;
+
+    for(let i = 0; i < candidates.length; i++){
+      const walkableCandidate = this.owner.area.getNearestWalkablePoint(candidates[i], ownerHitDistance);
+      let occupied = false;
+
+      for(let j = 0; j < this.owner.area.creatures.length; j++){
+        const creature = this.owner.area.creatures[j];
+        if(creature === this.owner || creature === this.target || creature.isDead()){
+          continue;
+        }
+
+        if(Utility.Distance2D(walkableCandidate, creature.position) < (occupancyRadius + creature.getHitDistance() * 0.5)){
+          occupied = true;
+          break;
+        }
+      }
+
+      for(let j = 0; !occupied && j < GameState.PartyManager.party.length; j++){
+        const creature = GameState.PartyManager.party[j];
+        if(creature === this.owner || creature === this.target || creature.isDead()){
+          continue;
+        }
+
+        if(Utility.Distance2D(walkableCandidate, creature.position) < (occupancyRadius + creature.getHitDistance() * 0.5)){
+          occupied = true;
+          break;
+        }
+      }
+
+      let score = this.owner.area.scorePointEdgeDistance(walkableCandidate);
+      score -= walkableCandidate.distanceToSquared(baseTarget) * 0.25;
+      if(occupied){
+        score -= 1000;
+      }
+
+      if(score > bestScore){
+        bestScore = score;
+        bestCandidate = walkableCandidate;
+      }
+    }
+
+    return bestCandidate;
   }
 
   calculatePath(){
@@ -161,7 +259,7 @@ export class ActionMoveToPoint extends Action {
 
   dispose(): void {
     super.dispose();
-    if(this.owner.getComputedPath() == this.computedPath){
+    if(this.owner && this.owner.getComputedPath() == this.computedPath){
       this.owner.setComputedPath(undefined);
     }
     this.computedPath = undefined;

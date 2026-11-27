@@ -52,7 +52,7 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   unsetTransitionObject(object: ModuleObject){
-    if(this.transitionObject == object){
+    if(!object || this.transitionObject == object){
       this.transitionObject = undefined;
     }
   }

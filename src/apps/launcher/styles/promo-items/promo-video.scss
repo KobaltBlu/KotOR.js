@@ -1,19 +1,19 @@
-
-/* VIDEO ELEMENT */
+/* Video element */
 
 .promo-element.video {
-  height: 250px;
+  width: 520px;
+  height: 210px;
   position: relative;
 }
 
 .promo-element.video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  width: auto;
-  height: 250px;
-  max-width: none;
 }
 
-.promo-element.video:hover:after {
+.promo-element.video:hover::after {
   content: '';
   background-image: url('./images/play-icon.png');
   background-repeat: no-repeat;

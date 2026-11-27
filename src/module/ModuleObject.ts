@@ -70,6 +70,7 @@ import { actionParameterToStruct } from "@/actions/actionParameterStructs";
 export class ModuleObject {
   facingSpeed: number = TURN_SPEED_SLOW;
   helperColor: THREE.Color = new THREE.Color(0xFFFFFF);
+  renderEnabled: boolean = true;
 
   combatOrder: number;
   combatRoundTimer: number;
@@ -434,7 +435,7 @@ export class ModuleObject {
    * @returns 
    */
   isVisible(){
-    return this.getModel().visible;
+    return this.renderEnabled && !!this.getModel()?.visible;
   }
 
   /**
@@ -491,8 +492,9 @@ export class ModuleObject {
 
     //Loop through and update the effects
     if(!this.deferEventUpdate){
-      for(let i = 0, len = this.effects.length; i < len; i++){
-        this.effects[i].update(delta);
+      for(let i = this.effects.length - 1; i >= 0; i--){
+        const effect = this.effects[i];
+        effect?.update(delta);
       }
     }
 
@@ -547,6 +549,11 @@ export class ModuleObject {
    */
   updateModelVisibility(){
     if(!this.model){ return; }
+    this.container.visible = this.renderEnabled;
+    if(!this.renderEnabled){
+      this.model.visible = false;
+      return;
+    }
     this.model.wasOffscreen = !this.model.visible;
 
     if(GameState.Mode == EngineMode.INGAME){
@@ -1546,19 +1553,36 @@ export class ModuleObject {
    * Trigger the user defined event
    * @param event 
    */
+  protected getUserDefinedEventScript(): NWScriptInstance | undefined {
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      return this.scripts[ModuleObjectScript.CreatureOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      return this.scripts[ModuleObjectScript.PlaceableOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      return this.scripts[ModuleObjectScript.DoorOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+      return this.scripts[ModuleObjectScript.TriggerOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleEncounter)){
+      return this.scripts[ModuleObjectScript.EncounterOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleArea)){
+      return this.scripts[ModuleObjectScript.AreaOnUserDefined];
+    }
+  }
+
+  protected getSpellCastAtEventScript(): NWScriptInstance | undefined {
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      return this.scripts[ModuleObjectScript.CreatureOnSpellAt];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      return this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      return this.scripts[ModuleObjectScript.DoorOnSpellCastAt];
+    }
+  }
+
   triggerUserDefinedEvent( event: NWScriptEvent ){
     if(!(event instanceof NWScriptEvent)){ return; }
 
-    let onUserDefined: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      onUserDefined = this.scripts[ModuleObjectScript.CreatureOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
-      onUserDefined = this.scripts[ModuleObjectScript.PlaceableOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
-      onUserDefined = this.scripts[ModuleObjectScript.DoorOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
-      onUserDefined = this.scripts[ModuleObjectScript.TriggerOnUserDefined];
-    }
+    const onUserDefined = this.getUserDefinedEventScript();
     
     if(!onUserDefined){ return; }
     onUserDefined.run(this, parseInt(event.getInt(0)));
@@ -1571,14 +1595,7 @@ export class ModuleObject {
   triggerSpellCastAtEvent( event: NWScriptEvent ){
     if(!(event instanceof NWScriptEvent)){ return; }
 
-    let onSpellAt: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      onSpellAt = this.scripts[ModuleObjectScript.CreatureOnSpellAt];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
-      onSpellAt = this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
-      onSpellAt = this.scripts[ModuleObjectScript.DoorOnSpellCastAt];
-    }
+    const onSpellAt = this.getSpellCastAtEventScript();
 
     if(!onSpellAt){ return; }
     const instance = onSpellAt.nwscript.newInstance();
@@ -1719,16 +1736,23 @@ export class ModuleObject {
    * @returns 
    */
   addItem(item: ModuleItem){
-    item.load();
-    
-    const eItem = this.getItemByTag(item.getTag());
-    if(eItem){
-      eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
-      return eItem;
-    }else{
-      this.inventory.push(item);
-      return item;
+    if(this.isPartyMember()){
+      return GameState.InventoryManager.addItem(item);
     }
+
+    item.load();
+    item.setStackSize(item.getStackSize());
+
+    for(let i = 0; i < this.inventory.length; i++){
+      const eItem = this.inventory[i];
+      if(eItem?.canStackWith?.(item)){
+        eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
+        return eItem;
+      }
+    }
+
+    this.inventory.push(item);
+    return item;
   }
 
   /**
@@ -1738,21 +1762,30 @@ export class ModuleObject {
    * @returns 
    */
   removeItem(item: ModuleItem, nCount = 1): ModuleItem {
-    const eItem = this.getItemByTag(item.getTag());
+    const eItem = this.isPartyMember() ? item : (this.getItem(item) || this.getItemByTag(item.getTag()));
 
     if(!eItem){
       return undefined;
     }
 
+    const removedCount = Math.min(Math.max(1, nCount), eItem.getStackSize());
+    const removedItem = eItem.clone();
+    removedItem.setStackSize(removedCount);
+
+    if(this.isPartyMember()){
+      GameState.InventoryManager.removeItem(eItem, removedCount);
+      return removedItem;
+    }
+
     const idx = this.inventory.indexOf(eItem);
 
-    if(nCount < eItem.getStackSize()){
-      eItem.setStackSize(eItem.getStackSize() - nCount);
-    }else{
+    if(removedCount < eItem.getStackSize()){
+      eItem.setStackSize(eItem.getStackSize() - removedCount);
+    }else if(idx >= 0){
       this.inventory.splice(idx, 1);
     }
 
-    return eItem.clone();
+    return removedItem;
   }
 
   /**
@@ -1768,15 +1801,24 @@ export class ModuleObject {
       return undefined;
     }
 
+    const removedCount = Math.min(Math.max(1, nCount), eItem.getStackSize());
+    const removedItem = eItem.clone();
+    removedItem.setStackSize(removedCount);
+
+    if(this.isPartyMember()){
+      GameState.InventoryManager.removeItem(eItem, removedCount);
+      return removedItem;
+    }
+
     const idx = this.inventory.indexOf(eItem);
 
-    if(nCount < eItem.getStackSize()){
-      eItem.setStackSize(eItem.getStackSize() - nCount);
-    }else{
+    if(removedCount < eItem.getStackSize()){
+      eItem.setStackSize(eItem.getStackSize() - removedCount);
+    }else if(idx >= 0){
       this.inventory.splice(idx, 1);
     }
 
-    return eItem.clone();
+    return removedItem;
   }
 
   /**
@@ -2150,12 +2192,9 @@ export class ModuleObject {
     console.warn("Method not implemented.", this.tag);
   }
 
-  /**
-   * Set the commadable
-   * @param arg0 
-   */
-  setCommadable(arg0: any) {
-    console.warn("Method not implemented.", this.tag);
+  /** @deprecated Use setCommandable. */
+  setCommadable(value: any) {
+    this.setCommandable(value);
   }
 
   /**
@@ -2617,9 +2656,26 @@ export class ModuleObject {
     }
 
     effect.setAttachedObject(this);
-    effect.loadModel();
-    effect.onApply(this);
     this.effects.push(effect);
+
+    const applyEffect = () => {
+      if(this.destroyed || this.effects.indexOf(effect) === -1){ return; }
+      effect.onApply(this);
+    };
+
+    const maybePromise: unknown = effect.loadModel();
+    if(maybePromise && typeof (maybePromise as Promise<void>).then === 'function'){
+      (maybePromise as Promise<void>)
+        .then(applyEffect, (error) => {
+          console.error('ModuleObject.addEffect: Failed to load effect model', error);
+          applyEffect();
+        })
+        .catch((error) => {
+          console.error('ModuleObject.addEffect: Failed to apply effect', error);
+        });
+    }else{
+      applyEffect();
+    }
   }
 
   /**
@@ -2643,6 +2699,17 @@ export class ModuleObject {
    */
   hasEffect(type = -1){
     return this.getEffect(type) ? true : false;
+  }
+
+  /**
+   * Remove the effects present at call time through their normal lifecycle.
+   * A snapshot tolerates onRemove removing another effect or re-entering this
+   * method; removeEffect checks membership before invoking each callback.
+   */
+  clearAllEffects(): void {
+    for(const effect of this.effects.slice()){
+      this.removeEffect(effect);
+    }
   }
 
   /**
@@ -3673,6 +3740,7 @@ export class ModuleObject {
    * Destroyed
    */
   destroyed: boolean = false;
+  destroying: boolean = false;
 
   /**
    * Will destroy
@@ -3731,17 +3799,41 @@ export class ModuleObject {
    * Destroy the object
    */
   destroy(){
-    this.destroyed = true;
-    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
-    try{
-      this.container.removeFromParent();
+    if(this.destroyed || this.destroying){
+      return;
+    }
 
+    this.destroying = true;
+    this.destroyed = true;
+
+    const area = this.area ?? GameState.module?.area;
+    const effects = Array.isArray(this.effects) ? this.effects.splice(0, this.effects.length) : [];
+    const inventory = Array.isArray(this.inventory) ? this.inventory.splice(0, this.inventory.length) : [];
+    const scriptInstances = Object.values(this.scripts || {});
+    const computedPath = this.#computedPath;
+    this.#computedPath = undefined;
+
+    const runCleanup = (label: string, callback: () => void) => {
+      try{
+        callback();
+      }catch(error){
+        console.error(`ModuleObject.destroy: ${label} failed`, error);
+      }
+    };
+
+    runCleanup('container.removeFromParent', () => {
+      this.container?.removeFromParent();
+    });
+
+    runCleanup('model.dispose', () => {
       if(this.model instanceof OdysseyModel3D){
         this.model.removeFromParent();
         this.model.dispose();
         this.model = undefined;
       }
+    });
 
+    runCleanup('mesh.dispose', () => {
       if(this.mesh instanceof THREE.Mesh){
         this.mesh.removeFromParent();
 
@@ -3752,128 +3844,121 @@ export class ModuleObject {
         this.mesh.geometry = undefined;
         this.mesh = undefined;
       }
+    });
 
-      //cleanup audio emitter
+    runCleanup('audioEmitter.destroy', () => {
       if(this.audioEmitter){
         this.audioEmitter.destroy();
         this.audioEmitter = undefined;
       }
+    });
 
+    runCleanup('footstepEmitter.destroy', () => {
       if(this.footstepEmitter){
         this.footstepEmitter.destroy();
         this.footstepEmitter = undefined;
       }
+    });
 
-      // Dispose all game effects
-      if(this.effects && this.effects.length > 0){
-        for(let i = this.effects.length - 1; i >= 0; i--){
-          if(this.effects[i]){
-            this.effects[i].onRemove();
-          }
-        }
-        this.effects.length = 0;
+    runCleanup('effects.onRemove', () => {
+      for(let i = effects.length - 1; i >= 0; i--){
+        effects[i]?.onRemove();
       }
+    });
 
-      //Cleanup scripts
-      Object.keys(this.scripts).forEach( (key) => {
-        if(this.scripts[key] instanceof NWScriptInstance){
-          this.scripts[key].dispose();
+    runCleanup('scripts.dispose', () => {
+      for(let i = 0; i < scriptInstances.length; i++){
+        const scriptInstance = scriptInstances[i];
+        if(scriptInstance instanceof NWScriptInstance){
+          scriptInstance.dispose();
         }
-        this.scripts = {};
-      });
+      }
+      this.scripts = {};
+    });
 
-      //Clear action queue
+    runCleanup('actionQueue.clear', () => {
       if(this.actionQueue){
         this.actionQueue.clear();
         this.actionQueue = undefined;
       }
+    });
 
-      //Clear computed path
-      if(this.#computedPath){
-        this.#computedPath.dispose();
-        this.#computedPath = undefined;
+    runCleanup('computedPath.dispose', () => {
+      if(computedPath){
+        computedPath.dispose();
       }
+    });
 
-      //Clear perception list
+    runCleanup('perceptionList.clear', () => {
       if(this.perceptionList){
         this.perceptionList.length = 0;
       }
+    });
 
-      //Clear inventory
-      if(this.inventory){
-        for(let i = this.inventory.length - 1; i >= 0; i--){
-          if(this.inventory[i]){
-            this.inventory[i].destroy();
-          }
-        }
-        this.inventory.length = 0;
+    runCleanup('inventory.destroy', () => {
+      for(let i = 0; i < inventory.length; i++){
+        inventory[i]?.destroy();
       }
+    });
 
-      //Clear rooms array
+    runCleanup('rooms.clear', () => {
       if(this.rooms){
         this.rooms.length = 0;
       }
+    });
 
-      //Clear objects inside
+    runCleanup('objectsInside.clear', () => {
       if(this.objectsInside){
         this.objectsInside.length = 0;
       }
+    });
 
-      //Dispose Three.js utility objects
-      if(this.forceVector){
-        this.forceVector = undefined;
-      }
-      // if(this.position){
-      //   this.position = undefined;
-      // }
-      // if(this.rotation){
-      //   this.rotation = undefined;
-      // }
-      // if(this.quaternion){
-      //   this.quaternion = undefined;
-      // }
-      if(this.box){
-        this.box = undefined;
-      }
-      if(this.sphere){
-        this.sphere = undefined;
-      }
-      if(this.v20){
-        this.v20 = undefined;
-      }
-      if(this.v21){
-        this.v21 = undefined;
-      }
+    runCleanup('area.detachObject', () => {
+      area?.detachObject(this);
+    });
 
-      if(this.area){
-        this.area.detachObject(this);
-      }else if (GameState.module.area){
-        GameState.module.area.detachObject(this);
-      }
+    runCleanup('ModuleObjectManager.RemoveObject', () => {
+      GameState.ModuleObjectManager.RemoveObject(this);
+    });
 
-      //Clear references to prevent circular references
-      this.area = undefined;
-      this.room = undefined;
-      this.lookAtObject = undefined;
-      this.lastTriggerEntered = undefined;
-      this.lastTriggerExited = undefined;
-      this.lastAreaEntered = undefined;
-      this.lastAreaExited = undefined;
-      this.lastModuleEntered = undefined;
-      this.lastModuleExited = undefined;
-      this.lastDoorEntered = undefined;
-      this.lastDoorExited = undefined;
-      this.lastPlaceableEntered = undefined;
-      this.lastPlaceableExited = undefined;
-      this.lastAoeEntered = undefined;
-      this.lastAoeExited = undefined;
-      this.conversation = undefined;
-      this.linkedToObject = undefined;
+    //Clear references to prevent circular references
+    this.area = undefined;
+    this.room = undefined;
+    this.lookAtObject = undefined;
+    this.lastTriggerEntered = undefined;
+    this.lastTriggerExited = undefined;
+    this.lastAreaEntered = undefined;
+    this.lastAreaExited = undefined;
+    this.lastModuleEntered = undefined;
+    this.lastModuleExited = undefined;
+    this.lastDoorEntered = undefined;
+    this.lastDoorExited = undefined;
+    this.lastPlaceableEntered = undefined;
+    this.lastPlaceableExited = undefined;
+    this.lastAoeEntered = undefined;
+    this.lastAoeExited = undefined;
+    this.conversation = undefined;
+    this.linkedToObject = undefined;
 
-      GameState.ModuleObjectManager.RemoveObject(this); 
-    }catch(e){
-      console.error('ModuleObject.destroy', e);
+    //Dispose Three.js utility objects
+    if(this.forceVector){
+      this.forceVector = undefined;
     }
+    // Preserve transform references: deferred observers may still read them.
+    if(this.box){
+      this.box = undefined;
+    }
+    if(this.sphere){
+      this.sphere = undefined;
+    }
+    if(this.v20){
+      this.v20 = undefined;
+    }
+    if(this.v21){
+      this.v21 = undefined;
+    }
+
+    this.destroying = false;
   }
 
 }

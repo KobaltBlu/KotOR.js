@@ -32,6 +32,8 @@ import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 */
 export class ModuleMGPlayer extends ModuleObject {
 
+  readonly supportsRuntimeStatePersistence: boolean = false;
+
   camera: OdysseyModel3D;
   models: OdysseyModel3D[] = [];
   track: OdysseyObject3D;
@@ -614,6 +616,7 @@ export class ModuleMGPlayer extends ModuleObject {
       const box = this.box.clone();
 
       this.rooms = [];
+      this.roomIds = [];
       for(let i = 0; i < GameState.module.area.rooms.length; i++){
         let room = GameState.module.area.rooms[i];
         let model = room.model;
@@ -625,7 +628,7 @@ export class ModuleMGPlayer extends ModuleObject {
       }
 
       if(box){
-        for(let j = 0, jl = this.rooms.length; j < jl; j++){
+        for(let j = 0, jl = this.roomIds.length; j < jl; j++){
           let room = GameState.module.area.rooms[this.roomIds[j]];
           if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
             aabbFaces.push({
@@ -682,41 +685,33 @@ export class ModuleMGPlayer extends ModuleObject {
     return face;
   }
 
-  load(){
+  async load(): Promise<void> {
     this.initProperties();
+    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
   }
 
-  loadCamera( onLoad?: Function ){
+  async loadCamera( onLoad?: Function ): Promise<void> {
     if(this.cameraName){
       const resref = this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      MDLLoader.loader.load(resref).then(
-        (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (camera: OdysseyModel3D) => {
-              try{
-                this.camera = camera;
-                camera.name = this.cameraName;
-                this.container.add(camera);
+      try{
+        const mdl = await MDLLoader.loader.load(resref);
+        const camera = await OdysseyModel3D.FromMDL(mdl, {
+          context: this.context,
+          castShadow: true,
+          receiveShadow: true
+        });
 
-                if(typeof onLoad === 'function')
-                  onLoad();
-              }catch(e){
-                console.error(e);
-                if(typeof onLoad === 'function')
-                  onLoad();
-              }
-            },
-            context: this.context,
-            castShadow: true,
-            receiveShadow: true
-          });
-        }
-      );
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad();
+        this.camera = camera;
+        camera.name = this.cameraName;
+        this.container.add(camera);
+      }catch(e){
+        console.error(e);
+      }
     }
+
+    if(typeof onLoad === 'function')
+      onLoad();
   }
 
   async loadModel (){
@@ -855,6 +850,27 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   initProperties(){
+    this.accel_secs = 0;
+    this.bump_damage = 0;
+    this.cameraName = '';
+    this.cameraRotate = 0;
+    this.hit_points = 0;
+    this.invince_period = 0;
+    this.max_hps = 0;
+    this.speed_max = 0;
+    this.speed_min = 0;
+    this.num_loops = 0;
+    this.sphere_radius = 0;
+    this.trackName = '';
+    this.modelProps = [];
+    this.gunBanks = [];
+    this.tunnel.neg.x = 0;
+    this.tunnel.neg.y = 0;
+    this.tunnel.neg.z = 0;
+    this.tunnel.pos.x = 0;
+    this.tunnel.pos.y = 0;
+    this.tunnel.pos.z = 0;
+
     if(this.template.RootNode.hasField('Accel_Secs'))
       this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
 
@@ -889,7 +905,7 @@ export class ModuleMGPlayer extends ModuleObject {
       this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
 
     if(this.template.RootNode.hasField('Track'))
-      this.trackName = this.template.getFieldByLabel('Track').getValue();
+      this.trackName = this.template.getFieldByLabel('Track').getValue().replace(/\0[\s\S]*$/g,'').toLowerCase();
 
     if(this.template.RootNode.hasField('TunnelXNeg'))
       this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXNeg').getValue());
@@ -931,9 +947,9 @@ export class ModuleMGPlayer extends ModuleObject {
           )
         );
       }
-
-      this.initialized = true;
     }
+
+    this.initialized = true;
 
 
     /*if(this.template.RootNode.hasField('CameraRotate'))

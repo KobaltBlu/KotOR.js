@@ -423,6 +423,22 @@ export class GFFField {
           this.cexoLocString.addSubString(val, 0);
         }
       break;
+      case GFFDataType.ORIENTATION:
+        if(typeof val == 'object' && typeof val?.x == 'number' && typeof val?.y == 'number' && typeof val?.z == 'number' && typeof val?.w == 'number'){
+          this.orientation = {x: val.x, y: val.y, z: val.z, w: val.w};
+        }else{
+          this.orientation = {x: 0, y: 0, z: 0, w: 1};
+        }
+        this.value = 0;
+      break;
+      case GFFDataType.VECTOR:
+        if(typeof val == 'object' && typeof val?.x == 'number' && typeof val?.y == 'number' && typeof val?.z == 'number'){
+          this.vector = {x: val.x, y: val.y, z: val.z};
+        }else{
+          this.vector = {x: 0, y: 0, z: 0};
+        }
+        this.value = 0;
+      break;
       case GFFDataType.RESREF:
         if(!val)
           val = '';

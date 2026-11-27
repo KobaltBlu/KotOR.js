@@ -139,13 +139,13 @@ export const TabUTMEditor = function(props: BaseTabProps){
               </FormField>
               <FormField 
                 label="Buy/Sell Flag" 
-                info="Controls what the store can do: 0 = Buy only, 1 = Sell only, 2 = Buy and Sell, 3 = Neither."
+                info="Controls what the store can do in the game files: 1 = Only sells, 2 = Only buys, 3 = Buys and sells. 0 appears to be unknown or legacy."
               >
                 <select value={buySellFlag} onChange={(e) => { setBuySellFlag(Number(e.target.value)); tab.store.buySellFlag = Number(e.target.value); tab.updateFile(); }}>
-                  <option value={0}>Buy Only</option>
-                  <option value={1}>Sell Only</option>
-                  <option value={2}>Buy and Sell</option>
-                  <option value={3}>Neither</option>
+                  <option value={0}>Unknown / Legacy</option>
+                  <option value={1}>Only Sells</option>
+                  <option value={2}>Only Buys</option>
+                  <option value={3}>Buys and Sells</option>
                 </select>
               </FormField>
               <FormField 

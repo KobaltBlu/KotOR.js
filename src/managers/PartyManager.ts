@@ -105,6 +105,21 @@ export class PartyManager {
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
 
+  static SyncPlayerStateTemplates(){
+    if(!(PartyManager.Player instanceof ModuleCreature)){
+      return;
+    }
+
+    const currentPlayerTemplate = PartyManager.Player.save();
+    PartyManager.PlayerTemplate = currentPlayerTemplate;
+
+    if(PartyManager.Player instanceof ModulePlayer || PartyManager.Player.isPlayer || PartyManager.Player.npcId < 0){
+      PartyManager.ActualPlayerTemplate = currentPlayerTemplate;
+    }else if(!(PartyManager.ActualPlayerTemplate instanceof GFFObject)){
+      PartyManager.ActualPlayerTemplate = currentPlayerTemplate;
+    }
+  }
+
   /**
    * Initialize the party manager
    * @returns void
@@ -259,11 +274,21 @@ export class PartyManager {
       }
     }
 
+    GameState.JournalManager.ClearEntries();
+    GameState.DialogMessageManager.ClearEntries();
+    GameState.FeedbackMessageManager.ClearEntries();
+
     if(gff.RootNode.hasField('JNL_Entries')){
       const entries = gff.RootNode.getFieldByLabel('JNL_Entries').getChildStructs();
       for(let i = 0; i < entries.length; i++){
         GameState.JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
       }
+    }
+
+    if(gff.RootNode.hasField('JNL_SortOrder')){
+      GameState.JournalManager.SortOrder = gff.RootNode.getFieldByLabel('JNL_SortOrder').getValue();
+    }else{
+      GameState.JournalManager.SortOrder = 0;
     }
 
     if(gff.RootNode.hasField('PT_DLG_MSG_LIST')){
@@ -335,6 +360,8 @@ export class PartyManager {
    */
   static async Export(directory = ''){
     return new Promise<void>( (resolve, reject) => {
+      PartyManager.SyncPlayerStateTemplates();
+
       //Export PARTYTABLE.res
       let partytable = new GFFObject();
       partytable.FileType = 'PT  ';
@@ -347,7 +374,7 @@ export class PartyManager {
         );
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'JNL_SortOrder')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'JNL_SortOrder')).setValue(GameState.JournalManager.SortOrder ?? 0);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_AISTATE')).setValue(0);
       let availNPCSList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
 
@@ -359,6 +386,27 @@ export class PartyManager {
         availStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_NPC_AVAIL') ).setValue(pm.available ? 1 : 0);
         availStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_NPC_SELECT') ).setValue(pm.canSelect ? 1 : 0);
         availNPCSList.addChildStruct(availStruct);
+      }
+
+      if(GameState.GameKey == GameEngineType.TSL){
+        const availPuppetsList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_PUPS'));
+        for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+          const puppet = PartyManager.Puppets[i];
+          const puppetStruct = new GFFStruct();
+          puppetStruct.addField(new GFFField(GFFDataType.BYTE, 'PT_PUP_AVAIL')).setValue(puppet?.available ? 1 : 0);
+          puppetStruct.addField(new GFFField(GFFDataType.BYTE, 'PT_PUP_SELECT')).setValue(puppet?.select ? 1 : 0);
+          availPuppetsList.addChildStruct(puppetStruct);
+        }
+
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_ITEM_CHEMICAL')).setValue(GameState.PartyManager.ChemicalCount);
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_ITEM_COMPONEN')).setValue(GameState.PartyManager.ComponentCount);
+
+        const influenceList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_INFLUENCE'));
+        for(let i = 0; i < PartyManager.MaxPartyCount; i++){
+          const influenceStruct = new GFFStruct();
+          influenceStruct.addField(new GFFField(GFFDataType.INT, 'PT_NPC_INFLUENCE')).setValue(GameState.PartyManager.InfluenceMap.get(i) ?? -1);
+          influenceList.addChildStruct(influenceStruct);
+        }
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
@@ -432,7 +480,7 @@ export class PartyManager {
         pazaakSideDeckList.addChildStruct(sideDeckStruct);
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).setValue(GameState.time | 0);
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(0);
 
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
@@ -631,8 +679,16 @@ export class PartyManager {
   static RebuildPortraitOrder(){
     PartyManager.PortraitOrder = [];
     for(let i = 0; i < PartyManager.party.length; i++){
-      PartyManager.PortraitOrder[i] = PartyManager.party[i].getPortraitResRef().toLowerCase();
+      const partyMember = PartyManager.party[i];
+      if(!(partyMember instanceof ModuleCreature)){ continue; }
+
+      const portraitResRef = partyMember.getPortraitResRef();
+      if(!portraitResRef){ continue; }
+
+      PartyManager.PortraitOrder.push(portraitResRef.toLowerCase());
     }
+
+    GameState.currentLeader = PartyManager.party[0];
   }
 
   /**
@@ -660,8 +716,9 @@ export class PartyManager {
    * @returns void
    */
   static AddPortraitToOrder( resref = '' ){
-    if(PartyManager.PortraitOrder.indexOf(resref) == -1 )
-      PartyManager.PortraitOrder.push( resref.toLowerCase() );
+    const normalizedResRef = resref.toLowerCase();
+    if(normalizedResRef && PartyManager.PortraitOrder.indexOf(normalizedResRef) == -1 )
+      PartyManager.PortraitOrder.push( normalizedResRef );
   }
 
   /**
@@ -793,20 +850,21 @@ export class PartyManager {
    */
   static SwitchPlayerCharacter(npcId = 0){
     let partyMember: ModuleCreature;
+    const oldPC = PartyManager.Player;
+
+    if(oldPC instanceof ModuleCreature && (oldPC instanceof ModulePlayer || oldPC.isPlayer || oldPC.npcId < 0)){
+      PartyManager.ActualPlayerTemplate = oldPC.save();
+      CurrentGame.WriteFile('pc.utc', PartyManager.ActualPlayerTemplate.getExportBuffer());
+    }
+
     if(npcId == -1){
       partyMember = new ModulePlayer(PartyManager.ActualPlayerTemplate);
       PartyManager.PlayerTemplate = PartyManager.ActualPlayerTemplate;
     }else{
       partyMember = new ModuleCreature(PartyManager.NPCS[npcId].template);
     }
-     
-    const oldPC = PartyManager.Player;
-    PartyManager.Player = partyMember;
 
-    if(PartyManager.Player.isPlayer && npcId >= 0){
-      PartyManager.ActualPlayerTemplate = PartyManager.Player.save();
-      CurrentGame.WriteFile('pc.utc', PartyManager.ActualPlayerTemplate.getExportBuffer());
-    }
+    PartyManager.Player = partyMember;
 
     try{
       const spawn = oldPC.position.clone();
@@ -838,19 +896,18 @@ export class PartyManager {
       return undefined;
     }
   }
-
-  /**
-   * Save the current party member templates
-   * @returns void
-   */
   static Save(){
-    const npcs = PartyManager.party.filter( (pm) => pm.npcId >= 0 );
-    for(let i = 0; i < npcs.length; i++){
-      const pm = npcs[i];
-      PartyManager.CurrentMembers[i] = {
-        isLeader: i == 0 ? true : false,
+    PartyManager.SyncPlayerStateTemplates();
+
+    const npcs = PartyManager.party.filter( (pm) => pm instanceof ModuleCreature && pm.npcId >= 0 );
+    PartyManager.CurrentMembers = npcs.map((pm) => {
+      return {
+        isLeader: PartyManager.party[0] == pm,
         memberID: pm.npcId
       };
+    });
+    for(let i = 0; i < npcs.length; i++){
+      const pm = npcs[i];
       PartyManager.SavePartyMember(pm.npcId);
     }
   }
@@ -921,18 +978,67 @@ export class PartyManager {
     }
   }
 
+  static GetLeaderCurrentMemberIndex(){
+    return PartyManager.CurrentMembers.findIndex((member) => !!member?.isLeader);
+  }
+
+  static GetPlayerStartingPartyIndex(){
+    return PartyManager.GetLeaderCurrentMemberIndex() >= 0 ? 1 : 0;
+  }
+
+  static GetCurrentMemberStartingPartyIndex(memberIndex: number){
+    if(memberIndex < 0){
+      return PartyManager.party.length;
+    }
+
+    const leaderIndex = PartyManager.GetLeaderCurrentMemberIndex();
+    if(memberIndex == leaderIndex){
+      return 0;
+    }
+
+    if(leaderIndex == -1){
+      return memberIndex + 1;
+    }
+
+    return memberIndex < leaderIndex ? memberIndex + 2 : memberIndex + 1;
+  }
+
   /**
-   * Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
+   * Get the index of the creature in the party array using the persisted party order.
    * @param creature - The creature to get the index of
    * @returns number
    */
   static GetCreatureStartingPartyIndex(creature: ModuleCreature){
+    if(!(creature instanceof ModuleCreature)){
+      return PartyManager.GetPlayerStartingPartyIndex();
+    }
 
-    if(PartyManager.PortraitOrder[0]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
+    const existingIndex = PartyManager.party.indexOf(creature);
+    if(existingIndex >= 0){
+      return existingIndex;
+    }
+
+    if(creature == PartyManager.Player || creature.npcId < 0){
+      return PartyManager.GetPlayerStartingPartyIndex();
+    }
+
+    const currentMemberIndex = PartyManager.CurrentMembers.findIndex((member) => member?.memberID == creature.npcId);
+    if(currentMemberIndex >= 0){
+      return PartyManager.GetCurrentMemberStartingPartyIndex(currentMemberIndex);
+    }
+
+    const portraitResRef = creature.getPortraitResRef();
+    if(!portraitResRef){
+      return PartyManager.party.length;
+    }
+
+    const normalizedPortraitResRef = portraitResRef.toLowerCase();
+
+    if(PartyManager.PortraitOrder[0]?.toLowerCase() == normalizedPortraitResRef){
       return 0
-    }else if(PartyManager.PortraitOrder[1]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
+    }else if(PartyManager.PortraitOrder[1]?.toLowerCase() == normalizedPortraitResRef){
       return 1;
-    }else if(PartyManager.PortraitOrder[2]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
+    }else if(PartyManager.PortraitOrder[2]?.toLowerCase() == normalizedPortraitResRef){
       return 2
     }
 
@@ -1054,7 +1160,10 @@ export class PartyManager {
         if( GameState.module.area.transWP ){
           //console.log('TransWP - PM', GameState.module.area.transWP);
         }
-        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
+        let index = PartyManager.party.indexOf(creature);
+        if(index == -1){
+          index = PartyManager.GetCreatureStartingPartyIndex(creature);
+        }
         let spawnLoc = GameState.module.area.getSpawnLocation();
         let facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
         switch(index){
@@ -1087,7 +1196,10 @@ export class PartyManager {
             );
         }
       }else{
-        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
+        let index = PartyManager.party.indexOf(creature);
+        if(index == -1){
+          index = PartyManager.GetCreatureStartingPartyIndex(creature);
+        }
         let spawnLoc = GameState.module.area.getSpawnLocation();
         let facing = spawnLoc.getFacing();
         switch(index){
@@ -1194,12 +1306,14 @@ export class PartyManager {
       for(let i = 0; i < maxPartyMembers; i++){
         let pm = PartyManager.NPCS[i];
         if(!pm){
-          console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. pm was undefined.`);
           continue;
         }
 
         if(!(pm.template instanceof GFFObject)){
-          console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
+          const shouldWarn = !!(pm.available || pm.canSelect || pm.spawned || pm.moduleObject);
+          if(shouldWarn){
+            console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
+          }
           continue;
         }
 
@@ -1215,6 +1329,14 @@ export class PartyManager {
    * @returns void
    */
   static async ExportPlayerCharacter(){
+    if(GameState.PartyManager.Player instanceof ModuleCreature && (GameState.PartyManager.Player instanceof ModulePlayer || GameState.PartyManager.Player.isPlayer || GameState.PartyManager.Player.npcId < 0)){
+      GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.Player.save();
+    }
+
+    if(!GameState.PartyManager.ActualPlayerTemplate && GameState.PartyManager.PlayerTemplate){
+      GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+    }
+
     if(!GameState.PartyManager.ActualPlayerTemplate){ return; }
     const gff = GameState.PartyManager.ActualPlayerTemplate;
     await gff.export( path.join( CurrentGame.gameinprogress_dir, 'pc.utc'));

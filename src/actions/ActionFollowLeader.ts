@@ -8,6 +8,7 @@ import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 
 /**
  * ActionFollowLeader class.
@@ -44,17 +45,17 @@ export class ActionFollowLeader extends Action {
       if(distance > 5){
         this.path_realtime = true;
         // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, follow_destination.x);
-        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, follow_destination.y);
-        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, follow_destination.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
-        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-        this.owner.actionQueue.addFront(actionMoveToTarget);
+        enqueueMoveToPoint(this.owner, {
+          x: follow_destination.x,
+          y: follow_destination.y,
+          z: follow_destination.z,
+          area: GameState.module.area.id,
+          target: this.target.id,
+          run: true,
+          range: 4.5,
+          timeout: 30.0,
+          groupId: this.groupId,
+        });
 
         return ActionStatus.IN_PROGRESS;
       }else{

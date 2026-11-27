@@ -15,7 +15,7 @@ export class ForgeStore extends ForgeGameObject {
   resref: string = '';
 
   //Blueprint Properties
-  buySellFlag: number = 0;
+  buySellFlag: number = 3;
   comment: string = '';
   id: number = 0;
   itemList: StoreItemEntry[] = [];

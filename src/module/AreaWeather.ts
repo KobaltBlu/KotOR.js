@@ -63,7 +63,7 @@ export class AreaWeather {
    * @returns string
    */
   getWeatherModelName(): string {
-    switch(this.getWeatherCondition()){
+    switch(this.currentWeather){
       case WeatherCondition.SNOW:
         return 'fx_snow';
       case WeatherCondition.RAIN:
@@ -78,7 +78,13 @@ export class AreaWeather {
    * Load the weather model
    */
   async load(){
-    this.currentWeather = this.getWeatherCondition();
+    this.destroy();
+
+    if(!this.started){
+      this.currentWeather = this.getWeatherCondition();
+      this.started = true;
+    }
+
     const weatherModelName = this.getWeatherModelName();
     try{
       if(weatherModelName){

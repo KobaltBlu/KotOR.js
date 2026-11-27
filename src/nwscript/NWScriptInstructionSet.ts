@@ -136,6 +136,17 @@ export const CALL_CONST = function( this: NWScriptInstance, instruction: NWScrip
  */
 export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   const action_definition: INWScriptDefAction = instruction.actionDefinition;
+  if(!action_definition){
+    console.error('NWScript CALL_ACTION: missing action definition', {
+      script: this.name,
+      address: instruction.address,
+      action: instruction.action,
+      argCount: instruction.argCount,
+      instruction,
+    });
+    this.running = false;
+    return;
+  }
   const args: any[] = [];
 
   for(let i = 0, len = action_definition.args.length; i < len; i++){
@@ -1107,7 +1118,7 @@ export const CALL_RESTOREBP = function( this: NWScriptInstance, instruction: NWS
  */
 export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   const state: INWScriptStoreState = {
-    offset: instruction.nextInstr.nextInstr.address,
+    offset: instruction.address + instruction.type,
     base:   [], //this.stack.stack.slice(0, (instr.bpOffset/4)),
     local:  [], //this.stack.stack.slice(this.stack.stack.length-(instr.spOffset/4), this.stack.stack.length)
     instr:  instruction,

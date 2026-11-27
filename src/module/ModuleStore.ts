@@ -56,38 +56,90 @@ export class ModuleStore extends ModuleObject {
     return this.markUp * .01;
   }
 
+  canSellToCustomer(){
+    switch(Number(this.buySellFlag)){
+      case 1:
+        return true;
+      case 2:
+        return false;
+      case 3:
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  canBuyFromCustomer(){
+    switch(Number(this.buySellFlag)){
+      case 1:
+        return false;
+      case 2:
+        return true;
+      case 3:
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  loadScripts(){
+    if(typeof this.onOpenStore !== 'string' || !this.onOpenStore.length){
+      return;
+    }
+
+    const nwscript = GameState.NWScript.Load(this.onOpenStore);
+    if(!nwscript){
+      return;
+    }
+
+    nwscript.caller = this;
+    this.scripts['OnOpenStore'] = nwscript;
+  }
+
+  runOnOpenStore(customer?: ModuleObject){
+    let instance = this.scripts['OnOpenStore']?.nwscript?.newInstance();
+    if(!instance && typeof this.onOpenStore === 'string' && this.onOpenStore.length){
+      instance = GameState.NWScript.Load(this.onOpenStore);
+    }
+
+    if(!instance){
+      return;
+    }
+
+    instance.listenPatternSpeaker = customer;
+    instance.lastSpeaker = customer;
+    instance.enteringObject = customer;
+    instance.run(this);
+  }
+
   load(){
-    // The GIT's StoreList struct names the blueprint `ResRef`. Every other object
-    // type names it `TemplateResRef`, and this method mixed the two: it guarded on
-    // the field a GIT store actually carries, then looked the UTM up by the field it
-    // never carries, so loadCachedResource was always handed null. No store in the
-    // game ever loaded its blueprint - inventory, markUp/markDown, onOpenStore and
-    // locName all silently kept their constructor defaults.
-    //
-    // Loading every TSL module reported "Failed to load ModuleStore template" in exactly the 12 of
-    // 82 modules that contain a store, and in no module that does not. ForgeStore
-    // reads and writes this same struct through `ResRef`, which is what settled
-    // which of the two names is the authored one.
-    const blueprint = this.getResRef();
+    // A GIT StoreList entry names its blueprint `ResRef`; UTM-style templates use
+    // `TemplateResRef`. Prefer ResRef, fall back to TemplateResRef.
+    const blueprint = this.getResRef() || this.getTemplateResRef();
     if(blueprint){
-      // Hold on to it, or save() writes an empty TemplateResRef from the untouched
-      // `templateResRef` and the savegame loses the blueprint as well.
+      // Hold on to it, or save() writes an empty TemplateResRef and the savegame
+      // loses the blueprint as well.
       this.templateResRef = blueprint;
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], blueprint);
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
+        this.templateResRef = blueprint;
         this.initProperties();
+        this.loadScripts();
       }else{
         console.error('Failed to load ModuleStore template');
         if(this.template instanceof GFFObject){
+          this.templateResRef = blueprint;
           this.initProperties();
+          this.loadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
+      this.loadScripts();
     }
   }
 
@@ -117,6 +169,11 @@ export class ModuleStore extends ModuleObject {
 
     if(this.template.RootNode.hasField('OnOpenStore'))
       this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
+
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+    else if(this.template.RootNode.hasField('ResRef'))
+      this.templateResRef = this.template.getFieldByLabel('ResRef').getValue();
       
     if(this.template.RootNode.hasField('Tag'))
       this.tag = this.template.getFieldByLabel('Tag').getValue(); 
@@ -161,6 +218,20 @@ export class ModuleStore extends ModuleObject {
         }
       }
     }
+
+    try{
+      if(this.template.RootNode.hasField('ActionList') && !this.actionQueue.length){
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        for(let i = 0, len = actionStructs.length; i < len; i++){
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          if(action){
+            this.actionQueue.add(action);
+          }
+        }
+      }
+    }catch(e: any){
+      console.error(e);
+    }
             
     if(this.template.RootNode.hasField('ItemList')){
       let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
@@ -176,15 +247,14 @@ export class ModuleStore extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
-    if(this.area) this.area.detachObject(this);
 
-    while(this.inventory.length){
-      const item = this.inventory[0];
-      if(item){
-        item.destroy();
-      }
-      this.inventory.splice(0, 1);
+    const inventory = this.inventory.splice(0, this.inventory.length);
+    for(let i = 0; i < inventory.length; i++){
+      inventory[i]?.destroy();
     }
   }
 
@@ -200,7 +270,9 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MarkDown') ).setValue(this.markDown);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MarkUp') ).setValue(this.markUp);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (
+      this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : (typeof this.onOpenStore === 'string' ? this.onOpenStore : '')
+    );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).setValue(this.buySellFlag);
 
     let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );

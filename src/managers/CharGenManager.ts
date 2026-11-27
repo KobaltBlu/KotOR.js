@@ -1,4 +1,3 @@
-import { AudioLoader } from "@/audio/AudioLoader";
 import { GameEngineType } from "@/enums/engine";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -13,7 +12,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { AudioEngine } from "@/audio/AudioEngine";
 import { LTRObject } from "@/resource/LTRObject";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
@@ -104,9 +102,7 @@ export class CharGenManager {
 
   static async StartBackgroundMusic(): Promise<void> {
     const audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
-    const data = await AudioLoader.LoadMusic(audioResRef);
-    AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, audioResRef);
-    AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
+    await GameState.MusicManager.playMenuMusicTrack(audioResRef, false, true, 1);
   }
 
   static async Init(){
@@ -577,11 +573,6 @@ export class CharGenManager {
     return template;
   }
 
-  
-
-  /**
-   * Number of skills tracked by the working copy (skills.2da rows / creature.skills).
-   */
   static getSkillCount(): number {
     const creature = CharGenManager.selectedCreature;
     if(creature && creature.skills){

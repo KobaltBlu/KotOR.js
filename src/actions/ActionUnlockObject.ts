@@ -8,6 +8,7 @@ import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 // import type { ModulePlaceable } from "@/module/ModulePlaceable";
 // import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleItem } from "@/module/ModuleItem";
@@ -63,17 +64,17 @@ export class ActionUnlockObject extends Action {
     if(distance > 1.5){
         
       // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 1.5 );
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      this.owner.actionQueue.addFront(actionMoveToTarget);
+      enqueueMoveToPoint(this.owner, {
+        x: this.target.position.x,
+        y: this.target.position.y,
+        z: this.target.position.z,
+        area: GameState.module.area.id,
+        target: this.target.id,
+        run: true,
+        range: 1.5,
+        timeout: 30.0,
+        groupId: this.groupId,
+      });
 
       return ActionStatus.IN_PROGRESS;
     }else{
@@ -94,6 +95,12 @@ export class ActionUnlockObject extends Action {
           }
         }
         this.usedItem = true;
+        // Consume the selected security tool once, not once per animation frame.
+        if(this.oItem.charges > 1){
+          this.oItem.charges -= 1;
+        }else{
+          this.owner.removeItem(this.oItem, 1);
+        }
       }
 
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
@@ -132,18 +139,6 @@ export class ActionUnlockObject extends Action {
         return ActionStatus.COMPLETE;
       }
       
-      if(this.oItem){
-        //If we have more charges, reduce the charges count by 1
-        if(this.oItem.charges > 1){
-          this.oItem.charges -= 1;
-        }
-        //If we are out of charges remove the item from the owners inventory
-        else
-        {
-          this.owner.removeItem(this.oItem, 1);
-        }
-      }
-
       return ActionStatus.IN_PROGRESS;
       
     }

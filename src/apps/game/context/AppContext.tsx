@@ -67,15 +67,6 @@ export const AppProvider = (props: any) => {
     setGameLoaded(true);
   }
 
-  const onKeyPress = (e: KeyboardEvent) => {
-    if(e.key === '`'){
-      e.preventDefault();
-      e.stopPropagation();
-      setShowCheatConsole(!showCheatConsole);
-      return false;
-    }
-  }
-
   const onLoadingScreenShow = () => {
     setShowLoadingScreen(true);
   }
@@ -95,7 +86,28 @@ export const AppProvider = (props: any) => {
   }
 
   useEffect(() => { 
-    window.addEventListener('keypress', onKeyPress);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if(e.key !== '`'){
+        return;
+      }
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      const isEditableElement = !!activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.isContentEditable
+      );
+
+      if(isEditableElement && activeElement?.getAttribute('data-cheat-console-input') !== 'true'){
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      setShowCheatConsole((currentState) => !currentState);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
     AppState.addEventListener('on-preload', onPreload);
     AppState.addEventListener('on-ready', onAppReady);
     AppState.addEventListener('on-game-loaded', onGameLoaded);
@@ -105,7 +117,7 @@ export const AppProvider = (props: any) => {
     AppState.addEventListener('on-loader-message', onLoadingScreenMessage);
     AppState.initApp();
     return () => {
-      window.removeEventListener('keypress', onKeyPress);
+      window.removeEventListener('keydown', onKeyDown);
       AppState.removeEventListener('on-preload', onPreload);
       AppState.removeEventListener('on-ready', onAppReady);
       AppState.removeEventListener('on-game-loaded', onGameLoaded);
@@ -115,13 +127,6 @@ export const AppProvider = (props: any) => {
       AppState.removeEventListener('on-loader-message', onLoadingScreenMessage);
     }
   }, []);
-
-  useEffect(() => { 
-    window.addEventListener('keypress', onKeyPress);
-    return () => {
-      window.removeEventListener('keypress', onKeyPress);
-    }
-  }, [gameLoaded, showCheatConsole, appReady]);
 
   const providerValue: AppProviderValues = {
     appState: [AppState],

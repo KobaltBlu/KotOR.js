@@ -112,7 +112,7 @@ export class FollowerCamera {
     }
 
     const appearance = followee.creatureAppearance;
-    const followeeHeight = 1.6 + FollowerCamera.DEBUG_OFFSET;//appearance.height + FollowerCamera.DEBUG_OFFSET;
+    const followeeHeight = followee.getCameraHeight() + FollowerCamera.DEBUG_OFFSET;
 
     let offsetHeight = 0;
 

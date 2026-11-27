@@ -19,20 +19,24 @@ import { isUsableDirectoryHandle } from "@/utility/gameDirectoryAccess";
 export class CurrentGame {
   static gameinprogress_dir = 'gameinprogress';
 
+  static async GetSavedModuleFilename(name = ''): Promise<string|undefined> {
+    try{
+      const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
+      const match = files.find((file) => {
+        const fileInfo = path.parse(file);
+        const ext = fileInfo.ext.split('.').pop()?.toLowerCase();
+        return ext == 'sav' && fileInfo.name.toLowerCase() == name.toLowerCase();
+      });
+      return match;
+    }catch(e){
+      return undefined;
+    }
+  }
+
   static IsModuleSaved( name = '' ){
     return new Promise( (resolve, reject) => {
-        GameFileSystem.readdir(CurrentGame.gameinprogress_dir).then( (files) => {
-          for(let i = 0, len = files.length; i < len; i++){
-            let file = files[i];
-            let file_path = path.join( CurrentGame.gameinprogress_dir, file );
-            let file_info = path.parse(file);
-            let ext = file_info.ext.split('.').pop();
-            if(file_info.name.toLowerCase() == name.toLowerCase()){
-              resolve(true);
-              return;
-            }
-          }
-          resolve(false);
+        CurrentGame.GetSavedModuleFilename(name).then((file) => {
+          resolve(typeof file === 'string');
         }).catch( (e) => {
           resolve(false);
         });
@@ -44,8 +48,9 @@ export class CurrentGame {
     return new Promise( async (resolve, reject) => {
 
       try{
+        const savedModuleName = await CurrentGame.GetSavedModuleFilename(name);
         let buffer = await GameFileSystem.readFile( 
-          path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav') 
+          savedModuleName || path.join( CurrentGame.gameinprogress_dir, name + '.sav') 
         );
         const erf = new ERFObject(buffer);
         erf.load().then( (rim: ERFObject) => {
@@ -145,9 +150,9 @@ export class CurrentGame {
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
       for(let i = 0; i < files.length; i++){
         const file = files[i];
-        const file_path = path.join( file );
+        const file_path = file;
         const file_info = path.parse(file);
-        const ext = file_info.ext.split('.').pop();
+        const ext = file_info.ext.split('.').pop()?.toLowerCase();
         if(typeof ResourceTypes[ext] != 'undefined'){
           try{
             const data = await GameFileSystem.readFile( file_path);

@@ -108,9 +108,10 @@ export class WindowManager {
       });
     });
     
-    ipcMain.handle('open-file-dialog', (event, data: Electron.OpenDialogOptions) => {
+    ipcMain.handle('open-file-dialog', (event, data: Electron.OpenDialogOptions | [Electron.OpenDialogOptions]) => {
       return new Promise( (resolve, reject) => {
-        dialog.showOpenDialog(data).then(result => {
+        const options = Array.isArray(data) ? data[0] : data;
+        dialog.showOpenDialog(options).then(result => {
           resolve(result);
         }).catch(err => {
           reject(err)
@@ -118,10 +119,10 @@ export class WindowManager {
       });
     });
     
-    ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions) => {
+    ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions | [Electron.SaveDialogOptions]) => {
       return new Promise( (resolve, reject) => {
-        console.log('save-file-dialog2', event, data[0]);
-        dialog.showSaveDialog(data[0]).then(result => {
+        const options = Array.isArray(data) ? data[0] : data;
+        dialog.showSaveDialog(options).then(result => {
           resolve(result);
         }).catch(err => {
           reject(err)

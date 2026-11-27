@@ -1,0 +1,36 @@
+{
+  "originalContributionPaths": 276,
+  "dispositions": {
+    "Excluded operating-system metadata": 1,
+    "Ported / reconciled": 227,
+    "Kept upstream dependency versions and lockfile": 1,
+    "Translated into src/apps/game/GameInitializer.ts": 1,
+    "Retained upstream; reconciliation rationale in subsystem ledger": 40,
+    "Omitted empty original placeholder (no implementation to port)": 4,
+    "Replaced with compact upstream-derived routineMetadata.ts and ABI fixtures": 2
+  },
+  "baselineTypeDiagnostics": 145,
+  "finalTypeDiagnostics": 141,
+  "introducedTypeDiagnostics": [],
+  "resolvedTypeDiagnostics": [
+    "src/electron/WindowManager.ts(line,col): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'SaveDialogOptions'.",
+    "src/electron/WindowManager.ts(line,col): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'SaveDialogOptions'.",
+    "src/game/tsl/menu/MenuEquipment.ts(line,col): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.",
+    "src/nwscript/NWScriptDefK1.ts(line,col): error TS2339: Property 'clearAllEffects' does not exist on type 'ModuleCreature'."
+  ],
+  "passedTests": 361,
+  "failedTests": 6,
+  "passedSuites": 47,
+  "failedSuites": 8,
+  "newFailedSuites": [],
+  "remainingBaselineFailedSuites": [
+    "src/tests/apps/forge/dlgEditor.test.ts",
+    "src/tests/apps/forge/editorUndo.test.ts",
+    "src/tests/apps/forge/forgeWithoutGame.test.ts",
+    "src/tests/apps/forge/lipEditor.test.ts",
+    "src/tests/apps/forge/twoDAIndexOptions.test.ts",
+    "src/tests/apps/forge/txiLanguage.test.ts",
+    "src/tests/apps/forge/untitledUtxBlueprint.test.ts",
+    "src/tests/nwscript/decompiler/NWScriptDecompiler.integration.test.ts"
+  ]
+}

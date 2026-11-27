@@ -883,6 +883,12 @@ export class IngameControls {
     }
     this.gamePad.updateState(delta);
 
+    if(GameState.CheatConsoleManager){
+      GameState.CheatConsoleManager.setSprintModifierDown(
+        !!(this.keyboard.action.ShiftLeft?.down || this.keyboard.action.ShiftRight?.down)
+      );
+    }
+
     if(currentMenu){
       if(this.gamePad.button_a.pressed){
         currentMenu.triggerControllerAPress();

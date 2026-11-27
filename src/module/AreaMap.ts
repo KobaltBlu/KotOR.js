@@ -335,15 +335,21 @@ export class AreaMap {
   exportData(){
     let dataStruct = new GFFStruct(14);
 
+    const data = new Uint8Array(this.dataSize);
     let byteIndex = 0;
     for(let i = 0; i < this.fogAlphaPixelData.length; i++){
       const bitIndex = i % 8;
-      this.data[byteIndex] |= 1 << bitIndex;
+      const explored = this.fogAlphaPixelData[i] == 0;
+      if(explored){
+        data[byteIndex] |= 1 << bitIndex;
+      }
 
       if(!((i+1) % 8)){
         byteIndex++;
       }
     }
+
+    this.data = data;
 
     dataStruct.addField( new GFFField(GFFDataType.VOID, 'AreaMapData') ).setData(this.data);
     dataStruct.addField( new GFFField(GFFDataType.DWORD, 'AreaMapDataSize') ).setValue(this.dataSize);

@@ -28,6 +28,7 @@ export class InGameBark extends GameMenu {
 
   audioNode: AudioBufferSourceNode;
   currentEntry: DLGNode;
+  barkPlaybackToken: number = 0;
 
   constructor(){
     super();
@@ -42,6 +43,9 @@ export class InGameBark extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.LBL_BARKTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.barkPlaybackToken++;
+        this.resetCurrentEntryLIP();
+        GameState.CutsceneManager.audioEmitter?.stop();
         this.bHasAudio = false;
         this.bAudioPlayed = true;
         this.barkTimer = 0;
@@ -53,6 +57,7 @@ export class InGameBark extends GameMenu {
   
   bark(entry: DLGNode) {
 
+    if (!entry) return;
     const outText = this.gameStringParse(entry.text);
     console.log('bark', entry, outText);
 
@@ -60,8 +65,8 @@ export class InGameBark extends GameMenu {
       return;
     }
 
+    const barkToken = ++this.barkPlaybackToken;
     this.resetCurrentEntryLIP();
-
     //reset the last audioNode
     if(this.audioNode){
       this.audioNode.onended = undefined;
@@ -77,6 +82,7 @@ export class InGameBark extends GameMenu {
       entry.initProperties();
     }
     this.currentEntry = entry;
+    GameState.CutsceneManager.audioEmitter?.stop();
 
     this.bHasAudio = false;
     this.bAudioPlayed = false;
@@ -95,16 +101,35 @@ export class InGameBark extends GameMenu {
       this.bHasAudio = true;
       this.bAudioPlayed = false;
       console.log('lip', entry.getVoiceResRef());
-      void entry.loadLIP();
+      void entry.loadLIP().catch(() => {
+        if (this.barkPlaybackToken === barkToken) this.resetCurrentEntryLIP();
+      });
       GameState.CutsceneManager.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
+        if (this.barkPlaybackToken !== barkToken) {
+          return;
+        }
+        if(!audioNode){
+          this.bHasAudio = false;
+          this.bAudioPlayed = true;
+          this.resetCurrentEntryLIP();
+          return;
+        }
         this.audioNode = audioNode;
         this.bHasAudio = true;
         audioNode.onended = () => {
+          if (this.barkPlaybackToken !== barkToken) {
+            return;
+          }
+          this.resetCurrentEntryLIP();
           this.bAudioPlayed = true;
         };
       }).catch((e) => {
+        if (this.barkPlaybackToken !== barkToken) {
+          return;
+        }
         this.bHasAudio = false;
         this.bAudioPlayed = true;
+        this.resetCurrentEntryLIP();
       });
     } else {
       this.bAudioPlayed = true;
@@ -147,15 +172,19 @@ export class InGameBark extends GameMenu {
 
   close(){
     super.close();
-    if(this.audioNode){
-      this.audioNode.onended = undefined;
-      this.audioNode = undefined;
-    }
-    this.resetCurrentEntryLIP();
-    this.currentEntry = undefined;
+    this.barkPlaybackToken++;
     this.bHasAudio = false;
     this.bAudioPlayed = false;
     this.barkTimer = 0;
+    this.resetCurrentEntryLIP();
+    this.currentEntry = undefined;
+    if(this.audioNode){
+      this.audioNode.onended = undefined;
+    }
+    GameState.CutsceneManager.audioEmitter?.stop();
+    if(this.audioNode){
+      this.audioNode = undefined;
+    }
   }
 
   resetCurrentEntryLIP(){

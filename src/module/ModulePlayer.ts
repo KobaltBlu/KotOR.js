@@ -1,6 +1,5 @@
 import { ModuleCreature } from "@/module/ModuleCreature";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-// import { PartyManager } from "@/managers/PartyManager";
 import { GFFObject } from "@/resource/GFFObject";
 import { GameState } from "@/GameState";
 
@@ -30,8 +29,9 @@ export class ModulePlayer extends ModuleCreature {
   }
 
   save(){
-    let gff = super.save();
+    const gff = super.save();
     GameState.PartyManager.PlayerTemplate = gff;
+    GameState.PartyManager.ActualPlayerTemplate = gff;
     this.template = gff;
     return gff;
   }

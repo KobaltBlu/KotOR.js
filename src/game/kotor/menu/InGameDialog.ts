@@ -1,6 +1,7 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel } from "@/gui";
+import type { GUIControl, GUIListBox, GUILabel } from "@/gui";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import * as THREE from "three";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import { DLGNode } from "@/resource/DLGNode";
@@ -43,10 +44,7 @@ export class InGameDialog extends GameMenu {
       this.LBL_MESSAGE.setText('');
       this.LBL_MESSAGE.setTextColor(this.LBL_MESSAGE.defaultColor.r, this.LBL_MESSAGE.defaultColor.g, this.LBL_MESSAGE.defaultColor.b);
 
-      this.LB_REPLIES.extent.left = -(GameState.ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
-      this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
-      this.LB_REPLIES.calculatePosition();
-      this.LB_REPLIES.calculateBox();
+      this.updateReplyListLayout();
       this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
@@ -69,11 +67,81 @@ export class InGameDialog extends GameMenu {
     GameState.SetEngineMode(EngineMode.DIALOG);
   }
 
+  protected getReplyItemWidth() {
+    const borderSize = Math.min(this.LB_REPLIES.getBorderSize(), this.LB_REPLIES.extent.width / 2, this.LB_REPLIES.extent.height / 2);
+    const scrollbarWidth = (this.LB_REPLIES.scrollbar && this.LB_REPLIES.maxScroll > 0)
+      ? this.LB_REPLIES.scrollbar.extent.width + (this.LB_REPLIES.scrollbar.border.dimension * 2)
+      : 0;
+    return Math.max(1, this.LB_REPLIES.extent.width - (borderSize * 2) - scrollbarWidth);
+  }
+
+  protected reflowReplyItems(controls: GUIControl[] = this.LB_REPLIES.children) {
+    const itemWidth = this.getReplyItemWidth();
+
+    for (let i = 0; i < controls.length; i++) {
+      const control = controls[i];
+      if (!control) {
+        continue;
+      }
+
+      if(typeof control.userData.replyBaseHeight === 'undefined'){
+        control.userData.replyBaseHeight = control.extent.height;
+      }
+
+      control.text.alignment = (control.text.alignment & GUIControlAlignment.VerticalMask) | GUIControlAlignment.HorizontalLeft;
+
+      let needsResize = false;
+      if (control.extent.width !== itemWidth) {
+        control.extent.width = itemWidth;
+        needsResize = true;
+      }
+
+      control.updateTextGeometry(control.getText());
+      const textSize = control.getTextSize();
+      const itemHeight = Math.max(control.userData.replyBaseHeight, textSize.y);
+
+      if (control.extent.height !== itemHeight) {
+        control.extent.height = itemHeight;
+        needsResize = true;
+      }
+
+      if (needsResize) {
+        control.resizeControl();
+      }
+
+      control.updateTextGeometry(control.getText());
+      control.updateBounds();
+    }
+
+    this.LB_REPLIES.updateList();
+  }
+
+  protected updateReplyListLayout() {
+    const horizontalMargin = 16;
+    const viewportWidth = GameState.ResolutionManager.getViewportWidth();
+    const viewportHeight = GameState.ResolutionManager.getViewportHeight();
+
+    this.LB_REPLIES.extent.width = Math.max(1, viewportWidth - (horizontalMargin * 2));
+    this.LB_REPLIES.extent.left = ((this.width - viewportWidth) / 2) + horizontalMargin;
+    this.LB_REPLIES.extent.top = (viewportHeight / 2) - this.LB_REPLIES.extent.height / 2;
+    this.LB_REPLIES.resizeControl();
+    this.LB_REPLIES.calculatePosition();
+    this.LB_REPLIES.calculateBox();
+    this.reflowReplyItems();
+    this.reflowReplyItems();
+  }
+
   setReplies(replies: DLGNode[]) {
+    this.updateReplyListLayout();
+    this.LB_REPLIES.scroll = 0;
     const texts = replies
       .filter(r => !r.isContinueDialog())
       .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
     this.LB_REPLIES.setItems(texts);
+    // The first layout pass determines scrollbar visibility; the second uses
+    // the final text width so long replies wrap without clipping.
+    this.reflowReplyItems();
+    this.reflowReplyItems();
   }
 
   setDialogMode(state: ConversationState) {
@@ -139,10 +207,7 @@ export class InGameDialog extends GameMenu {
   }
 
   recalculatePosition() {
-    this.LB_REPLIES.extent.left = -(GameState.ResolutionManager.getViewportWidth() / 2) + this.LB_REPLIES.extent.width / 2 + 16;
-    this.LB_REPLIES.extent.top = GameState.ResolutionManager.getViewportHeight() / 2 - this.LB_REPLIES.extent.height / 2;
-    this.LB_REPLIES.calculatePosition();
-    this.LB_REPLIES.calculateBox();
+    this.updateReplyListLayout();
     this.resetLetterBox();
   }
 

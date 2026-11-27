@@ -94,6 +94,22 @@ export class ModuleObjectManager {
     this.ObjectList.clear();
   }
 
+  static SyncCount(minimum = 1){
+    let nextId = Math.max(1, minimum);
+
+    this.ObjectList.forEach((_object, key) => {
+      if(typeof key !== 'number' || !isFinite(key)){
+        return;
+      }
+
+      if(key >= nextId){
+        nextId = key + 1;
+      }
+    });
+
+    this.COUNT = nextId;
+  }
+
   public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){
 
     /*ModuleObjectType.CREATURE         = 1;
@@ -255,8 +271,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
-          let distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
+          let distanceA = a.position.distanceTo(oObject.position);
+          let distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -723,6 +739,13 @@ export class ModuleObjectManager {
 
   static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
 
+    if(!BitWise.InstanceOfObject(player, ModuleObjectType.ModuleObject)){
+      this.playerSelectableObjects = [];
+      this.playerHoverableObjects = [];
+      this.SetPlayerVisibleObjects([]);
+      return this.playerSelectableObjects;
+    }
+
     const objects = [
       ...GameState.PartyManager.party,
       ...GameState.module.area.placeables, 
@@ -819,7 +842,15 @@ export class ModuleObjectManager {
     this.tUpdateSelectable -= delta;
     if(this.tUpdateSelectable <= 0){
       //Update the cache of selectable objects
-      GameState.ModuleObjectManager.GetSelectableObjectsInRange(PartyManager.party[0]);
+      const player = PartyManager.party[0];
+      if(!player){
+        this.playerSelectableObjects = [];
+        this.playerHoverableObjects = [];
+        this.SetPlayerVisibleObjects([]);
+        this.tUpdateSelectable = UPDATE_SELECTABLE_OBJECTS_INTERVAL;
+        return;
+      }
+      GameState.ModuleObjectManager.GetSelectableObjectsInRange(player);
       this.tUpdateSelectable = UPDATE_SELECTABLE_OBJECTS_INTERVAL;
     }
   }

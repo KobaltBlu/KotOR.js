@@ -1,5 +1,7 @@
+import { GameState } from "@/GameState";
 import { ActionStatus, ActionType, ModuleObjectType } from "@/enums";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 
@@ -19,6 +21,7 @@ export class ActionPickUpItem extends Action {
     this.type = ActionType.ActionPickUpItem;
 
     //PARAMS
+    // 0 - dword: oItem
   }
 
   update(delta?: number): ActionStatus {
@@ -31,6 +34,29 @@ export class ActionPickUpItem extends Action {
     }
 
     const owner: ModuleCreature = this.owner as ModuleCreature;
+    const item = this.getParameter<ModuleItem>(0);
+
+    if(!BitWise.InstanceOfObject(item, ModuleObjectType.ModuleItem)){
+      return ActionStatus.FAILED;
+    }
+
+    if(!item.area){
+      return ActionStatus.FAILED;
+    }
+
+    if(item.model){
+      item.model.removeFromParent();
+    }
+
+    item.placedInWorld = false;
+    item.setPossessor(owner);
+    item.area.detachObject(item);
+
+    if(owner.isPartyMember()){
+      GameState.InventoryManager.addItem(item);
+    }else{
+      owner.addItem(item);
+    }
 
     return ActionStatus.COMPLETE;
   }

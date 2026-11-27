@@ -4,6 +4,7 @@ import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from 
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 
 /**
  * ActionRandomWalk class.
@@ -51,17 +52,17 @@ export class ActionRandomWalk extends Action {
 
     position.copy(face.centroid);
 
-    const action = new GameState.ActionFactory.ActionMoveToPoint();
-    action.setParameter(0, ActionParameterType.FLOAT, position.x);
-    action.setParameter(1, ActionParameterType.FLOAT, position.y);
-    action.setParameter(2, ActionParameterType.FLOAT, position.z);
-    action.setParameter(3, ActionParameterType.DWORD, this.owner.area);
-    action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
-    action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
-    action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
-    action.setParameter(7, ActionParameterType.INT, 0);
-    action.setParameter(8, ActionParameterType.FLOAT, 30.0);
-    owner.actionQueue.addFront(action);
+    enqueueMoveToPoint(owner, {
+      x: position.x,
+      y: position.y,
+      z: position.z,
+      area: this.owner.area,
+      target: 0xFFFFFFFF,
+      run,
+      range: Math.max(1.5, maxDistance),
+      timeout: 30.0,
+      groupId: this.groupId,
+    });
 
     return ActionStatus.COMPLETE;
   }
