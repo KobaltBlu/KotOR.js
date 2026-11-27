@@ -169,21 +169,24 @@ export class AIScheduler {
         levelBudgetUs = remainingUs * AI_LEVEL_BUDGET_FRACTION;
       }
 
-      const levelStart = performance.now();
-
       // (a) Creature loco pass — every moving creature, every frame (not budgeted).
       this.creatureLocoPass(list, delta);
 
-      // (b) Round-robin AIUpdate with event drain + budget.
+      // (b) Round-robin AIUpdate with event drain + budget. The budget only
+      // covers aiUpdate time; at least one object always runs so a slow loco
+      // pass or an over-budget level can never stall a whole level (stalled
+      // action queues freeze scripted waits and cutscenes).
+      const levelStart = performance.now();
       let firstObject: GameObject | undefined;
       let wrapped = false;
       let budgetExhausted = false;
+      let ranThisLevel = 0;
 
       while(!budgetExhausted && !wrapped){
         this.drainDueEvents();
 
         const elapsedUs = (performance.now() - levelStart) * 1000;
-        if(elapsedUs >= levelBudgetUs){
+        if(ranThisLevel > 0 && elapsedUs >= levelBudgetUs){
           budgetExhausted = true;
           break;
         }
@@ -201,6 +204,7 @@ export class AIScheduler {
           break;
         }
 
+        ranThisLevel++;
         const aiStart = performance.now();
         try{
           const aiDelta = this.computeObjectAIDelta(obj, delta);

@@ -104,4 +104,32 @@ describe("AIScheduler", () => {
     expect(scheduler.lists[AILevel.HIGH]).toHaveLength(0);
     expect(scheduler.listIndex.every((i) => i === 0)).toBe(true);
   });
+
+  it("a slow creature loco pass cannot starve a level's aiUpdates", () => {
+    const objs = [makeObj(1), makeObj(2), makeObj(3)];
+    objs.forEach((o) => scheduler.addObject(o, AILevel.LOW));
+    // Simulate a loco pass that burns far more than the whole frame budget.
+    (scheduler as any).creatureLocoPass = () => {
+      const end = performance.now() + 15;
+      while(performance.now() < end){ /* busy */ }
+    };
+    for(let frame = 0; frame < 3; frame++) scheduler.update(1 / 60);
+    for(const o of objs){
+      expect((o.aiUpdate as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every non-empty level advances at least one object per frame even over budget", () => {
+    const high = makeObj(10);
+    const low = makeObj(11);
+    scheduler.addObject(high, AILevel.VERY_HIGH);
+    scheduler.addObject(low, AILevel.VERY_LOW);
+    // High-level aiUpdate eats the entire frame budget.
+    (high.aiUpdate as jest.Mock).mockImplementation(() => {
+      const end = performance.now() + 15;
+      while(performance.now() < end){ /* busy */ }
+    });
+    scheduler.update(1 / 60);
+    expect((low.aiUpdate as jest.Mock).mock.calls.length).toBe(1);
+  });
 });
